@@ -2117,7 +2117,7 @@ function renderCard(card) {
   if (card.dueDate) {
     const due = new Date(card.dueDate + 'T00:00:00');
     isOverdue = due < today && card.column !== 'done';
-    dateHtml = `<span class="card-date ${isOverdue ? 'overdue' : ''}">📅 ${formatDate(card.dueDate)}${isOverdue ? ' · VENCIDA' : ''}</span>`;
+    dateHtml = `<span class="card-date ${isOverdue ? 'overdue' : ''}">📅 ${formatDate(card.dueDate)}${isOverdue ? ' · FORA DO PRAZO' : ''}</span>`;
   }
   let delegHtml = '';
   const isPending = card.isDelegation && card.delegationStatus === 'pending';
@@ -2635,7 +2635,7 @@ function checkOverdueAndNotifyMone() {
       id: 'ovd_' + card.id + '_' + Date.now(),
       type: 'overdue_alert',
       refId: card.id,
-      message: `⚠️ Card VENCIDO: "${card.title}" — responsável: ${ownerName} (prazo: ${formatDate(card.dueDate)})`,
+      message: `⚠️ Card FORA DO PRAZO: "${card.title}" — responsável: ${ownerName} (prazo: ${formatDate(card.dueDate)})`,
       createdAt: new Date().toISOString(),
       read: false
     });
