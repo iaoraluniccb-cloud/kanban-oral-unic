@@ -1900,6 +1900,20 @@ function setCurrentUserId(id) {
 }
 
 // ---- Listeners em tempo real ----
+// Migra fotos do localStorage para o Firestore (one-time, para fotos antigas)
+async function migrateLocalPhotosToFirestore() {
+  if (!window.__db) return;
+  USERS.forEach(async u => {
+    const local = localStorage.getItem('ou_photo_' + u.id);
+    if (!local) return;
+    // Só envia se o Firestore ainda não tiver foto para esse usuário
+    if (window._cache.photos?.[u.id]) return;
+    try {
+      await window.__setDoc(window.__doc('ou_photos', u.id), { photo: local, updatedAt: new Date().toISOString() });
+    } catch(e) {}
+  });
+}
+
 function startRealtimeListeners() {
   if (!window.__db) return;
 
@@ -1990,6 +2004,8 @@ async function loadInitialData(userId) {
       localStorage.setItem('ou_photo_' + d.id, d.data().photo);
     }
   });
+  // Migra fotos antigas do localStorage para o Firestore (dispositivo que tinha as fotos salvas localmente)
+  migrateLocalPhotosToFirestore();
 
   // Agenda e delegações (documentos únicos em ou_shared)
   try {
