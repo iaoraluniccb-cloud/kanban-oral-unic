@@ -3392,16 +3392,31 @@ async function fetchGoogleCalendarEvents() {
       return;
     }
     const data = await res.json();
-    const gcalEvents = (data.items || []).map(item => ({
-      id: 'gcal_' + item.id,
-      title: item.summary || '(sem título)',
-      date: (item.start?.date || item.start?.dateTime || '').substring(0, 10),
-      type: 'compromisso',
-      assignedTo: [currentUser.id],
-      createdBy: currentUser.id,
-      source: 'google',
-      gcalLink: item.htmlLink
-    })).filter(e => e.date);
+    const gcalEvents = (data.items || []).map(item => {
+      const startRaw = item.start?.dateTime || item.start?.date || '';
+      const endRaw = item.end?.dateTime || item.end?.date || '';
+      const date = startRaw.substring(0, 10);
+      // Extrai horário se disponível (dateTime tem T no meio)
+      let timeLabel = '';
+      if (item.start?.dateTime) {
+        const startT = new Date(item.start.dateTime);
+        const endT = item.end?.dateTime ? new Date(item.end.dateTime) : null;
+        const fmt = t => t.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        timeLabel = endT ? `${fmt(startT)}–${fmt(endT)}` : fmt(startT);
+      }
+      return {
+        id: 'gcal_' + item.id,
+        title: (timeLabel ? `${timeLabel} ${item.summary || '(sem título)'}` : item.summary || '(sem título)'),
+        date,
+        type: 'compromisso',
+        assignedTo: [currentUser.id],
+        createdBy: currentUser.id,
+        source: 'google',
+        gcalLink: item.htmlLink,
+        location: item.location || '',
+        description: item.description || ''
+      };
+    }).filter(e => e.date);
 
     // Remove eventos antigos do Google e adiciona os novos
     const existingAgenda = getAgenda().filter(e => e.source !== 'google' || e.createdBy !== currentUser.id);
