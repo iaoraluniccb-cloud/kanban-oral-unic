@@ -2906,7 +2906,7 @@ function renderCalendar() {
       onclick="${!cell.other ? `selectDay('${dateStr}')` : ''}">
       <div class="day-number">${cell.day}</div>
       <div class="day-events">
-        ${dayEvents.slice(0,3).map(e => `<div class="day-event-pill event-${e.type}" onclick="event.stopPropagation();showEventDetail('${e.id}')">${escHtml(e.title)}</div>`).join('')}
+        ${dayEvents.slice(0,3).map(e => `<div class="day-event-pill event-${e.type}" onclick="event.stopPropagation();showEventDetail('${e.id}')">${e.startTime ? escHtml(e.startTime)+' ' : ''}${escHtml(e.title)}</div>`).join('')}
         ${dayEvents.length > 3 ? `<div class="day-event-pill" style="background:var(--gray-200);color:var(--gray-600);">+${dayEvents.length-3} mais</div>` : ''}
       </div>
     </div>`;
@@ -3393,24 +3393,23 @@ async function fetchGoogleCalendarEvents() {
     }
     const data = await res.json();
     const gcalEvents = (data.items || []).map(item => {
-      const startRaw = item.start?.dateTime || item.start?.date || '';
-      const endRaw = item.end?.dateTime || item.end?.date || '';
-      const date = startRaw.substring(0, 10);
-      // Extrai horário se disponível (dateTime tem T no meio)
-      let timeLabel = '';
+      const date = (item.start?.dateTime || item.start?.date || '').substring(0, 10);
+      let startTime = '', endTime = '';
       if (item.start?.dateTime) {
-        const startT = new Date(item.start.dateTime);
-        const endT = item.end?.dateTime ? new Date(item.end.dateTime) : null;
-        const fmt = t => t.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-        timeLabel = endT ? `${fmt(startT)}–${fmt(endT)}` : fmt(startT);
+        const fmt = t => new Date(t).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        startTime = fmt(item.start.dateTime);
+        if (item.end?.dateTime) endTime = fmt(item.end.dateTime);
       }
       return {
         id: 'gcal_' + item.id,
-        title: (timeLabel ? `${timeLabel} ${item.summary || '(sem título)'}` : item.summary || '(sem título)'),
+        title: item.summary || '(sem título)',
         date,
+        startTime,
+        endTime,
         type: 'compromisso',
         assignedTo: [currentUser.id],
         createdBy: currentUser.id,
+        createdByName: currentUser.name,
         source: 'google',
         gcalLink: item.htmlLink,
         location: item.location || '',
