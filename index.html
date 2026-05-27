@@ -1954,11 +1954,17 @@ function renderLogin() {
 }
 
 // Senhas protegidas
-const USER_PASSWORDS = { thais: 'ximia123', dra_mone: 'cooper123' };
+// Senhas específicas sobrepõem o padrão (nome do ID + "123")
+const USER_PASSWORDS_CUSTOM = { thais: 'ximia123', dra_mone: 'cooper123' };
+function getUserPassword(userId) {
+  if (USER_PASSWORDS_CUSTOM[userId]) return USER_PASSWORDS_CUSTOM[userId];
+  // Padrão: primeiro segmento do ID + "123" (ex: "jarina" → "jarina123", "dr_aurelio" → "dr123")
+  return userId.split('_')[0] + '123';
+}
 let _pendingLoginUserId = null;
 
 function attemptLogin(userId) {
-  if (USER_PASSWORDS[userId]) {
+  if (getUserPassword(userId)) {
     _pendingLoginUserId = userId;
     const user = getUserById(userId);
     document.getElementById('pwd-modal-title').textContent = `Olá, ${user.name}! Digite sua senha:`;
@@ -1974,7 +1980,7 @@ function attemptLogin(userId) {
 
 function confirmPwd() {
   const entered = document.getElementById('pwd-input').value;
-  if (entered === USER_PASSWORDS[_pendingLoginUserId]) {
+  if (entered === getUserPassword(_pendingLoginUserId)) {
     document.getElementById('pwd-modal').style.display = 'none';
     login(_pendingLoginUserId);
     _pendingLoginUserId = null;
