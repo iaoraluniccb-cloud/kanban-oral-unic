@@ -1900,16 +1900,19 @@ function setCurrentUserId(id) {
 }
 
 // ---- Listeners em tempo real ----
-// Migra fotos do localStorage para o Firestore (one-time, para fotos antigas)
+// Migra fotos do localStorage para o Firestore — envia qualquer foto local que o Firestore não tenha ainda
 async function migrateLocalPhotosToFirestore() {
   if (!window.__db) return;
+  const { getDoc } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
   USERS.forEach(async u => {
     const local = localStorage.getItem('ou_photo_' + u.id);
     if (!local) return;
-    // Só envia se o Firestore ainda não tiver foto para esse usuário
-    if (window._cache.photos?.[u.id]) return;
     try {
-      await window.__setDoc(window.__doc('ou_photos', u.id), { photo: local, updatedAt: new Date().toISOString() });
+      const snap = await getDoc(window.__doc('ou_photos', u.id));
+      // Só envia se Firestore não tiver foto ainda
+      if (!snap.exists() || !snap.data().photo) {
+        await window.__setDoc(window.__doc('ou_photos', u.id), { photo: local, updatedAt: new Date().toISOString() });
+      }
     } catch(e) {}
   });
 }
@@ -3266,6 +3269,8 @@ function init() {
   renderLogin();
   // Inicia listeners globais (agenda, delegações) assim que Firebase estiver pronto
   startRealtimeListeners();
+  // Migra fotos locais para Firestore imediatamente (sem aguardar login)
+  if (window.__db) migrateLocalPhotosToFirestore();
 
   const savedUser = getCurrentUserId();
   if (savedUser && getUserById(savedUser)) {
