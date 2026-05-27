@@ -1519,7 +1519,12 @@
         <button class="agenda-nav-btn" onclick="changeMonth(1)">›</button>
         <button class="agenda-nav-btn" onclick="goToToday()" title="Hoje" style="font-size:0.7rem;width:auto;padding:0 10px;">Hoje</button>
       </div>
-      <button class="add-event-btn" id="add-event-btn" onclick="openAddEvent()">+ Novo Evento</button>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button id="gcal-connect-btn" onclick="connectGoogleCalendar()" style="display:none;padding:7px 14px;border-radius:8px;border:1.5px solid #4285f4;background:#fff;color:#4285f4;font-size:0.82rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;">
+          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width:16px;height:16px;"> Google Agenda
+        </button>
+        <button class="add-event-btn" id="add-event-btn" onclick="openAddEvent()">+ Novo Evento</button>
+      </div>
     </div>
     <div class="calendar-grid-wrapper">
       <div class="calendar-weekdays">
@@ -2163,6 +2168,12 @@ function switchTab(tab) {
     } else {
       btn.style.display = 'flex'; // Everyone can add events for themselves
     }
+    // Mostra botão Google Agenda e atualiza estado
+    const gcalBtn = document.getElementById('gcal-connect-btn');
+    if (gcalBtn) { gcalBtn.style.display = 'flex'; updateGcalBtn(); }
+    // Recarrega eventos do Google se conectado
+    const savedToken = localStorage.getItem('ou_gcal_' + currentUser?.id);
+    if (savedToken) { _gcalAccessToken = savedToken; fetchGoogleCalendarEvents(); }
   }
 }
 
@@ -3286,6 +3297,134 @@ if (window.__fbReady) {
   // Fallback: se Firebase demorar mais de 3s, inicia sem ele (modo offline)
   setTimeout(() => { if (!window.__fbReady) init(); }, 3000);
 }
+</script>
+
+<!-- Google Identity Services -->
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+
+<script>
+// ============================================================
+// GOOGLE CALENDAR INTEGRATION
+// ============================================================
+const GCAL_CLIENT_ID = '878566113583-q4t0n31s4hm4bf6hkv8jos95mtu5d6kt.apps.googleusercontent.com';
+const GCAL_SCOPES = 'https://www.googleapis.com/auth/calendar.readonly';
+
+let _gcalTokenClient = null;
+let _gcalAccessToken = null;
+
+function initGoogleCalendar() {
+  if (!window.google?.accounts?.oauth2) return;
+  _gcalTokenClient = window.google.accounts.oauth2.initTokenClient({
+    client_id: GCAL_CLIENT_ID,
+    scope: GCAL_SCOPES,
+    callback: (response) => {
+      if (response.error) { showToast('Erro ao conectar Google Agenda', 'error'); return; }
+      _gcalAccessToken = response.access_token;
+      // Salva token no cache do usuário
+      if (!window._cache.gcalTokens) window._cache.gcalTokens = {};
+      window._cache.gcalTokens[currentUser.id] = response.access_token;
+      localStorage.setItem('ou_gcal_' + currentUser.id, response.access_token);
+      showToast('Google Agenda conectada!', 'success');
+      updateGcalBtn();
+      fetchGoogleCalendarEvents();
+    }
+  });
+}
+
+function connectGoogleCalendar() {
+  if (!_gcalTokenClient) {
+    showToast('Google ainda carregando, tente novamente em segundos', 'info');
+    setTimeout(initGoogleCalendar, 1000);
+    return;
+  }
+  _gcalTokenClient.requestAccessToken();
+}
+
+function disconnectGoogleCalendar() {
+  _gcalAccessToken = null;
+  localStorage.removeItem('ou_gcal_' + currentUser.id);
+  if (window._cache.gcalTokens) delete window._cache.gcalTokens[currentUser.id];
+  // Remove eventos do Google da agenda
+  const agenda = getAgenda().filter(e => e.source !== 'google');
+  saveAgenda(agenda);
+  showToast('Google Agenda desconectada', 'info');
+  updateGcalBtn();
+  renderCalendar();
+}
+
+function updateGcalBtn() {
+  const btn = document.getElementById('gcal-connect-btn');
+  if (!btn) return;
+  const token = _gcalAccessToken || localStorage.getItem('ou_gcal_' + currentUser?.id);
+  if (token) {
+    btn.innerHTML = '<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width:16px;height:16px;"> Agenda Conectada ✓';
+    btn.style.background = '#e8f5e9';
+    btn.style.borderColor = '#4caf50';
+    btn.style.color = '#2e7d32';
+    btn.onclick = disconnectGoogleCalendar;
+  } else {
+    btn.innerHTML = '<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width:16px;height:16px;"> Google Agenda';
+    btn.style.background = '#fff';
+    btn.style.borderColor = '#4285f4';
+    btn.style.color = '#4285f4';
+    btn.onclick = connectGoogleCalendar;
+  }
+}
+
+async function fetchGoogleCalendarEvents() {
+  const token = _gcalAccessToken || localStorage.getItem('ou_gcal_' + currentUser?.id);
+  if (!token || !currentUser) return;
+
+  try {
+    const now = new Date();
+    const threeMonths = new Date(now);
+    threeMonths.setMonth(threeMonths.getMonth() + 3);
+    const url = `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${now.toISOString()}&timeMax=${threeMonths.toISOString()}&singleEvents=true&orderBy=startTime&maxResults=50`;
+
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) {
+      if (res.status === 401) {
+        // Token expirado
+        localStorage.removeItem('ou_gcal_' + currentUser.id);
+        _gcalAccessToken = null;
+        updateGcalBtn();
+      }
+      return;
+    }
+    const data = await res.json();
+    const gcalEvents = (data.items || []).map(item => ({
+      id: 'gcal_' + item.id,
+      title: item.summary || '(sem título)',
+      date: (item.start?.date || item.start?.dateTime || '').substring(0, 10),
+      type: 'compromisso',
+      assignedTo: [currentUser.id],
+      createdBy: currentUser.id,
+      source: 'google',
+      gcalLink: item.htmlLink
+    })).filter(e => e.date);
+
+    // Remove eventos antigos do Google e adiciona os novos
+    const existingAgenda = getAgenda().filter(e => e.source !== 'google' || e.createdBy !== currentUser.id);
+    saveAgenda([...existingAgenda, ...gcalEvents]);
+    renderCalendar();
+    showToast(`${gcalEvents.length} eventos importados do Google Agenda`, 'success');
+  } catch(e) {
+    console.warn('Erro ao buscar Google Calendar:', e);
+  }
+}
+
+// Inicializa GIS quando disponível e mostra botão ao mudar de aba
+window.addEventListener('load', () => {
+  const waitGIS = setInterval(() => {
+    if (window.google?.accounts?.oauth2) {
+      initGoogleCalendar();
+      clearInterval(waitGIS);
+    }
+  }, 500);
+});
+
+// Chamado ao trocar para aba de agenda
+const _origSwitchTab = typeof switchTab === 'function' ? switchTab : null;
 </script>
 
 <script>
