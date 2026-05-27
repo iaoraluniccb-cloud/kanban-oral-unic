@@ -1432,6 +1432,10 @@
         <div class="avatar avatar-sm avatar-upload-btn" id="header-avatar" title="Clique para trocar foto" onclick="triggerPhotoUpload(currentUser.id)" style="cursor:pointer"></div>
         <span id="header-name"></span>
       </div>
+      <div id="adm-switch-wrap" style="display:none;position:relative;">
+        <button class="logout-btn" onclick="toggleAdmSwitcher()" style="background:rgba(255,255,255,0.12);" title="Ver como outro usuário">👥 Trocar</button>
+        <div id="adm-switcher-menu" style="display:none;position:absolute;right:0;top:calc(100% + 6px);background:#fff;border:1px solid #e2e8f0;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.12);z-index:999;min-width:180px;padding:6px 0;max-height:320px;overflow-y:auto;"></div>
+      </div>
       <button class="logout-btn" onclick="logout()">Sair</button>
     </div>
   </header>
@@ -1768,6 +1772,48 @@ function saveCrop(userId) {
   showToast('Foto atualizada!', 'success');
 }
 
+function toggleAdmSwitcher() {
+  const menu = document.getElementById('adm-switcher-menu');
+  if (menu.style.display === 'none') {
+    // Popula o menu com todos os usuários exceto o atual
+    menu.innerHTML = USERS.filter(u => u.id !== currentUser.id).map(u => {
+      const photo = getPhoto(u.id);
+      const avatarStyle = photo
+        ? `background-image:url('${photo}');background-size:cover;background-position:center;`
+        : `background:${u.color};`;
+      return `<button onclick="admSwitchTo('${u.id}')" style="display:flex;align-items:center;gap:9px;width:100%;padding:8px 14px;border:none;background:none;cursor:pointer;font-size:0.85rem;color:#1e293b;text-align:left;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='none'">
+        <div style="width:28px;height:28px;border-radius:50%;flex-shrink:0;${avatarStyle}display:flex;align-items:center;justify-content:center;color:#fff;font-size:0.7rem;font-weight:700;">${photo ? '' : getInitials(u.name)}</div>
+        <div><div style="font-weight:600;">${escHtml(u.name)}</div><div style="font-size:0.72rem;color:#64748b;">${escHtml(u.role)}</div></div>
+      </button>`;
+    }).join('');
+    menu.style.display = 'block';
+    // Fecha ao clicar fora
+    setTimeout(() => document.addEventListener('click', closeAdmSwitcher, { once: true }), 50);
+  } else {
+    menu.style.display = 'none';
+  }
+}
+
+function closeAdmSwitcher() {
+  const menu = document.getElementById('adm-switcher-menu');
+  if (menu) menu.style.display = 'none';
+}
+
+async function admSwitchTo(userId) {
+  document.getElementById('adm-switcher-menu').style.display = 'none';
+  // Troca para o perfil sem pedir senha (ADM)
+  currentUser = getUserById(userId);
+  setCurrentUserId(userId);
+  updateHeaderAvatar();
+  document.getElementById('header-name').textContent = currentUser.name;
+  showToast(`Visualizando como ${currentUser.name}`, 'info');
+  await loadInitialData(userId);
+  switchTab('vello');
+  renderVello();
+  // Mostra botão switcher sempre (ADM ainda está no controle)
+  document.getElementById('adm-switch-wrap').style.display = 'flex';
+}
+
 function updateHeaderAvatar() {
   const el = document.getElementById('header-avatar');
   if (!el || !currentUser) return;
@@ -2010,6 +2056,8 @@ async function login(userId) {
 
   switchTab('vello');
   renderVello();
+  // Mostra botão de trocar perfil para ADMs
+  document.getElementById('adm-switch-wrap').style.display = ADM_USERS.includes(userId) ? 'flex' : 'none';
   // Verifica cards fora do prazo e notifica ADMs
   setTimeout(checkOverdueAndNotify, 1500);
 }
@@ -2019,6 +2067,7 @@ function logout() {
   localStorage.removeItem('ou_currentUser');
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('app').style.display = 'none';
+  document.getElementById('adm-switch-wrap').style.display = 'none';
   selectedDay = null;
 }
 
