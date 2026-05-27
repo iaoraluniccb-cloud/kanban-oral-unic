@@ -1909,7 +1909,7 @@ function startRealtimeListeners() {
     }
   });
 
-  // Cards do usuário logado
+  // Cards do usuário logado (ou qualquer usuário monitorado por ADM)
   function listenUserCards(userId) {
     window.__onSnapshot(window.__doc('ou_cards', userId), snap => {
       if (snap.exists()) {
@@ -1918,6 +1918,10 @@ function startRealtimeListeners() {
         window._cache.cards[userId] = [];
       }
       if (currentUser && currentUser.id === userId) renderKanban();
+      // ADM: atualiza painel de atraso em tempo real
+      if (currentUser && ADM_USERS.includes(currentUser.id)) {
+        renderOverdueTeamPanel();
+      }
     });
   }
 
@@ -1971,6 +1975,13 @@ async function loadInitialData(userId) {
   // Inicia listeners em tempo real para o usuário logado
   if (window._listenUserCards) window._listenUserCards(userId);
   if (window._listenUserNotifs) window._listenUserNotifs(userId);
+
+  // ADMs escutam cards de todos os usuários em tempo real
+  if (ADM_USERS.includes(userId) && window._listenUserCards) {
+    USERS.forEach(u => {
+      if (u.id !== userId) window._listenUserCards(u.id);
+    });
+  }
 }
 
 // ============================================================
