@@ -2906,7 +2906,7 @@ function renderCalendar() {
       onclick="${!cell.other ? `selectDay('${dateStr}')` : ''}">
       <div class="day-number">${cell.day}</div>
       <div class="day-events">
-        ${dayEvents.slice(0,3).map(e => `<div class="day-event-pill event-${e.type}" onclick="event.stopPropagation();showEventDetail('${e.id}')">${e.startTime ? escHtml(e.startTime)+' ' : ''}${escHtml(e.title)}</div>`).join('')}
+        ${dayEvents.slice(0,3).map(e => `<div class="day-event-pill event-${e.type}" style="${e.gcalColor ? `background:${e.gcalColor};color:#1e293b;` : ''}" onclick="event.stopPropagation();showEventDetail('${e.id}')">${e.startTime ? escHtml(e.startTime)+' ' : ''}${escHtml(e.title)}</div>`).join('')}
         ${dayEvents.length > 3 ? `<div class="day-event-pill" style="background:var(--gray-200);color:var(--gray-600);">+${dayEvents.length-3} mais</div>` : ''}
       </div>
     </div>`;
@@ -2935,7 +2935,7 @@ function renderDayDetail(dateStr) {
       <div class="day-detail-body">
         ${events.length === 0 ? `<div style="text-align:center;color:var(--gray-400);padding:24px;font-size:0.88rem;">Nenhum evento neste dia.</div>` :
           events.sort((a,b) => (a.startTime||'').localeCompare(b.startTime||'')).map(e => `
-            <div class="event-card type-${e.type}" onclick="showEventDetail('${e.id}')">
+            <div class="event-card type-${e.type}" style="${e.gcalColor ? `border-left:4px solid ${e.gcalColor};` : ''}" onclick="showEventDetail('${e.id}')">
               <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
                 <div class="event-card-title">${escHtml(e.title)}</div>
                 <span class="event-type-badge event-${e.type}">${EVENT_TYPES[e.type]||e.type}</span>
@@ -3400,6 +3400,14 @@ async function fetchGoogleCalendarEvents() {
         startTime = fmt(item.start.dateTime);
         if (item.end?.dateTime) endTime = fmt(item.end.dateTime);
       }
+      // Cores do Google Calendar (colorId → hex)
+      const GCAL_COLORS = {
+        '1':'#a4bdfc','2':'#7ae7bf','3':'#dbadff','4':'#ff887c',
+        '5':'#fbd75b','6':'#ffb878','7':'#46d6db','8':'#e1e1e1',
+        '9':'#5484ed','10':'#51b749','11':'#dc2127'
+      };
+      const gcalColor = item.colorId ? GCAL_COLORS[item.colorId] : null;
+
       return {
         id: 'gcal_' + item.id,
         title: item.summary || '(sem título)',
@@ -3411,6 +3419,7 @@ async function fetchGoogleCalendarEvents() {
         createdBy: currentUser.id,
         createdByName: currentUser.name,
         source: 'google',
+        gcalColor,
         gcalLink: item.htmlLink,
         location: item.location || '',
         description: item.description || ''
