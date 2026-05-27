@@ -2609,11 +2609,17 @@ function checkOverdueAndNotifyMone() {
   const today = new Date(); today.setHours(0,0,0,0);
   const allCards = window._cache.cards || {};
   const overdueCards = [];
-  Object.values(allCards).forEach(card => {
-    if (!card.dueDate || card.column === 'done') return;
-    const due = new Date(card.dueDate + 'T00:00:00');
-    if (due < today) overdueCards.push(card);
+
+  // allCards = { userId: [array de cards] } — iterar entries para manter dono do card
+  Object.entries(allCards).forEach(([ownerId, cardArray]) => {
+    if (!Array.isArray(cardArray)) return;
+    cardArray.forEach(card => {
+      if (!card.dueDate || card.column === 'done') return;
+      const due = new Date(card.dueDate + 'T00:00:00');
+      if (due < today) overdueCards.push({ ...card, _ownerId: ownerId });
+    });
   });
+
   if (overdueCards.length === 0) return;
 
   const existingNotifs = getNotifications('dra_mone');
@@ -2623,11 +2629,13 @@ function checkOverdueAndNotifyMone() {
 
   overdueCards.forEach(card => {
     if (existingIds.has(card.id)) return;
+    const ownerUser = getUserById(card._ownerId);
+    const ownerName = ownerUser ? ownerUser.name : card._ownerId;
     newNotifs.push({
       id: 'ovd_' + card.id + '_' + Date.now(),
       type: 'overdue_alert',
       refId: card.id,
-      message: `⚠️ Card VENCIDO: "${card.title}" — responsável: ${card.userId || 'desconhecido'} (prazo: ${formatDate(card.dueDate)})`,
+      message: `⚠️ Card VENCIDO: "${card.title}" — responsável: ${ownerName} (prazo: ${formatDate(card.dueDate)})`,
       createdAt: new Date().toISOString(),
       read: false
     });
