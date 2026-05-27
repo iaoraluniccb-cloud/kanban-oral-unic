@@ -1530,6 +1530,7 @@
       <div class="calendar-days" id="calendar-days"></div>
     </div>
     <div id="day-detail-panel"></div>
+    <div id="overdue-team-panel" style="display:none;margin-top:20px;"></div>
   </div>
 </div>
 
@@ -2539,6 +2540,7 @@ function renderInbox() {
           <button class="notif-dismiss" onclick="dismissNotif('${n.id}')">✕</button>
           ${n.type === 'delegation_accepted' ? `<strong>${escHtml(n.toName)}</strong> aceitou a tarefa "<em>${escHtml(n.cardTitle)}</em>".` : ''}
           ${n.type === 'delegation_refused' ? `<strong>${escHtml(n.toName)}</strong> recusou a tarefa "<em>${escHtml(n.cardTitle)}</em>"${n.reason ? ': <em>'+escHtml(n.reason)+'</em>' : ''}.` : ''}
+          ${n.type === 'overdue_alert' ? `${escHtml(n.message)}` : ''}
           <div style="font-size:0.72rem;color:var(--gray-400);margin-top:4px;">${timeAgo(n.createdAt)}</div>
         </div>
       `).join('');
@@ -2683,6 +2685,59 @@ function getVisibleEvents() {
   });
 }
 
+function renderOverdueTeamPanel() {
+  const panel = document.getElementById('overdue-team-panel');
+  if (!panel) return;
+  if (!ADM_USERS.includes(currentUser?.id)) { panel.style.display = 'none'; return; }
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  const allCards = window._cache.cards || {};
+  const overdueList = [];
+
+  Object.entries(allCards).forEach(([ownerId, cardArray]) => {
+    if (!Array.isArray(cardArray)) return;
+    const owner = getUserById(ownerId);
+    cardArray.forEach(card => {
+      if (!card.dueDate || card.column === 'done') return;
+      const due = new Date(card.dueDate + 'T00:00:00');
+      if (due < today) overdueList.push({ card, ownerName: owner ? owner.name : ownerId, ownerColor: owner?.color || '#888' });
+    });
+  });
+
+  panel.style.display = 'block';
+  if (overdueList.length === 0) {
+    panel.innerHTML = `<div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:12px;padding:14px 18px;color:#166534;font-size:0.87rem;">✅ Nenhuma tarefa fora do prazo na equipe.</div>`;
+    return;
+  }
+
+  // Group by owner
+  const byOwner = {};
+  overdueList.forEach(({ card, ownerName, ownerColor }) => {
+    if (!byOwner[ownerName]) byOwner[ownerName] = { color: ownerColor, cards: [] };
+    byOwner[ownerName].cards.push(card);
+  });
+
+  panel.innerHTML = `
+    <div style="background:#fff5f5;border:1.5px solid #fca5a5;border-radius:12px;padding:16px 18px;">
+      <div style="font-size:0.8rem;font-weight:700;color:#b91c1c;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;">⚠️ Fora do Prazo — Equipe (${overdueList.length})</div>
+      ${Object.entries(byOwner).map(([name, { color, cards }]) => `
+        <div style="margin-bottom:10px;">
+          <div style="display:flex;align-items:center;gap:7px;margin-bottom:5px;">
+            <div style="width:10px;height:10px;border-radius:50%;background:${color};flex-shrink:0;"></div>
+            <span style="font-size:0.82rem;font-weight:600;color:#374151;">${escHtml(name)}</span>
+            <span style="font-size:0.75rem;color:#9ca3af;">(${cards.length} tarefa${cards.length>1?'s':''})</span>
+          </div>
+          ${cards.map(c => `
+            <div style="margin-left:17px;padding:5px 10px;background:#fff;border:1px solid #fecaca;border-radius:7px;margin-bottom:4px;font-size:0.82rem;display:flex;justify-content:space-between;align-items:center;">
+              <span style="color:#1e293b;">${escHtml(c.title)}</span>
+              <span style="color:#ef4444;font-size:0.75rem;white-space:nowrap;margin-left:8px;">📅 ${formatDate(c.dueDate)}</span>
+            </div>
+          `).join('')}
+        </div>
+      `).join('')}
+    </div>`;
+}
+
 function renderCalendar() {
   document.getElementById('agenda-month-label').textContent = `${MONTHS[calMonth]} ${calYear}`;
   const events = getVisibleEvents();
@@ -2726,6 +2781,7 @@ function renderCalendar() {
       </div>
     </div>`;
   }).join('');
+  renderOverdueTeamPanel();
 }
 
 function selectDay(dateStr) {
