@@ -2010,8 +2010,8 @@ async function login(userId) {
 
   switchTab('vello');
   renderVello();
-  // Verifica cards vencidos e notifica Dra. Mone
-  setTimeout(checkOverdueAndNotifyMone, 1500);
+  // Verifica cards fora do prazo e notifica ADMs
+  setTimeout(checkOverdueAndNotify, 1500);
 }
 
 function logout() {
@@ -2607,12 +2607,11 @@ function updateVelloBadge() {
   else { badge.classList.add('hidden'); }
 }
 
-function checkOverdueAndNotifyMone() {
+function checkOverdueAndNotify() {
   const today = new Date(); today.setHours(0,0,0,0);
   const allCards = window._cache.cards || {};
   const overdueCards = [];
 
-  // allCards = { userId: [array de cards] } — iterar entries para manter dono do card
   Object.entries(allCards).forEach(([ownerId, cardArray]) => {
     if (!Array.isArray(cardArray)) return;
     cardArray.forEach(card => {
@@ -2624,27 +2623,30 @@ function checkOverdueAndNotifyMone() {
 
   if (overdueCards.length === 0) return;
 
-  const existingNotifs = getNotifications('dra_mone');
-  const existingIds = new Set(existingNotifs.filter(n => n.type === 'overdue_alert').map(n => n.refId));
-  const newNotifs = [...existingNotifs];
-  let added = 0;
+  // Notifica Thais e Dra. Mone
+  ['thais', 'dra_mone'].forEach(adminId => {
+    const existingNotifs = getNotifications(adminId);
+    const existingIds = new Set(existingNotifs.filter(n => n.type === 'overdue_alert').map(n => n.refId));
+    const newNotifs = [...existingNotifs];
+    let added = 0;
 
-  overdueCards.forEach(card => {
-    if (existingIds.has(card.id)) return;
-    const ownerUser = getUserById(card._ownerId);
-    const ownerName = ownerUser ? ownerUser.name : card._ownerId;
-    newNotifs.push({
-      id: 'ovd_' + card.id + '_' + Date.now(),
-      type: 'overdue_alert',
-      refId: card.id,
-      message: `⚠️ Card FORA DO PRAZO: "${card.title}" — responsável: ${ownerName} (prazo: ${formatDate(card.dueDate)})`,
-      createdAt: new Date().toISOString(),
-      read: false
+    overdueCards.forEach(card => {
+      if (existingIds.has(card.id)) return;
+      const ownerUser = getUserById(card._ownerId);
+      const ownerName = ownerUser ? ownerUser.name : card._ownerId;
+      newNotifs.push({
+        id: 'ovd_' + adminId + '_' + card.id + '_' + Date.now(),
+        type: 'overdue_alert',
+        refId: card.id,
+        message: `⚠️ ${ownerName} está com "${card.title}" em atraso (prazo: ${formatDate(card.dueDate)})`,
+        createdAt: new Date().toISOString(),
+        read: false
+      });
+      added++;
     });
-    added++;
-  });
 
-  if (added > 0) saveNotifications('dra_mone', newNotifs);
+    if (added > 0) saveNotifications(adminId, newNotifs);
+  });
 }
 
 // ============================================================
