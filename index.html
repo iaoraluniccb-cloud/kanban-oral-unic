@@ -672,6 +672,13 @@
 
   .card-date.overdue { color: var(--red); font-weight: 600; }
 
+  .kanban-card.overdue-card {
+    border-left: 4px solid var(--red);
+    background: #fff5f5;
+  }
+  .kanban-card.overdue-card .card-title { color: #7f1d1d; }
+  .kanban-card.overdue-card:hover { box-shadow: 0 4px 12px rgba(139,45,66,0.25); }
+
   .delegation-badge {
     font-size: 0.68rem;
     padding: 2px 7px;
@@ -1393,6 +1400,22 @@
   </div>
 </div>
 
+<!-- PASSWORD MODAL -->
+<div id="pwd-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:none;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:16px;padding:32px;width:320px;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.2);">
+    <div style="font-size:2rem;margin-bottom:8px;">🔒</div>
+    <h3 id="pwd-modal-title" style="margin:0 0 16px;font-size:1.1rem;color:#1e293b;">Digite sua senha</h3>
+    <input id="pwd-input" type="password" placeholder="Senha" autocomplete="off"
+      style="width:100%;box-sizing:border-box;padding:10px 14px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:1rem;outline:none;margin-bottom:8px;"
+      onkeydown="if(event.key==='Enter')confirmPwd()"/>
+    <div id="pwd-error" style="color:#ef4444;font-size:0.82rem;min-height:18px;margin-bottom:8px;"></div>
+    <div style="display:flex;gap:10px;">
+      <button onclick="cancelPwd()" style="flex:1;padding:9px;border:1.5px solid #cbd5e1;background:#fff;border-radius:8px;cursor:pointer;font-size:0.9rem;">Cancelar</button>
+      <button onclick="confirmPwd()" style="flex:1;padding:9px;background:var(--primary);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:0.9rem;font-weight:600;">Entrar</button>
+    </div>
+  </div>
+</div>
+
 <!-- APP -->
 <div id="app">
   <header class="app-header">
@@ -1919,7 +1942,7 @@ let selectedDay = null;
 function renderLogin() {
   const grid = document.getElementById('users-grid');
   grid.innerHTML = USERS.map(u => `
-    <button class="user-btn" onclick="login('${u.id}')">
+    <button class="user-btn" onclick="attemptLogin('${u.id}')">
       <div class="avatar-wrap" style="position:relative">
         ${avatarHtml(u.id, u.name, u.color)}
         <div class="avatar-upload-overlay" onclick="event.stopPropagation();triggerPhotoUpload('${u.id}')">📷</div>
@@ -1928,6 +1951,42 @@ function renderLogin() {
       <div class="user-role">${u.role}</div>
     </button>
   `).join('');
+}
+
+// Senhas protegidas
+const USER_PASSWORDS = { thais: 'ximia123', dra_mone: 'cooper123' };
+let _pendingLoginUserId = null;
+
+function attemptLogin(userId) {
+  if (USER_PASSWORDS[userId]) {
+    _pendingLoginUserId = userId;
+    const user = getUserById(userId);
+    document.getElementById('pwd-modal-title').textContent = `Olá, ${user.name}! Digite sua senha:`;
+    document.getElementById('pwd-input').value = '';
+    document.getElementById('pwd-error').textContent = '';
+    const modal = document.getElementById('pwd-modal');
+    modal.style.display = 'flex';
+    setTimeout(() => document.getElementById('pwd-input').focus(), 100);
+  } else {
+    login(userId);
+  }
+}
+
+function confirmPwd() {
+  const entered = document.getElementById('pwd-input').value;
+  if (entered === USER_PASSWORDS[_pendingLoginUserId]) {
+    document.getElementById('pwd-modal').style.display = 'none';
+    login(_pendingLoginUserId);
+    _pendingLoginUserId = null;
+  } else {
+    document.getElementById('pwd-error').textContent = 'Senha incorreta. Tente novamente.';
+    document.getElementById('pwd-input').select();
+  }
+}
+
+function cancelPwd() {
+  document.getElementById('pwd-modal').style.display = 'none';
+  _pendingLoginUserId = null;
 }
 
 async function login(userId) {
@@ -1944,6 +2003,8 @@ async function login(userId) {
 
   switchTab('vello');
   renderVello();
+  // Verifica cards vencidos e notifica Dra. Mone
+  setTimeout(checkOverdueAndNotifyMone, 1500);
 }
 
 function logout() {
@@ -2046,10 +2107,11 @@ function renderKanban() {
 function renderCard(card) {
   const today = new Date(); today.setHours(0,0,0,0);
   let dateHtml = '';
+  let isOverdue = false;
   if (card.dueDate) {
     const due = new Date(card.dueDate + 'T00:00:00');
-    const isOverdue = due < today && card.column !== 'done';
-    dateHtml = `<span class="card-date ${isOverdue ? 'overdue' : ''}">📅 ${formatDate(card.dueDate)}</span>`;
+    isOverdue = due < today && card.column !== 'done';
+    dateHtml = `<span class="card-date ${isOverdue ? 'overdue' : ''}">📅 ${formatDate(card.dueDate)}${isOverdue ? ' · VENCIDA' : ''}</span>`;
   }
   let delegHtml = '';
   const isPending = card.isDelegation && card.delegationStatus === 'pending';
@@ -2067,7 +2129,7 @@ function renderCard(card) {
   }
 
   return `
-    <div class="kanban-card${isPending ? ' pending-delegation' : ''}" id="card-${card.id}" draggable="${!isPending}">
+    <div class="kanban-card${isPending ? ' pending-delegation' : ''}${isOverdue && !isPending ? ' overdue-card' : ''}" id="card-${card.id}" draggable="${!isPending}">
       <div class="card-top">
         <div class="card-title">${escHtml(card.title)}</div>
         <span class="priority-badge priority-${card.priority}">${cap(card.priority)}</span>
@@ -2535,6 +2597,38 @@ function updateVelloBadge() {
   const badge = document.getElementById('vello-badge');
   if (total > 0) { badge.classList.remove('hidden'); badge.textContent = total; }
   else { badge.classList.add('hidden'); }
+}
+
+function checkOverdueAndNotifyMone() {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const allCards = window._cache.cards || {};
+  const overdueCards = [];
+  Object.values(allCards).forEach(card => {
+    if (!card.dueDate || card.column === 'done') return;
+    const due = new Date(card.dueDate + 'T00:00:00');
+    if (due < today) overdueCards.push(card);
+  });
+  if (overdueCards.length === 0) return;
+
+  const existingNotifs = getNotifications('dra_mone');
+  const existingIds = new Set(existingNotifs.filter(n => n.type === 'overdue_alert').map(n => n.refId));
+  const newNotifs = [...existingNotifs];
+  let added = 0;
+
+  overdueCards.forEach(card => {
+    if (existingIds.has(card.id)) return;
+    newNotifs.push({
+      id: 'ovd_' + card.id + '_' + Date.now(),
+      type: 'overdue_alert',
+      refId: card.id,
+      message: `⚠️ Card VENCIDO: "${card.title}" — responsável: ${card.userId || 'desconhecido'} (prazo: ${formatDate(card.dueDate)})`,
+      createdAt: new Date().toISOString(),
+      read: false
+    });
+    added++;
+  });
+
+  if (added > 0) saveNotifications('dra_mone', newNotifs);
 }
 
 // ============================================================
