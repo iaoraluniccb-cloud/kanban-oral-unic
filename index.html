@@ -1582,10 +1582,20 @@ function getInitials(name) {
 
 // ---- Fotos de perfil ----
 function getPhoto(userId) {
-  return localStorage.getItem('ou_photo_' + userId) || null;
+  // Cache local primeiro (rápido), Firestore como fonte da verdade
+  return window._cache.photos?.[userId] || localStorage.getItem('ou_photo_' + userId) || null;
 }
-function savePhoto(userId, dataUrl) {
+async function savePhoto(userId, dataUrl) {
+  // Salva local imediatamente (UI não trava)
+  if (!window._cache.photos) window._cache.photos = {};
+  window._cache.photos[userId] = dataUrl;
   localStorage.setItem('ou_photo_' + userId, dataUrl);
+  // Persiste no Firestore para todos verem
+  if (window.__db) {
+    try {
+      await window.__setDoc(window.__doc('ou_photos', userId), { photo: dataUrl, updatedAt: new Date().toISOString() });
+    } catch(e) { console.warn('Erro ao salvar foto no Firestore:', e); }
+  }
 }
 
 // Retorna HTML de um avatar (foto se tiver, senão iniciais)
@@ -1937,6 +1947,24 @@ function startRealtimeListeners() {
     });
   }
 
+  // Fotos de todos os usuários em tempo real
+  if (!window._cache.photos) window._cache.photos = {};
+  USERS.forEach(u => {
+    window.__onSnapshot(window.__doc('ou_photos', u.id), snap => {
+      if (snap.exists() && snap.data().photo) {
+        window._cache.photos[u.id] = snap.data().photo;
+        localStorage.setItem('ou_photo_' + u.id, snap.data().photo);
+        // Re-renderiza UI que usa avatares
+        if (currentUser) {
+          renderLogin();
+          updateHeaderAvatar();
+          renderKanban();
+          renderInbox();
+        }
+      }
+    });
+  });
+
   window._listenUserCards = listenUserCards;
   window._listenUserNotifs = listenUserNotifs;
 }
@@ -1947,11 +1975,21 @@ async function loadInitialData(userId) {
   const db = window.__db;
 
   // Carrega todos os dados necessários em paralelo
-  const [agendaSnap, delegSnap, cardsSnap, notifsSnap] = await Promise.all([
+  const [agendaSnap, delegSnap, cardsSnap, notifsSnap, photosSnap] = await Promise.all([
     window.__getDocs(window.__col('ou_shared')).catch(() => null),
     window.__getDocs(window.__col('ou_cards')).catch(() => null),
     window.__getDocs(window.__col('ou_notifications')).catch(() => null),
+    window.__getDocs(window.__col('ou_photos')).catch(() => null),
   ]);
+
+  // Fotos de todos os usuários
+  if (!window._cache.photos) window._cache.photos = {};
+  if (photosSnap) photosSnap.forEach(d => {
+    if (d.data().photo) {
+      window._cache.photos[d.id] = d.data().photo;
+      localStorage.setItem('ou_photo_' + d.id, d.data().photo);
+    }
+  });
 
   // Agenda e delegações (documentos únicos em ou_shared)
   try {
