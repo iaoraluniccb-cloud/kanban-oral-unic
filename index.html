@@ -821,6 +821,126 @@
     text-transform: capitalize;
   }
 
+  .view-toggle {
+    display: flex;
+    border: 1.5px solid var(--gray-200);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .view-toggle-btn {
+    padding: 6px 14px;
+    border: none;
+    background: white;
+    color: var(--gray-600);
+    font-family: inherit;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .view-toggle-btn.active {
+    background: var(--navy);
+    color: white;
+  }
+  .view-toggle-btn:hover:not(.active) { background: var(--gray-100); }
+
+  /* Week view */
+  .week-grid {
+    display: grid;
+    grid-template-columns: 48px repeat(7, 1fr);
+    border-top: 1px solid var(--gray-200);
+  }
+  .week-time-col {
+    border-right: 1px solid var(--gray-200);
+  }
+  .week-time-slot {
+    height: 56px;
+    border-bottom: 1px solid var(--gray-200);
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-end;
+    padding: 2px 6px 0 0;
+    font-size: 0.68rem;
+    color: var(--gray-400);
+  }
+  .week-day-col {
+    border-right: 1px solid var(--gray-200);
+    position: relative;
+    min-height: 56px;
+  }
+  .week-day-col:last-child { border-right: none; }
+  .week-hour-row {
+    height: 56px;
+    border-bottom: 1px solid var(--gray-200);
+    position: relative;
+  }
+  .week-event-block {
+    position: absolute;
+    left: 2px;
+    right: 2px;
+    border-radius: 4px;
+    padding: 2px 5px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    overflow: hidden;
+    cursor: pointer;
+    z-index: 1;
+    line-height: 1.3;
+  }
+  .week-allday-row {
+    border-bottom: 2px solid var(--gray-200);
+    min-height: 28px;
+  }
+  .week-allday-cell {
+    border-right: 1px solid var(--gray-200);
+    padding: 2px;
+  }
+  .week-allday-cell:last-child { border-right: none; }
+  .week-day-header {
+    text-align: center;
+    padding: 8px 4px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: rgba(255,255,255,0.8);
+    background: var(--navy);
+    border-right: 1px solid rgba(255,255,255,0.1);
+    cursor: pointer;
+  }
+  .week-day-header.today { background: var(--navy-deep); color: white; }
+  .week-day-header:last-child { border-right: none; }
+  .week-day-number {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: white;
+    display: block;
+  }
+  .week-day-header.today .week-day-number {
+    background: white;
+    color: var(--navy);
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 2px;
+    font-size: 0.9rem;
+  }
+  .week-time-header {
+    background: var(--navy);
+    padding: 8px 4px;
+    border-right: 1px solid rgba(255,255,255,0.1);
+  }
+  .week-allday-label {
+    font-size: 0.62rem;
+    color: var(--gray-400);
+    text-align: right;
+    padding: 4px 6px;
+    border-right: 1px solid var(--gray-200);
+  }
+
   .add-event-btn {
     padding: 8px 18px;
     background: #C4955A;
@@ -1528,19 +1648,23 @@
   <div class="tab-content" id="agenda-tab">
     <div class="agenda-header">
       <div class="agenda-nav">
-        <button class="agenda-nav-btn" onclick="changeMonth(-1)">‹</button>
+        <button class="agenda-nav-btn" id="cal-prev-btn" onclick="calNavigatePrev()">‹</button>
         <div class="agenda-month" id="agenda-month-label"></div>
-        <button class="agenda-nav-btn" onclick="changeMonth(1)">›</button>
+        <button class="agenda-nav-btn" id="cal-next-btn" onclick="calNavigateNext()">›</button>
         <button class="agenda-nav-btn" onclick="goToToday()" title="Hoje" style="font-size:0.7rem;width:auto;padding:0 10px;">Hoje</button>
       </div>
       <div style="display:flex;gap:8px;align-items:center;">
+        <div class="view-toggle">
+          <button class="view-toggle-btn active" id="view-btn-month" onclick="setCalView('month')">Mês</button>
+          <button class="view-toggle-btn" id="view-btn-week" onclick="setCalView('week')">Semana</button>
+        </div>
         <button id="gcal-connect-btn" onclick="connectGoogleCalendar()" style="display:none;padding:7px 14px;border-radius:8px;border:1.5px solid #4285f4;background:#fff;color:#4285f4;font-size:0.82rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;">
           <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width:16px;height:16px;"> Google Agenda
         </button>
         <button class="add-event-btn" id="add-event-btn" onclick="openAddEvent()">+ Novo Evento</button>
       </div>
     </div>
-    <div class="calendar-grid-wrapper">
+    <div id="month-view-wrapper" class="calendar-grid-wrapper">
       <div class="calendar-weekdays">
         <div class="calendar-weekday">Dom</div>
         <div class="calendar-weekday">Seg</div>
@@ -1551,6 +1675,9 @@
         <div class="calendar-weekday">Sáb</div>
       </div>
       <div class="calendar-days" id="calendar-days"></div>
+    </div>
+    <div id="week-view-wrapper" class="calendar-grid-wrapper" style="display:none;overflow-x:auto;">
+      <div id="week-view-inner"></div>
     </div>
     <div id="day-detail-panel"></div>
     <div id="overdue-team-panel" style="display:none;margin-top:20px;"></div>
@@ -2079,6 +2206,8 @@ let dragCardId = null;
 let dragFromCol = null;
 let calYear = new Date().getFullYear();
 let calMonth = new Date().getMonth(); // 0-based
+let calView = 'month'; // 'month' | 'week'
+let calWeekStart = null; // Date of Sunday of current week view
 let selectedDay = null;
 
 // ============================================================
@@ -2978,6 +3107,41 @@ function checkOverdueAndNotify() {
 const MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 const EVENT_TYPES = { reuniao: 'Reunião', compromisso: 'Compromisso', prazo: 'Prazo', pessoal: 'Pessoal', outro: 'Outro' };
 
+function setCalView(v) {
+  calView = v;
+  document.getElementById('view-btn-month').classList.toggle('active', v === 'month');
+  document.getElementById('view-btn-week').classList.toggle('active', v === 'week');
+  document.getElementById('month-view-wrapper').style.display = v === 'month' ? '' : 'none';
+  document.getElementById('week-view-wrapper').style.display = v === 'week' ? '' : 'none';
+  if (v === 'week' && !calWeekStart) {
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    calWeekStart = new Date(today);
+    calWeekStart.setDate(today.getDate() - today.getDay());
+  }
+  selectedDay = null;
+  document.getElementById('day-detail-panel').innerHTML = '';
+  renderCalendar();
+}
+
+function calNavigatePrev() {
+  if (calView === 'week') {
+    calWeekStart.setDate(calWeekStart.getDate() - 7);
+    renderCalendar();
+  } else {
+    changeMonth(-1);
+  }
+}
+
+function calNavigateNext() {
+  if (calView === 'week') {
+    calWeekStart.setDate(calWeekStart.getDate() + 7);
+    renderCalendar();
+  } else {
+    changeMonth(1);
+  }
+}
+
 function changeMonth(dir) {
   calMonth += dir;
   if (calMonth < 0) { calMonth = 11; calYear--; }
@@ -2990,9 +3154,125 @@ function changeMonth(dir) {
 function goToToday() {
   calYear = new Date().getFullYear();
   calMonth = new Date().getMonth();
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  calWeekStart = new Date(today);
+  calWeekStart.setDate(today.getDate() - today.getDay());
   selectedDay = null;
   document.getElementById('day-detail-panel').innerHTML = '';
   renderCalendar();
+}
+
+function renderWeekView() {
+  if (!calWeekStart) {
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    calWeekStart = new Date(today);
+    calWeekStart.setDate(today.getDate() - today.getDay());
+  }
+
+  const days = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(calWeekStart);
+    d.setDate(calWeekStart.getDate() + i);
+    days.push(d);
+  }
+
+  const weekEndDate = days[6];
+  const startLabel = calWeekStart.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' });
+  const endLabel = weekEndDate.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', year: 'numeric' });
+  document.getElementById('agenda-month-label').textContent = `${startLabel} – ${endLabel}`;
+
+  const events = getVisibleEvents();
+  const today = new Date(); today.setHours(0,0,0,0);
+  const WEEK_DAYS_SHORT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+  const HOURS = [];
+  for (let h = 0; h < 24; h++) HOURS.push(h);
+
+  // Build header row
+  let headerHtml = `<div style="display:grid;grid-template-columns:48px repeat(7,1fr);background:var(--navy);">
+    <div class="week-time-header"></div>
+    ${days.map(d => {
+      const isToday = d.getTime() === today.getTime();
+      const dateStr = formatDateStr(d.getFullYear(), d.getMonth(), d.getDate());
+      return `<div class="week-day-header ${isToday ? 'today' : ''}" onclick="selectDay('${dateStr}')">
+        <div style="font-size:0.72rem;opacity:0.75;">${WEEK_DAYS_SHORT[d.getDay()]}</div>
+        <span class="week-day-number">${d.getDate()}</span>
+      </div>`;
+    }).join('')}
+  </div>`;
+
+  // All-day events row
+  const allDayEventsPerDay = days.map(d => {
+    const dateStr = formatDateStr(d.getFullYear(), d.getMonth(), d.getDate());
+    return events.filter(e => e.date === dateStr && !e.startTime);
+  });
+  const hasAllDay = allDayEventsPerDay.some(arr => arr.length > 0);
+  let allDayHtml = '';
+  if (hasAllDay) {
+    allDayHtml = `<div style="display:grid;grid-template-columns:48px repeat(7,1fr);border-bottom:2px solid var(--gray-200);">
+      <div class="week-allday-label">dia todo</div>
+      ${allDayEventsPerDay.map(arr => `<div class="week-allday-cell">
+        ${arr.map(e => `<div class="day-event-pill event-${e.type}" style="margin-bottom:2px;${e.gcalColor ? `background:${e.gcalColor};color:#1e293b;` : ''}" onclick="showEventDetail('${e.id}')">${escHtml(e.title)}</div>`).join('')}
+      </div>`).join('')}
+    </div>`;
+  }
+
+  // Timed rows — build absolute-positioned event blocks per day per column
+  // Pre-compute timed events per day
+  const timedPerDay = days.map(d => {
+    const dateStr = formatDateStr(d.getFullYear(), d.getMonth(), d.getDate());
+    return events.filter(e => e.date === dateStr && e.startTime);
+  });
+
+  // Find first hour with events (or 7 as default)
+  let firstHour = 7;
+  timedPerDay.forEach(arr => arr.forEach(e => {
+    const h = parseInt((e.startTime||'00:00').split(':')[0], 10);
+    if (h < firstHour) firstHour = h;
+  }));
+  firstHour = Math.max(0, firstHour - 1);
+
+  const slotH = 56; // px per hour slot
+
+  let gridRows = HOURS.slice(firstHour).map(h => {
+    const label = h === 0 ? '' : `${String(h).padStart(2,'0')}:00`;
+    return `<div style="display:grid;grid-template-columns:48px repeat(7,1fr);min-height:${slotH}px;border-bottom:1px solid var(--gray-200);">
+      <div class="week-time-slot">${label}</div>
+      ${days.map(() => `<div style="border-right:1px solid var(--gray-200);min-height:${slotH}px;"></div>`).join('')}
+    </div>`;
+  }).join('');
+
+  // Overlay event blocks using a separate absolutely-positioned layer per day column
+  // We'll use inline style top/height on each event chip inside a relative wrapper
+  let overlayHtml = `<div style="display:grid;grid-template-columns:48px repeat(7,1fr);position:relative;pointer-events:none;">
+    <div style="min-height:${slotH * (24 - firstHour)}px;"></div>
+    ${timedPerDay.map(arr => {
+      const eventsHtml = arr.map(e => {
+        const [sh, sm] = (e.startTime||'00:00').split(':').map(Number);
+        const [eh, em] = e.endTime ? e.endTime.split(':').map(Number) : [sh+1, sm];
+        const topPx = (sh - firstHour + sm/60) * slotH;
+        const heightPx = Math.max(((eh - sh) + (em - sm)/60) * slotH, 22);
+        const bgColor = e.gcalColor || null;
+        const cls = bgColor ? '' : `event-${e.type}`;
+        return `<div class="week-event-block day-event-pill ${cls}"
+          style="top:${topPx}px;height:${heightPx}px;pointer-events:auto;${bgColor ? `background:${bgColor};color:#1e293b;` : ''}"
+          onclick="showEventDetail('${e.id}')">
+          <strong>${e.startTime}</strong> ${escHtml(e.title)}
+        </div>`;
+      }).join('');
+      return `<div style="position:relative;min-height:${slotH * (24 - firstHour)}px;border-right:1px solid var(--gray-200);">${eventsHtml}</div>`;
+    }).join('')}
+  </div>`;
+
+  const inner = document.getElementById('week-view-inner');
+  inner.innerHTML = headerHtml + allDayHtml +
+    `<div style="position:relative;overflow-y:auto;max-height:600px;">
+      <div style="position:relative;">
+        ${gridRows}
+        ${overlayHtml}
+      </div>
+    </div>`;
 }
 
 function getVisibleEvents() {
@@ -3066,6 +3346,11 @@ function renderOverdueTeamPanel() {
 }
 
 function renderCalendar() {
+  if (calView === 'week') {
+    renderWeekView();
+    renderOverdueTeamPanel();
+    return;
+  }
   document.getElementById('agenda-month-label').textContent = `${MONTHS[calMonth]} ${calYear}`;
   const events = getVisibleEvents();
 
