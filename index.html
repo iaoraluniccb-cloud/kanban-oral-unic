@@ -2517,7 +2517,7 @@ function openDelegate(cardId) {
             <div style="background:var(--gray-100);padding:10px;border-radius:6px;font-size:0.88rem;font-weight:600;">${escHtml(card.title)}</div>
           </div>
           <div class="form-group">
-            <label class="form-label">Delegar para *</label>
+            <label class="form-label">Delegar para * <span style="font-size:0.75rem;color:var(--gray-400);font-weight:400;">(pode selecionar vários)</span></label>
             <div class="user-picker" id="delegate-user-picker">
               ${otherUsers.map(u => `
                 <button class="user-pick-btn" data-uid="${u.id}" onclick="selectDelegateUser('${u.id}')">
@@ -2542,75 +2542,81 @@ function openDelegate(cardId) {
   renderModal(html);
 }
 
-let selectedDelegateUserId = null;
+let selectedDelegateUserIds = new Set();
 
 function selectDelegateUser(uid) {
-  selectedDelegateUserId = uid;
+  if (selectedDelegateUserIds.has(uid)) {
+    selectedDelegateUserIds.delete(uid);
+  } else {
+    selectedDelegateUserIds.add(uid);
+  }
   document.querySelectorAll('.user-pick-btn').forEach(b => {
-    b.classList.toggle('selected', b.dataset.uid === uid);
+    b.classList.toggle('selected', selectedDelegateUserIds.has(b.dataset.uid));
   });
 }
 
 function sendDelegation(cardId) {
-  if (!selectedDelegateUserId) { showToast('Selecione um destinatário.', 'error'); return; }
+  if (selectedDelegateUserIds.size === 0) { showToast('Selecione ao menos um destinatário.', 'error'); return; }
   const cards = getCards(currentUser.id);
   const card = cards.find(c => c.id === cardId);
   if (!card) return;
   const msg = document.getElementById('delegate-msg').value.trim();
-  const toUser = getUserById(selectedDelegateUserId);
-
-  const delegation = {
-    id: genId(),
-    fromUserId: currentUser.id,
-    fromUserName: currentUser.name,
-    toUserId: selectedDelegateUserId,
-    cardId: cardId,
-    cardTitle: card.title,
-    cardDescription: card.description,
-    cardPriority: card.priority,
-    cardDueDate: card.dueDate,
-    message: msg,
-    status: 'pending',
-    createdAt: new Date().toISOString()
-  };
 
   const delegations = getDelegations();
-  delegations.push(delegation);
+
+  selectedDelegateUserIds.forEach(toUserId => {
+    const delegation = {
+      id: genId(),
+      fromUserId: currentUser.id,
+      fromUserName: currentUser.name,
+      toUserId,
+      cardId,
+      cardTitle: card.title,
+      cardDescription: card.description,
+      cardPriority: card.priority,
+      cardDueDate: card.dueDate,
+      message: msg,
+      status: 'pending',
+      createdAt: new Date().toISOString()
+    };
+    delegations.push(delegation);
+
+    // Add card to recipient's board
+    const recipientCards = getCards(toUserId);
+    recipientCards.push({
+      id: genId(),
+      title: card.title,
+      description: card.description,
+      priority: card.priority,
+      dueDate: card.dueDate,
+      column: 'todo',
+      createdAt: new Date().toISOString(),
+      delegatedFrom: currentUser.id,
+      delegatedFromName: currentUser.name,
+      isDelegation: true,
+      delegationStatus: 'pending',
+      delegationId: delegation.id
+    });
+    saveCards(toUserId, recipientCards);
+
+    // Notify recipient
+    const notifs = getNotifications(toUserId);
+    notifs.push({
+      id: genId(),
+      type: 'incoming_delegation',
+      delegationId: delegation.id,
+      fromName: currentUser.name,
+      cardTitle: card.title,
+      message: msg,
+      read: false,
+      createdAt: new Date().toISOString()
+    });
+    saveNotifications(toUserId, notifs);
+  });
+
   saveDelegations(delegations);
-
-  // Add card to recipient's board
-  const recipientCards = getCards(selectedDelegateUserId);
-  recipientCards.push({
-    id: genId(),
-    title: card.title,
-    description: card.description,
-    priority: card.priority,
-    dueDate: card.dueDate,
-    column: 'todo',
-    createdAt: new Date().toISOString(),
-    delegatedFrom: currentUser.id,
-    delegatedFromName: currentUser.name,
-    isDelegation: true,
-    delegationStatus: 'pending',
-    delegationId: delegation.id
-  });
-  saveCards(selectedDelegateUserId, recipientCards);
-
-  // Notify recipient
-  const notifs = getNotifications(selectedDelegateUserId);
-  notifs.push({
-    id: genId(),
-    type: 'incoming_delegation',
-    delegationId: delegation.id,
-    fromName: currentUser.name,
-    cardTitle: card.title,
-    message: msg,
-    read: false,
-    createdAt: new Date().toISOString()
-  });
-  saveNotifications(selectedDelegateUserId, notifs);
-
-  selectedDelegateUserId = null;
+  const count = selectedDelegateUserIds.size;
+  selectedDelegateUserIds = new Set();
   closeModal('delegate-modal-overlay');
   showToast(`Delegado para ${toUser.name}!`, 'success');
   renderVello();
@@ -3204,7 +3210,7 @@ function closeModal(id) {
   const el = document.getElementById(id);
   if (el) el.remove();
   document.removeEventListener('keydown', handleEsc);
-  selectedDelegateUserId = null;
+  selectedDelegateUserIds = new Set();
 }
 
 function closeOnOverlay(e, id) {
