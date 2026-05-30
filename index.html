@@ -899,6 +899,7 @@
   }
 
   .event-reuniao { background: #dbeafe; color: #1d4ed8; }
+  .event-pessoal { background: #fce7f3; color: #9d174d; }
   .event-compromisso { background: #fce7f3; color: #9d174d; }
   .event-prazo { background: #fee2e2; color: #991b1b; }
   .event-outro { background: #f3e8ff; color: #6b21a8; }
@@ -2782,7 +2783,7 @@ function checkOverdueAndNotify() {
 // AGENDA / CALENDAR
 // ============================================================
 const MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-const EVENT_TYPES = { reuniao: 'Reunião', compromisso: 'Compromisso', prazo: 'Prazo', outro: 'Outro' };
+const EVENT_TYPES = { reuniao: 'Reunião', compromisso: 'Compromisso', prazo: 'Prazo', pessoal: 'Pessoal', outro: 'Outro' };
 
 function changeMonth(dir) {
   calMonth += dir;
@@ -2804,6 +2805,8 @@ function goToToday() {
 function getVisibleEvents() {
   const all = getAgenda();
   return all.filter(e => {
+    // Evento pessoal → só o criador vê
+    if (e.type === 'pessoal') return e.createdBy === currentUser.id;
     // Evento para todos
     if (e.assignedTo === 'all') return true;
     // Evento criado por ADM → visível para todo mundo (obrigatório)
@@ -3063,6 +3066,7 @@ function openEventModal(eventId, prefillDate) {
                 <option value="reuniao" ${isEdit && ev.type==='reuniao'?'selected':''}>Reunião</option>
                 <option value="compromisso" ${isEdit && ev.type==='compromisso'?'selected':''}>Compromisso</option>
                 <option value="prazo" ${isEdit && ev.type==='prazo'?'selected':''}>Prazo</option>
+                <option value="pessoal" ${isEdit && ev.type==='pessoal'?'selected':''}>Pessoal</option>
                 <option value="outro" ${isEdit && ev.type==='outro'?'selected':''}>Outro</option>
               </select>
             </div>
