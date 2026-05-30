@@ -2210,6 +2210,9 @@ let calYear = new Date().getFullYear();
 let calMonth = new Date().getMonth(); // 0-based
 let calView = 'month'; // 'month' | 'week'
 let calWeekStart = null; // Date of Sunday of current week view
+let _weekDragState = null;
+let _weekSlotH = 56;
+let _weekFirstHour = 7;
 let selectedDay = null;
 
 // ============================================================
@@ -3278,21 +3281,9 @@ function renderWeekView() {
     </div>`;
 
   // ---- drag-to-create ----
-  let dragState = null;
-
-  function pxToTime(py) {
-    const totalMins = (py / slotH) * 60 + firstHour * 60;
-    const h = Math.floor(totalMins / 60);
-    const m = Math.round((totalMins % 60) / 15) * 15;
-    const hh = Math.min(h + (m === 60 ? 1 : 0), 23);
-    const mm = m === 60 ? 0 : m;
-    return `${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}`;
-  }
-
-  function colLeft(colEl) {
-    const body = document.getElementById('week-body');
-    return colEl.getBoundingClientRect().left - body.getBoundingClientRect().left;
-  }
+  _weekSlotH = slotH;
+  _weekFirstHour = firstHour;
+  _weekDragState = null;
 
   document.querySelectorAll('.week-drag-col').forEach(col => {
     col.addEventListener('mousedown', e => {
@@ -3300,59 +3291,62 @@ function renderWeekView() {
       if (e.target.classList.contains('week-event-block') || e.target.closest('.week-event-block')) return;
       e.preventDefault();
       const rect = col.getBoundingClientRect();
-      const scroll = document.getElementById('week-scroll').scrollTop;
+      const scroll = document.getElementById('week-scroll')?.scrollTop || 0;
       const startY = e.clientY - rect.top + scroll;
-      dragState = { col, date: col.dataset.date, startY, endY: startY + slotH };
-      renderDragPreview();
+      _weekDragState = { col, date: col.dataset.date, startY, endY: startY + _weekSlotH };
+      weekRenderDragPreview();
     });
   });
-
-  document.addEventListener('mousemove', onDragMove);
-  document.addEventListener('mouseup', onDragUp);
-
-  function renderDragPreview() {
-    if (!dragState) return;
-    const preview = document.getElementById('week-drag-preview');
-    const body = document.getElementById('week-body');
-    if (!preview || !body) return;
-    const minY = Math.min(dragState.startY, dragState.endY);
-    const maxY = Math.max(dragState.startY, dragState.endY);
-    const colRect = dragState.col.getBoundingClientRect();
-    const bodyRect = body.getBoundingClientRect();
-    const left = colRect.left - bodyRect.left;
-    preview.style.display = 'block';
-    preview.style.left = left + 2 + 'px';
-    preview.style.width = colRect.width - 4 + 'px';
-    preview.style.top = minY + 'px';
-    preview.style.height = Math.max(maxY - minY, slotH / 2) + 'px';
-    preview.title = `${pxToTime(minY)} – ${pxToTime(Math.max(maxY, minY + slotH / 2))}`;
-  }
-
-  function onDragMove(e) {
-    if (!dragState) return;
-    const col = dragState.col;
-    const rect = col.getBoundingClientRect();
-    const scroll = document.getElementById('week-scroll')?.scrollTop || 0;
-    dragState.endY = e.clientY - rect.top + scroll;
-    renderDragPreview();
-  }
-
-  function onDragUp(e) {
-    if (!dragState) return;
-    document.removeEventListener('mousemove', onDragMove);
-    document.removeEventListener('mouseup', onDragUp);
-    const preview = document.getElementById('week-drag-preview');
-    if (preview) preview.style.display = 'none';
-    const minY = Math.min(dragState.startY, dragState.endY);
-    const maxY = Math.max(dragState.startY, dragState.endY);
-    const startTime = pxToTime(minY);
-    const endTime = pxToTime(Math.max(maxY, minY + slotH / 2));
-    const date = dragState.date;
-    dragState = null;
-    if (startTime === endTime) return;
-    openEventModal(null, date, startTime, endTime);
-  }
 }
+
+function weekPxToTime(py) {
+  const totalMins = (py / _weekSlotH) * 60 + _weekFirstHour * 60;
+  const h = Math.floor(totalMins / 60);
+  const m = Math.round((totalMins % 60) / 15) * 15;
+  const hh = Math.min(h + (m === 60 ? 1 : 0), 23);
+  const mm = m === 60 ? 0 : m;
+  return `${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}`;
+}
+
+function weekRenderDragPreview() {
+  if (!_weekDragState) return;
+  const preview = document.getElementById('week-drag-preview');
+  const body = document.getElementById('week-body');
+  if (!preview || !body) return;
+  const minY = Math.min(_weekDragState.startY, _weekDragState.endY);
+  const maxY = Math.max(_weekDragState.startY, _weekDragState.endY);
+  const colRect = _weekDragState.col.getBoundingClientRect();
+  const bodyRect = body.getBoundingClientRect();
+  preview.style.display = 'block';
+  preview.style.left = (colRect.left - bodyRect.left + 2) + 'px';
+  preview.style.width = (colRect.width - 4) + 'px';
+  preview.style.top = minY + 'px';
+  preview.style.height = Math.max(maxY - minY, _weekSlotH / 2) + 'px';
+  preview.title = `${weekPxToTime(minY)} – ${weekPxToTime(Math.max(maxY, minY + _weekSlotH / 2))}`;
+}
+
+document.addEventListener('mousemove', function(e) {
+  if (!_weekDragState) return;
+  const col = _weekDragState.col;
+  const rect = col.getBoundingClientRect();
+  const scroll = document.getElementById('week-scroll')?.scrollTop || 0;
+  _weekDragState.endY = e.clientY - rect.top + scroll;
+  weekRenderDragPreview();
+});
+
+document.addEventListener('mouseup', function(e) {
+  if (!_weekDragState) return;
+  const preview = document.getElementById('week-drag-preview');
+  if (preview) preview.style.display = 'none';
+  const minY = Math.min(_weekDragState.startY, _weekDragState.endY);
+  const maxY = Math.max(_weekDragState.startY, _weekDragState.endY);
+  const startTime = weekPxToTime(minY);
+  const endTime = weekPxToTime(Math.max(maxY, minY + _weekSlotH / 2));
+  const date = _weekDragState.date;
+  _weekDragState = null;
+  if (startTime === endTime) return;
+  openEventModal(null, date, startTime, endTime);
+});
 
 function getVisibleEvents() {
   const all = getAgenda();
