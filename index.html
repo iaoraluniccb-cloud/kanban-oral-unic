@@ -3282,14 +3282,12 @@ function getVisibleEvents() {
   return all.filter(e => {
     // Evento pessoal → só o criador vê
     if (e.type === 'pessoal') return e.createdBy === currentUser.id;
-    // Evento para todos
+    // Evento para todos → todos veem
     if (e.assignedTo === 'all') return true;
-    // Evento criado por ADM → visível para todo mundo (obrigatório)
-    if (ADM_USERS.includes(e.createdBy)) return true;
-    // Participante incluído no evento
-    if (Array.isArray(e.assignedTo) && e.assignedTo.includes(currentUser.id)) return true;
-    // Próprio criador sempre vê
+    // Próprio criador sempre vê o próprio evento
     if (e.createdBy === currentUser.id) return true;
+    // Participante explicitamente incluído vê o evento
+    if (Array.isArray(e.assignedTo) && e.assignedTo.includes(currentUser.id)) return true;
     return false;
   });
 }
