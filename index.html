@@ -933,6 +933,7 @@
     padding: 8px 4px;
     border-right: 1px solid rgba(255,255,255,0.1);
   }
+  .week-drag-col:hover { background: rgba(139,45,66,0.03); }
   .week-allday-label {
     font-size: 0.62rem;
     color: var(--gray-400);
@@ -3245,36 +3246,112 @@ function renderWeekView() {
     </div>`;
   }).join('');
 
-  // Overlay event blocks using a separate absolutely-positioned layer per day column
-  // We'll use inline style top/height on each event chip inside a relative wrapper
-  let overlayHtml = `<div style="display:grid;grid-template-columns:48px repeat(7,1fr);position:relative;pointer-events:none;">
-    <div style="min-height:${slotH * (24 - firstHour)}px;"></div>
-    ${timedPerDay.map(arr => {
-      const eventsHtml = arr.map(e => {
-        const [sh, sm] = (e.startTime||'00:00').split(':').map(Number);
-        const [eh, em] = e.endTime ? e.endTime.split(':').map(Number) : [sh+1, sm];
-        const topPx = (sh - firstHour + sm/60) * slotH;
-        const heightPx = Math.max(((eh - sh) + (em - sm)/60) * slotH, 22);
-        const bgColor = e.gcalColor || null;
-        const cls = bgColor ? '' : `event-${e.type}`;
-        return `<div class="week-event-block day-event-pill ${cls}"
-          style="top:${topPx}px;height:${heightPx}px;pointer-events:auto;${bgColor ? `background:${bgColor};color:#1e293b;` : ''}"
-          onclick="showEventDetail('${e.id}')">
-          <strong>${e.startTime}</strong> ${escHtml(e.title)}
-        </div>`;
-      }).join('');
-      return `<div style="position:relative;min-height:${slotH * (24 - firstHour)}px;border-right:1px solid var(--gray-200);">${eventsHtml}</div>`;
-    }).join('')}
-  </div>`;
-
   const inner = document.getElementById('week-view-inner');
   inner.innerHTML = headerHtml + allDayHtml +
-    `<div style="position:relative;overflow-y:auto;max-height:600px;">
-      <div style="position:relative;">
+    `<div id="week-scroll" style="overflow-y:auto;max-height:600px;">
+      <div id="week-body" style="position:relative;">
         ${gridRows}
-        ${overlayHtml}
+        <div id="week-overlay" style="display:grid;grid-template-columns:48px repeat(7,1fr);position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none;">
+          <div></div>
+          ${days.map((d,i) => {
+            const dateStr = formatDateStr(d.getFullYear(), d.getMonth(), d.getDate());
+            return `<div class="week-drag-col" data-date="${dateStr}" data-col="${i}"
+              style="position:relative;min-height:${slotH*(24-firstHour)}px;border-right:1px solid var(--gray-200);pointer-events:auto;cursor:crosshair;">
+              ${timedPerDay[i].map(e => {
+                const [sh, sm] = (e.startTime||'00:00').split(':').map(Number);
+                const [eh, em] = e.endTime ? e.endTime.split(':').map(Number) : [sh+1, sm];
+                const topPx = (sh - firstHour + sm/60) * slotH;
+                const heightPx = Math.max(((eh - sh) + (em - sm)/60) * slotH, 22);
+                const bgColor = e.gcalColor || null;
+                const cls = bgColor ? '' : `event-${e.type}`;
+                return `<div class="week-event-block day-event-pill ${cls}"
+                  style="top:${topPx}px;height:${heightPx}px;${bgColor ? `background:${bgColor};color:#1e293b;` : ''}"
+                  onclick="event.stopPropagation();showEventDetail('${e.id}')">
+                  <strong>${e.startTime}</strong> ${escHtml(e.title)}
+                </div>`;
+              }).join('')}
+            </div>`;
+          }).join('')}
+        </div>
+        <div id="week-drag-preview" style="display:none;position:absolute;background:rgba(139,45,66,0.25);border:2px solid var(--navy);border-radius:4px;pointer-events:none;z-index:10;left:0;width:0;"></div>
       </div>
     </div>`;
+
+  // ---- drag-to-create ----
+  let dragState = null;
+
+  function pxToTime(py) {
+    const totalMins = (py / slotH) * 60 + firstHour * 60;
+    const h = Math.floor(totalMins / 60);
+    const m = Math.round((totalMins % 60) / 15) * 15;
+    const hh = Math.min(h + (m === 60 ? 1 : 0), 23);
+    const mm = m === 60 ? 0 : m;
+    return `${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}`;
+  }
+
+  function colLeft(colEl) {
+    const body = document.getElementById('week-body');
+    return colEl.getBoundingClientRect().left - body.getBoundingClientRect().left;
+  }
+
+  document.querySelectorAll('.week-drag-col').forEach(col => {
+    col.addEventListener('mousedown', e => {
+      if (e.button !== 0) return;
+      if (e.target.classList.contains('week-event-block') || e.target.closest('.week-event-block')) return;
+      e.preventDefault();
+      const rect = col.getBoundingClientRect();
+      const scroll = document.getElementById('week-scroll').scrollTop;
+      const startY = e.clientY - rect.top + scroll;
+      dragState = { col, date: col.dataset.date, startY, endY: startY + slotH };
+      renderDragPreview();
+    });
+  });
+
+  document.addEventListener('mousemove', onDragMove);
+  document.addEventListener('mouseup', onDragUp);
+
+  function renderDragPreview() {
+    if (!dragState) return;
+    const preview = document.getElementById('week-drag-preview');
+    const body = document.getElementById('week-body');
+    if (!preview || !body) return;
+    const minY = Math.min(dragState.startY, dragState.endY);
+    const maxY = Math.max(dragState.startY, dragState.endY);
+    const colRect = dragState.col.getBoundingClientRect();
+    const bodyRect = body.getBoundingClientRect();
+    const left = colRect.left - bodyRect.left;
+    preview.style.display = 'block';
+    preview.style.left = left + 2 + 'px';
+    preview.style.width = colRect.width - 4 + 'px';
+    preview.style.top = minY + 'px';
+    preview.style.height = Math.max(maxY - minY, slotH / 2) + 'px';
+    preview.title = `${pxToTime(minY)} – ${pxToTime(Math.max(maxY, minY + slotH / 2))}`;
+  }
+
+  function onDragMove(e) {
+    if (!dragState) return;
+    const col = dragState.col;
+    const rect = col.getBoundingClientRect();
+    const scroll = document.getElementById('week-scroll')?.scrollTop || 0;
+    dragState.endY = e.clientY - rect.top + scroll;
+    renderDragPreview();
+  }
+
+  function onDragUp(e) {
+    if (!dragState) return;
+    document.removeEventListener('mousemove', onDragMove);
+    document.removeEventListener('mouseup', onDragUp);
+    const preview = document.getElementById('week-drag-preview');
+    if (preview) preview.style.display = 'none';
+    const minY = Math.min(dragState.startY, dragState.endY);
+    const maxY = Math.max(dragState.startY, dragState.endY);
+    const startTime = pxToTime(minY);
+    const endTime = pxToTime(Math.max(maxY, minY + slotH / 2));
+    const date = dragState.date;
+    dragState = null;
+    if (startTime === endTime) return;
+    openEventModal(null, date, startTime, endTime);
+  }
 }
 
 function getVisibleEvents() {
@@ -3504,7 +3581,7 @@ function openEditEvent(eventId) {
   openEventModal(eventId, null);
 }
 
-function openEventModal(eventId, prefillDate) {
+function openEventModal(eventId, prefillDate, prefillStart, prefillEnd) {
   const isEdit = !!eventId;
   const events = getAgenda();
   const ev = isEdit ? events.find(e => e.id === eventId) : null;
@@ -3552,11 +3629,11 @@ function openEventModal(eventId, prefillDate) {
           <div class="form-row">
             <div class="form-group">
               <label class="form-label">Início</label>
-              <input class="form-control" type="time" id="ev-start" value="${isEdit ? ev.startTime||'' : ''}">
+              <input class="form-control" type="time" id="ev-start" value="${isEdit ? ev.startTime||'' : (prefillStart||'')}">
             </div>
             <div class="form-group">
               <label class="form-label">Fim</label>
-              <input class="form-control" type="time" id="ev-end" value="${isEdit ? ev.endTime||'' : ''}">
+              <input class="form-control" type="time" id="ev-end" value="${isEdit ? ev.endTime||'' : (prefillEnd||'')}">
             </div>
           </div>
           <div class="form-group">
@@ -3589,6 +3666,7 @@ function openEventModal(eventId, prefillDate) {
   renderModal(html);
   window._eventAssignAll = assignedToAll;
   window._eventAssignedUsers = [...assignedUsers];
+  if (!isEdit) setTimeout(() => document.getElementById('ev-title')?.focus(), 50);
 }
 
 function toggleAllUsers() {
