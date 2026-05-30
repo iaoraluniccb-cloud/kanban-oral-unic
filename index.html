@@ -1255,7 +1255,8 @@
   }
 
   .user-pick-btn:hover { border-color: var(--cyan); }
-  .user-pick-btn.selected { border-color: var(--cyan); background: #f0faff; color: var(--navy); font-weight: 700; }
+  .user-pick-btn.selected { border-color: var(--navy); background: var(--navy); color: white; font-weight: 700; }
+  .user-pick-btn.selected::after { content: '✓'; display: block; font-size: 0.8rem; }
 
   /* Multi-user picker for agenda */
   .multi-user-picker {
@@ -2818,6 +2819,7 @@ function openDelegate(cardId) {
   const card = cards.find(c => c.id === cardId);
   if (!card) return;
 
+  selectedDelegateUserIds = new Set();
   const otherUsers = USERS.filter(u => u.id !== currentUser.id);
 
   const html = `
@@ -2866,7 +2868,7 @@ function selectDelegateUser(uid) {
   } else {
     selectedDelegateUserIds.add(uid);
   }
-  document.querySelectorAll('.user-pick-btn').forEach(b => {
+  document.querySelectorAll('#delegate-user-picker .user-pick-btn').forEach(b => {
     b.classList.toggle('selected', selectedDelegateUserIds.has(b.dataset.uid));
   });
 }
