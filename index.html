@@ -1567,7 +1567,7 @@
     </nav>
     <div class="header-right">
       <div class="current-user-info">
-        <div class="avatar avatar-sm avatar-upload-btn" id="header-avatar" title="Clique para trocar foto" onclick="triggerPhotoUpload(currentUser.id)" style="cursor:pointer"></div>
+        <div class="avatar avatar-sm" id="header-avatar"></div>
         <span id="header-name"></span>
       </div>
       <div id="adm-switch-wrap" style="display:none;position:relative;">
@@ -2271,7 +2271,6 @@ function renderLogin() {
     <button class="user-btn" onclick="attemptLogin('${u.id}')">
       <div class="avatar-wrap" style="position:relative">
         ${avatarHtml(u.id, u.name, u.color)}
-        <div class="avatar-upload-overlay" onclick="event.stopPropagation();triggerPhotoUpload('${u.id}')">📷</div>
       </div>
       <div class="user-name">${u.name}</div>
       <div class="user-role">${u.role}</div>
