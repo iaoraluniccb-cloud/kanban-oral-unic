@@ -2475,6 +2475,13 @@ function renderCard(card) {
     delegHtml = `<span class="delegation-badge from">👤 De: ${card.delegatedFromName}</span>`;
   }
 
+  // Mostra para quem foi delegado (no card do dono)
+  let delegatedToHtml = '';
+  if (card.delegatedTo?.length) {
+    const names = card.delegatedTo.map(uid => { const u = getUserById(uid); return u ? u.name : uid; }).join(', ');
+    delegatedToHtml = `<div style="font-size:0.72rem;color:var(--gray-500);margin-top:4px;">📤 Delegado para: <strong>${escHtml(names)}</strong></div>`;
+  }
+
   return `
     <div class="kanban-card${isPending ? ' pending-delegation' : ''}${isOverdue && !isPending ? ' overdue-card' : ''}${card.sharedWith?.length ? ' shared-card' : ''}" id="card-${card.id}" draggable="${!isPending}">
       <div class="card-top">
@@ -2491,6 +2498,7 @@ function renderCard(card) {
           return `<button onclick="openSharedChat('${card.id}')" class="${unreadCount ? 'chat-btn-unread' : ''}" style="font-size:0.7rem;background:${unreadCount ? '#ef4444' : '#0ea5e9'};color:#fff;border:none;border-radius:4px;padding:2px 7px;cursor:pointer;margin-left:2px;">💬 Chat${unreadCount ? ` (${unreadCount})` : ''}</button>`;
         })()}
       </div>` : ''}
+      ${delegatedToHtml}
       <div class="card-footer">
         <div class="card-meta">
           ${dateHtml}
@@ -3039,11 +3047,16 @@ function sendDelegation(cardId) {
     saveNotifications(toUserId, notifs);
   });
 
+  // Salva no card original quem foi delegado
+  const delegatedToIds = [...selectedDelegateUserIds];
+  card.delegatedTo = [...new Set([...(card.delegatedTo || []), ...delegatedToIds])];
+  saveCards(currentUser.id, cards);
+
   saveDelegations(delegations);
-  const count = selectedDelegateUserIds.size;
+  const count = delegatedToIds.length;
   selectedDelegateUserIds = new Set();
   closeModal('delegate-modal-overlay');
-  showToast(`Delegado para ${toUser.name}!`, 'success');
+  showToast(`Delegado para ${count} pessoa${count > 1 ? 's' : ''}!`, 'success');
   renderVello();
 }
 
