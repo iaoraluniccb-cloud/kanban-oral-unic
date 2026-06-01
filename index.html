@@ -1715,6 +1715,10 @@ const USERS = [
 ];
 
 const ADM_USERS = ["thais", "dra_mone"];
+// Supervisores: podem acessar perfis dos supervisionados sem senha e recebem alertas de atraso deles
+const SUPERVISORS = {
+  jarina: ["bruna", "marieli"]
+};
 
 function genId() {
   try { return crypto.randomUUID(); } catch(e) { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
@@ -1933,8 +1937,12 @@ function saveCrop(userId) {
 function toggleAdmSwitcher() {
   const menu = document.getElementById('adm-switcher-menu');
   if (menu.style.display === 'none') {
-    // Popula o menu com todos os usuários exceto o atual
-    menu.innerHTML = USERS.filter(u => u.id !== currentUser.id).map(u => {
+    // ADMs veem todos; supervisores veem só seus supervisionados
+    const subordinates = SUPERVISORS[currentUser.id];
+    const switchableUsers = subordinates
+      ? USERS.filter(u => subordinates.includes(u.id))
+      : USERS.filter(u => u.id !== currentUser.id);
+    menu.innerHTML = switchableUsers.map(u => {
       const photo = getPhoto(u.id);
       const avatarStyle = photo
         ? `background-image:url('${photo}');background-size:cover;background-position:center;`
@@ -1968,7 +1976,7 @@ async function admSwitchTo(userId) {
   await loadInitialData(userId);
   switchTab('vello');
   renderVello();
-  // Mostra botão switcher sempre (ADM ainda está no controle)
+  // Mantém switcher visível (ADM/supervisor ainda está no controle)
   document.getElementById('adm-switch-wrap').style.display = 'flex';
 }
 
@@ -2288,8 +2296,9 @@ async function login(userId) {
 
   switchTab('vello');
   renderVello();
-  // Mostra botão de trocar perfil para ADMs
-  document.getElementById('adm-switch-wrap').style.display = ADM_USERS.includes(userId) ? 'flex' : 'none';
+  // Mostra botão de trocar perfil para ADMs e supervisores
+  const canSwitch = ADM_USERS.includes(userId) || !!SUPERVISORS[userId];
+  document.getElementById('adm-switch-wrap').style.display = canSwitch ? 'flex' : 'none';
   // Verifica cards fora do prazo e notifica ADMs
   setTimeout(checkOverdueAndNotify, 1500);
 }
@@ -3087,19 +3096,32 @@ function checkOverdueAndNotify() {
 
   if (overdueCards.length === 0) return;
 
-  // Notifica Thais e Dra. Mone
+  // Monta lista de quem recebe alertas: ADMs + supervisores filtrados por supervisionados
+  const notifyTargets = []; // { recipientId, cards[] }
+
+  // ADMs recebem de todos
   ['thais', 'dra_mone'].forEach(adminId => {
-    const existingNotifs = getNotifications(adminId);
+    notifyTargets.push({ recipientId: adminId, cards: overdueCards });
+  });
+
+  // Supervisores recebem só dos seus supervisionados
+  Object.entries(SUPERVISORS).forEach(([supervisorId, subordinates]) => {
+    const relevant = overdueCards.filter(c => subordinates.includes(c._ownerId));
+    if (relevant.length > 0) notifyTargets.push({ recipientId: supervisorId, cards: relevant });
+  });
+
+  notifyTargets.forEach(({ recipientId, cards }) => {
+    const existingNotifs = getNotifications(recipientId);
     const existingIds = new Set(existingNotifs.filter(n => n.type === 'overdue_alert').map(n => n.refId));
     const newNotifs = [...existingNotifs];
     let added = 0;
 
-    overdueCards.forEach(card => {
+    cards.forEach(card => {
       if (existingIds.has(card.id)) return;
       const ownerUser = getUserById(card._ownerId);
       const ownerName = ownerUser ? ownerUser.name : card._ownerId;
       newNotifs.push({
-        id: 'ovd_' + adminId + '_' + card.id + '_' + Date.now(),
+        id: 'ovd_' + recipientId + '_' + card.id + '_' + Date.now(),
         type: 'overdue_alert',
         refId: card.id,
         message: `⚠️ ${ownerName} está com "${card.title}" em atraso (prazo: ${formatDate(card.dueDate)})`,
@@ -3109,7 +3131,7 @@ function checkOverdueAndNotify() {
       added++;
     });
 
-    if (added > 0) saveNotifications(adminId, newNotifs);
+    if (added > 0) saveNotifications(recipientId, newNotifs);
   });
 }
 
