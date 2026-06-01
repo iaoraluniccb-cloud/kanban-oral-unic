@@ -2234,7 +2234,7 @@ function renderLogin() {
 
 // Senhas protegidas
 // Senhas específicas sobrepõem o padrão (nome do ID + "123")
-const USER_PASSWORDS_CUSTOM = { thais: 'ximia123', dra_mone: 'cooper123' };
+const USER_PASSWORDS_CUSTOM = { thais: 'ximia123', dra_mone: 'cooper123', francieli: 'franci123' };
 function getUserPassword(userId) {
   if (USER_PASSWORDS_CUSTOM[userId]) return USER_PASSWORDS_CUSTOM[userId];
   // Padrão: primeiro segmento do ID + "123" (ex: "jarina" → "jarina123", "dr_aurelio" → "dr123")
