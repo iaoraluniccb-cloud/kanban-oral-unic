@@ -3171,35 +3171,50 @@ function checkOverdueAndNotify() {
 
   if (overdueCards.length === 0) return;
 
-  // Monta lista de quem recebe alertas: ADMs + supervisores filtrados por supervisionados
-  const notifyTargets = []; // { recipientId, cards[] }
+  // Monta mapa: recipientId → Set de cards a notificar
+  const targetMap = {}; // { recipientId: Set of cards }
 
-  // ADMs recebem de todos
-  ['thais', 'dra_mone'].forEach(adminId => {
-    notifyTargets.push({ recipientId: adminId, cards: overdueCards });
+  function addTarget(recipientId, card) {
+    if (!targetMap[recipientId]) targetMap[recipientId] = new Map();
+    targetMap[recipientId].set(card.id, card);
+  }
+
+  overdueCards.forEach(card => {
+    // ADMs sempre recebem tudo
+    addTarget('thais', card);
+    addTarget('dra_mone', card);
+
+    // Quem delegou o card também recebe (se for delegação)
+    if (card.isDelegation && card.delegatedFrom && card.delegatedFrom !== 'thais' && card.delegatedFrom !== 'dra_mone') {
+      addTarget(card.delegatedFrom, card);
+    }
+
+    // Supervisores recebem dos seus supervisionados
+    Object.entries(SUPERVISORS).forEach(([supervisorId, subordinates]) => {
+      if (subordinates.includes(card._ownerId)) addTarget(supervisorId, card);
+    });
   });
 
-  // Supervisores recebem só dos seus supervisionados
-  Object.entries(SUPERVISORS).forEach(([supervisorId, subordinates]) => {
-    const relevant = overdueCards.filter(c => subordinates.includes(c._ownerId));
-    if (relevant.length > 0) notifyTargets.push({ recipientId: supervisorId, cards: relevant });
-  });
-
-  notifyTargets.forEach(({ recipientId, cards }) => {
+  Object.entries(targetMap).forEach(([recipientId, cardMap]) => {
     const existingNotifs = getNotifications(recipientId);
     const existingIds = new Set(existingNotifs.filter(n => n.type === 'overdue_alert').map(n => n.refId));
     const newNotifs = [...existingNotifs];
     let added = 0;
 
-    cards.forEach(card => {
+    cardMap.forEach(card => {
       if (existingIds.has(card.id)) return;
       const ownerUser = getUserById(card._ownerId);
       const ownerName = ownerUser ? ownerUser.name : card._ownerId;
+      // Se for o delegador recebendo, mensagem personalizada
+      const isDelegator = card.isDelegation && card.delegatedFrom === recipientId;
+      const msg = isDelegator
+        ? `⚠️ ${ownerName} está com "${card.title}" (que você delegou) em atraso (prazo: ${formatDate(card.dueDate)})`
+        : `⚠️ ${ownerName} está com "${card.title}" em atraso (prazo: ${formatDate(card.dueDate)})`;
       newNotifs.push({
         id: 'ovd_' + recipientId + '_' + card.id + '_' + Date.now(),
         type: 'overdue_alert',
         refId: card.id,
-        message: `⚠️ ${ownerName} está com "${card.title}" em atraso (prazo: ${formatDate(card.dueDate)})`,
+        message: msg,
         createdAt: new Date().toISOString(),
         read: false
       });
