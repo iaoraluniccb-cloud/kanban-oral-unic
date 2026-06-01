@@ -729,6 +729,8 @@
   .chat-input-row input { flex:1;padding:8px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.85rem;outline:none; }
   .chat-input-row input:focus { border-color:var(--primary); }
   .chat-send-btn { padding:8px 14px;background:var(--primary);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:0.85rem;font-weight:600; }
+  .chat-btn-unread { background:#ef4444 !important; animation: pulse-red 1.4s infinite; }
+  @keyframes pulse-red { 0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,0.5)} 50%{box-shadow:0 0 0 5px rgba(239,68,68,0)} }
   .btn-delete-card { background: var(--gray-100); color: var(--gray-600); }
   .btn-delete-card:hover { background: #fee2e2; color: var(--red); }
 
@@ -2092,6 +2094,19 @@ function startRealtimeListeners() {
     }
   });
 
+  // Chats — listener em coleção para atualizar badges em tempo real
+  window.__onSnapshot(window.__col('ou_chats'), snapshot => {
+    if (!window._cache.chats) window._cache.chats = {};
+    snapshot.forEach(d => {
+      try {
+        window._cache.chats[d.id] = JSON.parse(d.data().messages || '[]');
+        window._cache.chatUnread = window._cache.chatUnread || {};
+        window._cache.chatUnread[d.id] = JSON.parse(d.data().unread || '{}');
+      } catch {}
+    });
+    if (currentUser) renderKanban();
+  });
+
   // Cards do usuário logado (ou qualquer usuário monitorado por ADM)
   function listenUserCards(userId) {
     window.__onSnapshot(window.__doc('ou_cards', userId), snap => {
@@ -2190,8 +2205,10 @@ async function loadInitialData(userId) {
     try {
       const chatSnap = await window.__getDocs(window.__col('ou_chats')).catch(() => null);
       if (!window._cache.chats) window._cache.chats = {};
+      if (!window._cache.chatUnread) window._cache.chatUnread = {};
       if (chatSnap) chatSnap.forEach(d => {
         try { window._cache.chats[d.id] = JSON.parse(d.data().messages || '[]'); } catch {}
+        try { window._cache.chatUnread[d.id] = JSON.parse(d.data().unread || '{}'); } catch {}
       });
     } catch(e) {}
   }
@@ -2441,7 +2458,11 @@ function renderCard(card) {
       ${card.sharedWith?.length ? `<div style="display:flex;align-items:center;gap:4px;margin-bottom:4px;flex-wrap:wrap;">
         <span class="shared-badge">🤝 Compartilhado</span>
         ${card.sharedWith.map(uid => { const u=getUserById(uid); return u ? `<span style="font-size:0.7rem;background:${u.color}20;color:${u.color};padding:1px 6px;border-radius:4px;font-weight:600;">${u.name}</span>` : ''; }).join('')}
-        <button onclick="openSharedChat('${card.id}')" style="font-size:0.7rem;background:#0ea5e9;color:#fff;border:none;border-radius:4px;padding:2px 7px;cursor:pointer;margin-left:2px;">💬 Chat</button>
+        ${(() => {
+          const chatId = card.sharedChatId || card.id;
+          const unreadCount = (window._cache?.chatUnread?.[chatId]?.[currentUser.id]) || 0;
+          return `<button onclick="openSharedChat('${card.id}')" class="${unreadCount ? 'chat-btn-unread' : ''}" style="font-size:0.7rem;background:${unreadCount ? '#ef4444' : '#0ea5e9'};color:#fff;border:none;border-radius:4px;padding:2px 7px;cursor:pointer;margin-left:2px;">💬 Chat${unreadCount ? ` (${unreadCount})` : ''}</button>`;
+        })()}
       </div>` : ''}
       <div class="card-footer">
         <div class="card-meta">
@@ -2555,17 +2576,31 @@ function saveShare(cardId) {
   renderKanban();
 }
 
-function openSharedChat(cardId) {
+async function openSharedChat(cardId) {
   // Busca o card (pode estar em qualquer usuário)
   let card = getCards(currentUser.id).find(c => c.id === cardId);
   if (!card) {
-    // Talvez seja uma cópia compartilhada
     card = getCards(currentUser.id).find(c => c.sharedOriginId === cardId);
   }
   if (!card) return;
   const chatId = card.sharedChatId || card.id;
   const chats = window._cache.chats || {};
   const messages = chats[chatId] || [];
+
+  // Marca como lido para o usuário atual
+  if (!window._cache.chatUnread) window._cache.chatUnread = {};
+  const unread = { ...(window._cache.chatUnread[chatId] || {}) };
+  if (unread[currentUser.id]) {
+    delete unread[currentUser.id];
+    window._cache.chatUnread[chatId] = unread;
+    if (window.__setDoc) {
+      window.__setDoc(window.__doc('ou_chats', chatId), {
+        messages: JSON.stringify(messages),
+        unread: JSON.stringify(unread)
+      }).catch(() => null);
+    }
+    renderKanban();
+  }
 
   const html = `
     <div class="modal-overlay" id="chat-modal-overlay" onclick="closeOnOverlay(event,'chat-modal-overlay')">
@@ -2609,9 +2644,24 @@ async function sendChatMsg(chatId, cardId) {
   const msg = { id: genId(), userId: currentUser.id, userName: currentUser.name, text, createdAt: new Date().toISOString() };
   window._cache.chats[chatId].push(msg);
 
+  // Calcula quem ainda não leu (todos os participantes exceto o remetente)
+  if (!window._cache.chatUnread) window._cache.chatUnread = {};
+  const unread = window._cache.chatUnread[chatId] || {};
+  // Busca participantes do card
+  const card = getCards(currentUser.id).find(c => c.sharedChatId === chatId || c.id === chatId)
+    || getCards(currentUser.id).find(c => c.sharedOriginId && c.sharedChatId === chatId);
+  const participants = card ? [card.sharedOriginUser || card.createdBy, ...(card.sharedWith || [])].filter(Boolean) : [];
+  participants.forEach(uid => {
+    if (uid !== currentUser.id) unread[uid] = (unread[uid] || 0) + 1;
+  });
+  window._cache.chatUnread[chatId] = unread;
+
   // Salva no Firestore
   if (window.__setDoc) {
-    await window.__setDoc(window.__doc('ou_chats', chatId), { messages: JSON.stringify(window._cache.chats[chatId]) });
+    await window.__setDoc(window.__doc('ou_chats', chatId), {
+      messages: JSON.stringify(window._cache.chats[chatId]),
+      unread: JSON.stringify(unread)
+    });
   }
 
   // Re-renderiza o chat
