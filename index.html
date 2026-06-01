@@ -2121,8 +2121,8 @@ function startRealtimeListeners() {
       try { window._cache.chats[d.id] = JSON.parse(d.data().messages || '[]'); } catch {}
       try { window._cache.chatUnread[d.id] = JSON.parse(d.data().unread || '{}'); } catch {}
     });
-    // Só re-renderiza se o usuário já tem cards carregados (evita limpar kanban antes dos dados chegarem)
-    if (currentUser && (window._cache.cards[currentUser.id] || []).length > 0) renderKanban();
+    // Só re-renderiza se o app já está inicializado (evita limpar kanban antes dos dados chegarem)
+    if (currentUser && window._appReady) renderKanban();
   });
 
   // Cards do usuário logado (ou qualquer usuário monitorado por ADM)
@@ -2343,9 +2343,12 @@ async function login(userId) {
   if (diagBtn) diagBtn.style.display = ADM_USERS.includes(userId) ? 'inline-flex' : 'none';
   // Verifica cards fora do prazo e notifica ADMs
   setTimeout(checkOverdueAndNotify, 1500);
+  // Marca app como pronto (libera listeners de chat para re-renderizar)
+  setTimeout(() => { window._appReady = true; }, 2000);
 }
 
 function logout() {
+  window._appReady = false;
   currentUser = null;
   localStorage.removeItem('ou_currentUser');
   document.getElementById('login-screen').style.display = 'flex';
@@ -2480,9 +2483,9 @@ function renderCard(card) {
         <span class="priority-badge priority-${card.priority}">${cap(card.priority)}</span>
       </div>
       ${card.description ? `<div class="card-desc">${escHtml(card.description)}</div>` : ''}
-      ${card.sharedWith?.length ? `<div style="display:flex;align-items:center;gap:4px;margin-bottom:4px;flex-wrap:wrap;">
-        <span class="shared-badge">🤝 Compartilhado</span>
-        ${card.sharedWith.map(uid => { const u=getUserById(uid); return u ? `<span style="font-size:0.7rem;background:${u.color}20;color:${u.color};padding:1px 6px;border-radius:4px;font-weight:600;">${u.name}</span>` : ''; }).join('')}
+      ${(card.sharedWith?.length || card.sharedOriginId) ? `<div style="display:flex;align-items:center;gap:4px;margin-bottom:4px;flex-wrap:wrap;">
+        <span class="shared-badge">🤝 ${card.sharedOriginId ? 'De: ' + escHtml(card.sharedOriginName||'') : 'Compartilhado'}</span>
+        ${(card.sharedWith||[]).map(uid => { const u=getUserById(uid); return u ? `<span style="font-size:0.7rem;background:${u.color}20;color:${u.color};padding:1px 6px;border-radius:4px;font-weight:600;">${u.name}</span>` : ''; }).join('')}
         ${(() => {
           const chatId = card.sharedChatId || card.id;
           const unreadCount = (window._cache?.chatUnread?.[chatId]?.[currentUser.id]) || 0;
@@ -2669,13 +2672,24 @@ async function sendChatMsg(chatId, cardId) {
   const msg = { id: genId(), userId: currentUser.id, userName: currentUser.name, text, createdAt: new Date().toISOString() };
   window._cache.chats[chatId].push(msg);
 
-  // Calcula quem ainda não leu (todos os participantes exceto o remetente)
+  // Calcula quem ainda não leu: busca o card original (com sharedWith) em todos os usuários
   if (!window._cache.chatUnread) window._cache.chatUnread = {};
-  const unread = window._cache.chatUnread[chatId] || {};
-  // Busca participantes do card
-  const card = getCards(currentUser.id).find(c => c.sharedChatId === chatId || c.id === chatId)
-    || getCards(currentUser.id).find(c => c.sharedOriginId && c.sharedChatId === chatId);
-  const participants = card ? [card.sharedOriginUser || card.createdBy, ...(card.sharedWith || [])].filter(Boolean) : [];
+  const unread = { ...(window._cache.chatUnread[chatId] || {}) };
+
+  // Acha o card que tem este chatId em qualquer board
+  let originCard = null;
+  const allCards = window._cache.cards || {};
+  outer: for (const [, cardArr] of Object.entries(allCards)) {
+    if (!Array.isArray(cardArr)) continue;
+    for (const c of cardArr) {
+      if ((c.sharedChatId === chatId) && c.sharedWith?.length) { originCard = c; break outer; }
+    }
+  }
+  // Participantes = criador + todos em sharedWith
+  const participants = originCard
+    ? [...new Set([originCard.createdBy || currentUser.id, ...(originCard.sharedWith || [])])]
+    : [currentUser.id];
+
   participants.forEach(uid => {
     if (uid !== currentUser.id) unread[uid] = (unread[uid] || 0) + 1;
   });
