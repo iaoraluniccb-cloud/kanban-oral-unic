@@ -2010,11 +2010,29 @@ window._cache = { cards: {}, delegations: [], notifications: {}, agenda: [] };
 function getCards(userId) {
   return (window._cache.cards[userId] || []);
 }
+
 async function saveCards(userId, cards) {
+  // Nunca salva se recebeu algo que não é array
+  if (!Array.isArray(cards)) { console.warn('saveCards: dado inválido ignorado', userId); return; }
+  // Proteção: nunca sobrescreve dados existentes com array vazio
+  const existing = window._cache.cards[userId] || [];
+  if (cards.length === 0 && existing.length > 0) {
+    console.warn('saveCards: tentativa de zerar cards ignorada para', userId);
+    return;
+  }
   window._cache.cards[userId] = cards;
   if (!window.__db) return;
   const ref = window.__doc('ou_cards', userId);
-  await window.__setDoc(ref, { cards: JSON.stringify(cards) });
+  // Retry automático em caso de falha de rede
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      await window.__setDoc(ref, { cards: JSON.stringify(cards), updatedAt: new Date().toISOString() });
+      return;
+    } catch(e) {
+      if (attempt === 3) console.error('saveCards falhou após 3 tentativas', userId, e);
+      else await new Promise(r => setTimeout(r, 500 * attempt));
+    }
+  }
 }
 
 // ---- Delegações ----
@@ -2111,11 +2129,18 @@ function startRealtimeListeners() {
   function listenUserCards(userId) {
     window.__onSnapshot(window.__doc('ou_cards', userId), snap => {
       if (snap.exists()) {
-        try { window._cache.cards[userId] = JSON.parse(snap.data().cards); } catch { window._cache.cards[userId] = []; }
-      } else {
-        // Só zera se doc não existe E não tínhamos dados antes (evita apagar cache válido)
-        if (!window._cache.cards[userId]) window._cache.cards[userId] = [];
+        try {
+          const incoming = JSON.parse(snap.data().cards || '[]');
+          const current = window._cache.cards[userId] || [];
+          // Nunca substitui dados existentes por array vazio vindo do Firestore
+          if (incoming.length === 0 && current.length > 0) {
+            console.warn('listenUserCards: snapshot vazio ignorado para', userId);
+          } else {
+            window._cache.cards[userId] = incoming;
+          }
+        } catch { /* mantém o que havia no cache */ }
       }
+      // doc não existe → não toca no cache
       if (currentUser && currentUser.id === userId) renderKanban();
       if (currentUser && ADM_USERS.includes(currentUser.id)) renderOverdueTeamPanel();
     });
