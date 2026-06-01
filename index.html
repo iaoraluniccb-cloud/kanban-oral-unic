@@ -1574,6 +1574,7 @@
         <button class="logout-btn" onclick="toggleAdmSwitcher()" style="background:rgba(255,255,255,0.12);" title="Ver como outro usuário">👥 Trocar</button>
         <div id="adm-switcher-menu" style="display:none;position:absolute;right:0;top:calc(100% + 6px);background:#fff;border:1px solid #e2e8f0;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.12);z-index:999;min-width:180px;padding:6px 0;max-height:320px;overflow-y:auto;"></div>
       </div>
+      <button id="diag-btn" onclick="diagCards()" style="display:none;" class="logout-btn" title="Recarregar dados do servidor">🔄 Recarregar</button>
       <button class="logout-btn" onclick="logout()">Sair</button>
     </div>
   </header>
@@ -2112,13 +2113,11 @@ function startRealtimeListeners() {
       if (snap.exists()) {
         try { window._cache.cards[userId] = JSON.parse(snap.data().cards); } catch { window._cache.cards[userId] = []; }
       } else {
-        window._cache.cards[userId] = [];
+        // Só zera se doc não existe E não tínhamos dados antes (evita apagar cache válido)
+        if (!window._cache.cards[userId]) window._cache.cards[userId] = [];
       }
       if (currentUser && currentUser.id === userId) renderKanban();
-      // ADM: atualiza painel de atraso em tempo real
-      if (currentUser && ADM_USERS.includes(currentUser.id)) {
-        renderOverdueTeamPanel();
-      }
+      if (currentUser && ADM_USERS.includes(currentUser.id)) renderOverdueTeamPanel();
     });
   }
 
@@ -2143,9 +2142,9 @@ function startRealtimeListeners() {
         localStorage.setItem('ou_photo_' + u.id, snap.data().photo);
         // Re-renderiza UI que usa avatares
         if (currentUser) {
-          renderLogin();
           updateHeaderAvatar();
-          renderKanban();
+          // Só re-renderiza se cards já carregaram
+          if ((window._cache.cards[currentUser.id] || []).length > 0) renderKanban();
           renderInbox();
         }
       }
@@ -2314,6 +2313,9 @@ async function login(userId) {
   // Mostra botão de trocar perfil para ADMs e supervisores
   const canSwitch = ADM_USERS.includes(userId) || !!SUPERVISORS[userId];
   document.getElementById('adm-switch-wrap').style.display = canSwitch ? 'flex' : 'none';
+  // Botão de recarregar dados visível só para ADMs
+  const diagBtn = document.getElementById('diag-btn');
+  if (diagBtn) diagBtn.style.display = ADM_USERS.includes(userId) ? 'inline-flex' : 'none';
   // Verifica cards fora do prazo e notifica ADMs
   setTimeout(checkOverdueAndNotify, 1500);
 }
@@ -3902,6 +3904,26 @@ function timeAgo(iso) {
   if (hrs < 24) return `${hrs}h atrás`;
   const days = Math.floor(hrs / 24);
   return `${days}d atrás`;
+}
+
+// ============================================================
+// DIAGNÓSTICO / RECUPERAÇÃO
+// ============================================================
+async function diagCards() {
+  if (!window.__db) { alert('Firebase não conectado'); return; }
+  const snap = await window.__getDocs(window.__col('ou_cards')).catch(() => null);
+  if (!snap) { alert('Erro ao ler Firestore'); return; }
+  let report = '';
+  snap.forEach(d => {
+    let cards = [];
+    try { cards = JSON.parse(d.data().cards || '[]'); } catch {}
+    report += `${d.id}: ${cards.length} cards\n`;
+    // Restaura no cache imediatamente
+    window._cache.cards[d.id] = cards;
+  });
+  alert('Dados no Firestore:\n' + report);
+  renderKanban();
+  renderOverdueTeamPanel();
 }
 
 // ============================================================
