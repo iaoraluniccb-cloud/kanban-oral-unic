@@ -2097,14 +2097,13 @@ function startRealtimeListeners() {
   // Chats — listener em coleção para atualizar badges em tempo real
   window.__onSnapshot(window.__col('ou_chats'), snapshot => {
     if (!window._cache.chats) window._cache.chats = {};
+    if (!window._cache.chatUnread) window._cache.chatUnread = {};
     snapshot.forEach(d => {
-      try {
-        window._cache.chats[d.id] = JSON.parse(d.data().messages || '[]');
-        window._cache.chatUnread = window._cache.chatUnread || {};
-        window._cache.chatUnread[d.id] = JSON.parse(d.data().unread || '{}');
-      } catch {}
+      try { window._cache.chats[d.id] = JSON.parse(d.data().messages || '[]'); } catch {}
+      try { window._cache.chatUnread[d.id] = JSON.parse(d.data().unread || '{}'); } catch {}
     });
-    if (currentUser) renderKanban();
+    // Só re-renderiza se o usuário já tem cards carregados (evita limpar kanban antes dos dados chegarem)
+    if (currentUser && (window._cache.cards[currentUser.id] || []).length > 0) renderKanban();
   });
 
   // Cards do usuário logado (ou qualquer usuário monitorado por ADM)
@@ -2163,8 +2162,7 @@ async function loadInitialData(userId) {
   const db = window.__db;
 
   // Carrega todos os dados necessários em paralelo
-  const [agendaSnap, delegSnap, cardsSnap, notifsSnap, photosSnap] = await Promise.all([
-    window.__getDocs(window.__col('ou_shared')).catch(() => null),
+  const [cardsSnap, notifsSnap, photosSnap] = await Promise.all([
     window.__getDocs(window.__col('ou_cards')).catch(() => null),
     window.__getDocs(window.__col('ou_notifications')).catch(() => null),
     window.__getDocs(window.__col('ou_photos')).catch(() => null),
