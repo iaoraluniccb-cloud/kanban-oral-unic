@@ -2405,7 +2405,7 @@ function renderCard(card) {
   if (card.dueDate) {
     const due = new Date(card.dueDate + 'T00:00:00');
     isOverdue = due < today && card.column !== 'done';
-    dateHtml = `<span class="card-date ${isOverdue ? 'overdue' : ''}">📅 ${formatDate(card.dueDate)}${isOverdue ? ' · FORA DO PRAZO' : ''}</span>`;
+    dateHtml = `<span class="card-date ${isOverdue ? 'overdue' : ''}">📅 ${formatDate(card.dueDate)}${card.dueTime ? ' ' + card.dueTime : ''}${isOverdue ? ' · FORA DO PRAZO' : ''}</span>`;
   }
   let delegHtml = '';
   const isPending = card.isDelegation && card.delegationStatus === 'pending';
@@ -2737,7 +2737,10 @@ function openCardModal(cardId, defaultCol) {
             </div>
             <div class="form-group">
               <label class="form-label">Prazo</label>
-              <input class="form-control" type="date" id="card-due" value="${isEdit && card.dueDate ? card.dueDate : ''}">
+              <div style="display:flex;gap:6px;">
+                <input class="form-control" type="date" id="card-due" value="${isEdit && card.dueDate ? card.dueDate : ''}">
+                <input class="form-control" type="time" id="card-due-time" style="width:120px;" value="${isEdit && card.dueTime ? card.dueTime : ''}">
+              </div>
             </div>
           </div>
           ${isEdit ? `
@@ -2771,6 +2774,7 @@ function saveCard(cardId, defaultCol) {
   const desc = document.getElementById('card-desc').value.trim();
   const priority = document.getElementById('card-priority').value;
   const due = document.getElementById('card-due').value;
+  const dueTime = document.getElementById('card-due-time')?.value || '';
   const colEl = document.getElementById('card-col');
   const col = colEl ? colEl.value : defaultCol;
 
@@ -2782,6 +2786,7 @@ function saveCard(cardId, defaultCol) {
       card.description = desc;
       card.priority = priority;
       card.dueDate = due;
+      card.dueTime = dueTime;
       card.column = col;
     }
     showToast('Tarefa atualizada!', 'success');
@@ -2792,6 +2797,7 @@ function saveCard(cardId, defaultCol) {
       description: desc,
       priority,
       dueDate: due,
+      dueTime,
       column: col,
       createdAt: new Date().toISOString(),
       delegatedFrom: null,
