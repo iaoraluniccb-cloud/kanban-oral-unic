@@ -2794,9 +2794,59 @@ function onDrop(e, toCol) {
   }
   card.column = toCol;
   saveCards(currentUser.id, cards);
+
+  // Quando mover para concluído, sincroniza com card original (delegação ou compartilhado)
+  if (toCol === 'done') {
+    syncDoneToOrigin(card);
+  }
+
   renderKanban();
   dragCardId = null;
   dragFromCol = null;
+}
+
+function syncDoneToOrigin(card) {
+  const allCards = window._cache.cards || {};
+
+  // --- Delegação: avisa o dono original ---
+  if (card.isDelegation && card.delegatedFrom) {
+    const originUserId = card.delegatedFrom;
+    const originCards = getCards(originUserId);
+    // Acha o card original pelo título + delegatedTo
+    const originCard = originCards.find(c => c.delegatedTo?.includes(currentUser.id) && c.title === card.title);
+    if (originCard && originCard.column !== 'done') {
+      originCard.column = 'done';
+      saveCards(originUserId, originCards);
+    }
+    // Notifica o dono
+    const notifs = getNotifications(originUserId);
+    notifs.push({
+      id: genId(),
+      type: 'task_done',
+      message: `✅ ${currentUser.name} concluiu "${card.title}"`,
+      read: false,
+      createdAt: new Date().toISOString()
+    });
+    saveNotifications(originUserId, notifs);
+  }
+
+  // --- Compartilhado: sincroniza todas as cópias ---
+  if (card.sharedChatId || card.sharedOriginId) {
+    const chatId = card.sharedChatId;
+    const originId = card.sharedOriginId || card.id;
+    // Atualiza todas as cópias em todos os boards
+    Object.entries(allCards).forEach(([uid, cardArr]) => {
+      if (!Array.isArray(cardArr)) return;
+      let changed = false;
+      cardArr.forEach(c => {
+        if ((c.sharedOriginId === originId || c.id === originId || (chatId && c.sharedChatId === chatId)) && c.column !== 'done') {
+          c.column = 'done';
+          changed = true;
+        }
+      });
+      if (changed) saveCards(uid, cardArr);
+    });
+  }
 }
 
 // ============================================================
@@ -2893,6 +2943,7 @@ function saveCard(cardId, defaultCol) {
       card.dueDate = due;
       card.dueTime = dueTime;
       card.column = col;
+      if (col === 'done') syncDoneToOrigin(card);
     }
     showToast('Tarefa atualizada!', 'success');
   } else {
@@ -3115,6 +3166,8 @@ function renderInbox() {
           ${n.type === 'delegation_accepted' ? `<strong>${escHtml(n.toName)}</strong> aceitou a tarefa "<em>${escHtml(n.cardTitle)}</em>".` : ''}
           ${n.type === 'delegation_refused' ? `<strong>${escHtml(n.toName)}</strong> recusou a tarefa "<em>${escHtml(n.cardTitle)}</em>"${n.reason ? ': <em>'+escHtml(n.reason)+'</em>' : ''}.` : ''}
           ${n.type === 'overdue_alert' ? `${escHtml(n.message)}` : ''}
+          ${n.type === 'task_done' ? `${escHtml(n.message)}` : ''}
+          ${n.type === 'shared_card' ? `${escHtml(n.message)}` : ''}
           <div style="font-size:0.72rem;color:var(--gray-400);margin-top:4px;">${timeAgo(n.createdAt)}</div>
         </div>
       `).join('');
