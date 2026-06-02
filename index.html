@@ -2812,17 +2812,22 @@ function syncDoneToOrigin(card) {
   if (card.isDelegation && card.delegatedFrom) {
     const originUserId = card.delegatedFrom;
     const originCards = getCards(originUserId);
-    // Busca por delegationId (mais preciso) ou por título + delegatedTo
+
+    // Pega o cardId original via lista de delegações
+    const delegation = getDelegations().find(d => d.id === card.delegationId);
+    const originCardId = delegation?.cardId;
+
     const originCard = originCards.find(c =>
-      (card.delegationId && c.id === card.delegationId) ||
+      (originCardId && c.id === originCardId) ||
       (c.delegatedTo?.includes(currentUser.id) && c.title === card.title) ||
       c.title === card.title
     );
+
     if (originCard && originCard.column !== 'done') {
       originCard.column = 'done';
       saveCards(originUserId, originCards);
     }
-    // Notifica o dono com badge
+    // Notifica o dono
     const notifs = getNotifications(originUserId);
     notifs.push({
       id: genId(),
