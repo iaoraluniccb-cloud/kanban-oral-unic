@@ -2806,12 +2806,20 @@ function onDrop(e, toCol) {
 }
 
 function syncDoneToOrigin(card) {
-  const allCards = window._cache.cards || {};
+  // Usa leitura direta do Firestore para garantir dados frescos
+  _syncDoneToOriginAsync(card).catch(e => console.error('syncDoneToOrigin error:', e));
+}
+
+async function _syncDoneToOriginAsync(card) {
+  const { getDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
 
   // --- Delegação: marca original como concluído e notifica dono ---
   if (card.isDelegation && card.delegatedFrom) {
     const originUserId = card.delegatedFrom;
-    const originCards = getCards(originUserId);
+
+    // Lê direto do Firestore para ter os dados mais recentes
+    const snap = await getDoc(window.__doc('ou_cards', originUserId));
+    const originCards = snap.exists() ? JSON.parse(snap.data().cards || '[]') : [];
 
     // Pega o cardId original via lista de delegações
     const delegation = getDelegations().find(d => d.id === card.delegationId);
@@ -2825,7 +2833,9 @@ function syncDoneToOrigin(card) {
 
     if (originCard && originCard.column !== 'done') {
       originCard.column = 'done';
-      saveCards(originUserId, originCards);
+      // Atualiza cache local também
+      window._cache.cards[originUserId] = originCards;
+      await saveCards(originUserId, originCards);
     }
     // Notifica o dono
     const notifs = getNotifications(originUserId);
@@ -2843,8 +2853,12 @@ function syncDoneToOrigin(card) {
   if (card.sharedChatId || card.sharedOriginId || card.sharedWith?.length) {
     const chatId = card.sharedChatId;
     const originId = card.sharedOriginId || card.id;
-    Object.entries(allCards).forEach(([uid, cardArr]) => {
-      if (!Array.isArray(cardArr)) return;
+    const allUsers = Object.keys(window._cache.cards || {});
+
+    for (const uid of allUsers) {
+      // Lê direto do Firestore para dados frescos
+      const snap = await getDoc(window.__doc('ou_cards', uid));
+      const cardArr = snap.exists() ? JSON.parse(snap.data().cards || '[]') : [];
       let changed = false;
       cardArr.forEach(c => {
         const isRelated =
@@ -2857,7 +2871,8 @@ function syncDoneToOrigin(card) {
         }
       });
       if (changed) {
-        saveCards(uid, cardArr);
+        window._cache.cards[uid] = cardArr;
+        await saveCards(uid, cardArr);
         // Notifica cada participante (exceto quem concluiu)
         if (uid !== currentUser.id) {
           const notifs = getNotifications(uid);
@@ -2871,7 +2886,7 @@ function syncDoneToOrigin(card) {
           saveNotifications(uid, notifs);
         }
       }
-    });
+    }
   }
 }
 
