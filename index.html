@@ -2808,17 +2808,21 @@ function onDrop(e, toCol) {
 function syncDoneToOrigin(card) {
   const allCards = window._cache.cards || {};
 
-  // --- Delegação: avisa o dono original ---
+  // --- Delegação: marca original como concluído e notifica dono ---
   if (card.isDelegation && card.delegatedFrom) {
     const originUserId = card.delegatedFrom;
     const originCards = getCards(originUserId);
-    // Acha o card original pelo título + delegatedTo
-    const originCard = originCards.find(c => c.delegatedTo?.includes(currentUser.id) && c.title === card.title);
+    // Busca por delegationId (mais preciso) ou por título + delegatedTo
+    const originCard = originCards.find(c =>
+      (card.delegationId && c.id === card.delegationId) ||
+      (c.delegatedTo?.includes(currentUser.id) && c.title === card.title) ||
+      c.title === card.title
+    );
     if (originCard && originCard.column !== 'done') {
       originCard.column = 'done';
       saveCards(originUserId, originCards);
     }
-    // Notifica o dono
+    // Notifica o dono com badge
     const notifs = getNotifications(originUserId);
     notifs.push({
       id: genId(),
@@ -2830,21 +2834,38 @@ function syncDoneToOrigin(card) {
     saveNotifications(originUserId, notifs);
   }
 
-  // --- Compartilhado: sincroniza todas as cópias ---
-  if (card.sharedChatId || card.sharedOriginId) {
+  // --- Compartilhado: sincroniza card original e todas as cópias ---
+  if (card.sharedChatId || card.sharedOriginId || card.sharedWith?.length) {
     const chatId = card.sharedChatId;
     const originId = card.sharedOriginId || card.id;
-    // Atualiza todas as cópias em todos os boards
     Object.entries(allCards).forEach(([uid, cardArr]) => {
       if (!Array.isArray(cardArr)) return;
       let changed = false;
       cardArr.forEach(c => {
-        if ((c.sharedOriginId === originId || c.id === originId || (chatId && c.sharedChatId === chatId)) && c.column !== 'done') {
+        const isRelated =
+          c.id === originId ||
+          c.sharedOriginId === originId ||
+          (chatId && c.sharedChatId === chatId);
+        if (isRelated && c.column !== 'done') {
           c.column = 'done';
           changed = true;
         }
       });
-      if (changed) saveCards(uid, cardArr);
+      if (changed) {
+        saveCards(uid, cardArr);
+        // Notifica cada participante (exceto quem concluiu)
+        if (uid !== currentUser.id) {
+          const notifs = getNotifications(uid);
+          notifs.push({
+            id: genId(),
+            type: 'task_done',
+            message: `✅ ${currentUser.name} concluiu "${card.title}"`,
+            read: false,
+            createdAt: new Date().toISOString()
+          });
+          saveNotifications(uid, notifs);
+        }
+      }
     });
   }
 }
