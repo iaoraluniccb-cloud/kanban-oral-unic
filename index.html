@@ -3008,6 +3008,7 @@ async function _syncDoneToOriginAsync(card) {
 
     const originCard = originCards.find(c =>
       (originCardId && c.id === originCardId) ||
+      (c.delegationIdMap && c.delegationIdMap[currentUser.id]) ||
       (c.delegatedTo?.includes(currentUser.id) && c.title === card.title) ||
       c.title === card.title
     );
@@ -3301,6 +3302,7 @@ function sendDelegation(cardId) {
 
   const delegations = getDelegations();
 
+  const newDelegationMap = {};
   selectedDelegateUserIds.forEach(toUserId => {
     const delegation = {
       id: genId(),
@@ -3318,6 +3320,7 @@ function sendDelegation(cardId) {
     };
     delegations.push(delegation);
 
+      newDelegationMap[toUserId] = delegation.id;
     // Add card to recipient's board
     const recipientCards = getCards(toUserId);
     recipientCards.push({
@@ -3354,6 +3357,7 @@ function sendDelegation(cardId) {
   // Salva no card original quem foi delegado
   const delegatedToIds = [...selectedDelegateUserIds];
   card.delegatedTo = [...new Set([...(card.delegatedTo || []), ...delegatedToIds])];
+  card.delegationIdMap = Object.assign({}, card.delegationIdMap || {}, newDelegationMap);
   saveCards(currentUser.id, cards);
 
   saveDelegations(delegations);
