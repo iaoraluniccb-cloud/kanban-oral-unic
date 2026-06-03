@@ -3015,8 +3015,8 @@ async function _syncDoneToOriginAsync(card) {
     );
 
     if (originCard && originCard.column !== 'done') {
-      // Não move para done automaticamente — marca verde e deixa o dono decidir
       originCard.delegationDone = true;
+      originCard.column = 'done';
       window._cache.cards[originUserId] = originCards;
       await saveCards(originUserId, originCards);
     }
@@ -3050,8 +3050,8 @@ async function _syncDoneToOriginAsync(card) {
           c.sharedOriginId === originId ||
           (chatId && c.sharedChatId === chatId);
         if (isRelated && c.column !== 'done') {
-          // Marca verde sem mover para done — dono decide
           c.delegationDone = true;
+          c.column = 'done';
           changed = true;
         }
         if (isRelated && c.column === 'done') {
