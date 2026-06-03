@@ -2480,8 +2480,10 @@ function renderCard(card) {
   let dateHtml = '';
   let isOverdue = false;
   if (card.dueDate) {
-    const due = new Date(card.dueDate + 'T00:00:00');
-    isOverdue = due < today && card.column !== 'done';
+    const due = card.dueTime
+      ? new Date(card.dueDate + 'T' + card.dueTime + ':00')
+      : new Date(card.dueDate + 'T23:59:59');
+    isOverdue = due < new Date() && card.column !== 'done';
     dateHtml = `<span class="card-date ${isOverdue ? 'overdue' : ''}">📅 ${formatDate(card.dueDate)}${card.dueTime ? ' ' + card.dueTime : ''}${isOverdue ? ' · FORA DO PRAZO' : ''}</span>`;
   }
   let delegHtml = '';
@@ -3362,8 +3364,10 @@ function checkOverdueAndNotify() {
     if (!Array.isArray(cardArray)) return;
     cardArray.forEach(card => {
       if (!card.dueDate || card.column === 'done') return;
-      const due = new Date(card.dueDate + 'T00:00:00');
-      if (due < today) overdueCards.push({ ...card, _ownerId: ownerId });
+      const due = card.dueTime
+        ? new Date(card.dueDate + 'T' + card.dueTime + ':00')
+        : new Date(card.dueDate + 'T23:59:59');
+      if (due <= new Date()) overdueCards.push({ ...card, _ownerId: ownerId });
     });
   });
 
@@ -3746,8 +3750,10 @@ function renderOverdueTeamPanel() {
     const owner = getUserById(ownerId);
     cardArray.forEach(card => {
       if (!card.dueDate || card.column === 'done') return;
-      const due = new Date(card.dueDate + 'T00:00:00');
-      if (due < today) overdueList.push({ card, ownerName: owner ? owner.name : ownerId, ownerColor: owner?.color || '#888' });
+      const due = card.dueTime
+        ? new Date(card.dueDate + 'T' + card.dueTime + ':00')
+        : new Date(card.dueDate + 'T23:59:59');
+      if (due <= new Date()) overdueList.push({ card, ownerName: owner ? owner.name : ownerId, ownerColor: owner?.color || '#888' });
     });
   });
 
