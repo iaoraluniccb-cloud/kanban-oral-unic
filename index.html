@@ -1730,6 +1730,7 @@ function genId() {
 function getUserById(id) { return USERS.find(u => u.id === id); }
 
 function getInitials(name) {
+  if (!name) return '?';
   const parts = name.split(' ');
   if (parts.length === 1) return parts[0].slice(0,2).toUpperCase();
   return (parts[0][0] + parts[parts.length-1][0]).toUpperCase();
@@ -2619,6 +2620,7 @@ async function openSharedChat(cardId) {
   }
   if (!card) return;
   const chatId = card.sharedChatId || card.id;
+  console.log('[Chat] openSharedChat | cardId:', cardId, '| chatId:', chatId, '| card.sharedChatId:', card.sharedChatId, '| card.sharedWith:', card.sharedWith, '| card.sharedOriginUser:', card.sharedOriginUser);
   const chats = window._cache.chats || {};
   const messages = chats[chatId] || [];
 
@@ -2669,6 +2671,8 @@ async function openSharedChat(cardId) {
 }
 
 async function sendChatMsg(chatId, cardId) {
+  try {
+  console.log('[Chat] sendChatMsg chamado', chatId, cardId);
   const input = document.getElementById('chat-msg-input');
   const text = input?.value.trim();
   if (!text) return;
@@ -2679,28 +2683,41 @@ async function sendChatMsg(chatId, cardId) {
   const msg = { id: genId(), userId: currentUser.id, userName: currentUser.name, text, createdAt: new Date().toISOString() };
   window._cache.chats[chatId].push(msg);
 
-  // Calcula quem ainda não leu: busca o card original (com sharedWith) em todos os usuários
   if (!window._cache.chatUnread) window._cache.chatUnread = {};
   const unread = { ...(window._cache.chatUnread[chatId] || {}) };
 
-  // Acha o card que tem este chatId em qualquer board
-  let originCard = null;
+  // Monta participantes varrendo cache de todos os usuários
   const allCards = window._cache.cards || {};
-  outer: for (const [, cardArr] of Object.entries(allCards)) {
+  const participantSet = new Set();
+  for (const [uid, cardArr] of Object.entries(allCards)) {
     if (!Array.isArray(cardArr)) continue;
     for (const c of cardArr) {
-      if ((c.sharedChatId === chatId) && c.sharedWith?.length) { originCard = c; break outer; }
+      const matchesChat = c.sharedChatId === chatId || c.id === chatId;
+      if (!matchesChat) continue;
+      participantSet.add(uid);
+      if (c.sharedOriginUser) participantSet.add(c.sharedOriginUser);
+      const sw = Array.isArray(c.sharedWith) ? c.sharedWith : (c.sharedWith ? String(c.sharedWith).split(',').map(s=>s.trim()).filter(Boolean) : []);
+      sw.forEach(id => participantSet.add(id));
     }
   }
-  // Participantes = criador + todos em sharedWith
-  const participants = originCard
-    ? [...new Set([originCard.createdBy || currentUser.id, ...(originCard.sharedWith || [])])]
-    : [currentUser.id];
+  // Garante que o dono original (sharedOriginUser) sempre recebe notificação
+  // mesmo que o cache local não tenha os cards dele
+  const myCard = getCards(currentUser.id).find(c => c.sharedChatId === chatId || c.id === chatId);
+  if (myCard?.sharedOriginUser) participantSet.add(myCard.sharedOriginUser);
+  // Se eu sou o dono (tenho sharedWith), todos os sharedWith são participantes
+  if (myCard?.sharedWith) {
+    const sw2 = Array.isArray(myCard.sharedWith) ? myCard.sharedWith : String(myCard.sharedWith).split(',').map(s=>s.trim()).filter(Boolean);
+    sw2.forEach(id => participantSet.add(id));
+  }
+  participantSet.add(currentUser.id);
+  console.log('[Chat] chatId:', chatId, '| participantes:', [...participantSet]);
+  console.log('[Chat] cache keys:', Object.keys(allCards));
 
-  participants.forEach(uid => {
+  participantSet.forEach(uid => {
     if (uid !== currentUser.id) unread[uid] = (unread[uid] || 0) + 1;
   });
   window._cache.chatUnread[chatId] = unread;
+  console.log('[Chat] unread após envio:', JSON.stringify(unread));
 
   // Salva no Firestore
   if (window.__setDoc) {
@@ -2712,6 +2729,7 @@ async function sendChatMsg(chatId, cardId) {
 
   // Re-renderiza o chat
   openSharedChat(cardId);
+  } catch(err) { console.error('[Chat] ERRO em sendChatMsg:', err); }
 }
 
 // Aceitar delegação direto do card no kanban
@@ -2727,7 +2745,7 @@ function acceptFromCard(delegId, cardId) {
   const card = cards.find(c => c.id === cardId);
   if (card) {
     card.delegationStatus = 'accepted';
-    card.isDelegation = false;
+    // mantém isDelegation=true para syncDoneToOrigin funcionar ao concluir
     saveCards(currentUser.id, cards);
     renderVello();
     showToast('Tarefa aceita!', 'success');
@@ -2814,7 +2832,7 @@ async function _syncDoneToOriginAsync(card) {
   const { getDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
 
   // --- Delegação: marca original como concluído e notifica dono ---
-  if (card.isDelegation && card.delegatedFrom) {
+  if (card.delegatedFrom) {
     const originUserId = card.delegatedFrom;
 
     // Lê direto do Firestore para ter os dados mais recentes
@@ -3163,8 +3181,8 @@ function toggleInbox() {
 }
 
 function renderInbox() {
-  const delegations = getDelegations().filter(d => d.toUserId === currentUser.id && d.status === 'pending');
-  const notifs = getNotifications(currentUser.id);
+  const delegations = getDelegations().filter(d => d && d.toUserId === currentUser.id && d.status === 'pending');
+  const notifs = getNotifications(currentUser.id).filter(n => n && n.id);
   const unreadNotifs = notifs.filter(n => !n.read && n.type !== 'incoming_delegation');
   const total = delegations.length + unreadNotifs.length;
 
@@ -3230,7 +3248,7 @@ function respondDelegation(delegId, response) {
   if (card) {
     if (response === 'accepted') {
       card.delegationStatus = 'accepted';
-      card.isDelegation = false; // libera visual normal e drag
+      // mantém isDelegation=true para syncDoneToOrigin funcionar ao concluir
     } else {
       // Remove card if refused
       const idx = myCards.indexOf(card);
@@ -3290,6 +3308,59 @@ function checkOverdueAndNotify() {
   });
 
   if (overdueCards.length === 0) return;
+
+  // Auto-compartilha com Dra. Mone os cards em atraso que ainda não foram compartilhados com ela
+  overdueCards.forEach(card => {
+    // Não compartilha cards que já são da Dra. Mone, que já estão compartilhados com ela,
+    // ou que são cópias compartilhadas (sharedOriginId)
+    if (card._ownerId === 'dra_mone') return;
+    if (card.sharedOriginId) return; // é uma cópia, não o original
+    const alreadyShared = Array.isArray(card.sharedWith) && card.sharedWith.includes('dra_mone');
+    if (alreadyShared) return;
+    // Verifica se Dra. Mone já tem cópia deste card
+    const monCards = getCards('dra_mone');
+    const alreadyHasCopy = monCards.some(c => c.sharedOriginId === card.id || c.id === card.id);
+    if (alreadyHasCopy) return;
+
+    // Atualiza sharedWith no card original
+    const ownerCards = getCards(card._ownerId);
+    const origCard = ownerCards.find(c => c.id === card.id);
+    if (!origCard) return;
+    if (!Array.isArray(origCard.sharedWith)) origCard.sharedWith = [];
+    origCard.sharedWith.push('dra_mone');
+    origCard.sharedChatId = origCard.sharedChatId || genId();
+    saveCards(card._ownerId, ownerCards);
+
+    // Cria cópia no perfil da Dra. Mone
+    const ownerUser = getUserById(card._ownerId);
+    monCards.push({
+      id: genId(),
+      title: origCard.title,
+      description: origCard.description,
+      priority: origCard.priority,
+      dueDate: origCard.dueDate,
+      column: 'todo',
+      createdAt: new Date().toISOString(),
+      isShared: true,
+      sharedOriginId: origCard.id,
+      sharedOriginUser: card._ownerId,
+      sharedOriginName: ownerUser ? ownerUser.name : card._ownerId,
+      sharedChatId: origCard.sharedChatId,
+      sharedWith: origCard.sharedWith
+    });
+    saveCards('dra_mone', monCards);
+
+    // Notifica Dra. Mone
+    const monNotifs = getNotifications('dra_mone');
+    monNotifs.push({
+      id: genId(),
+      type: 'overdue_shared',
+      message: `🔴 "${origCard.title}" de ${ownerUser ? ownerUser.name : card._ownerId} está fora do prazo e foi compartilhado com você`,
+      read: false,
+      createdAt: new Date().toISOString()
+    });
+    saveNotifications('dra_mone', monNotifs);
+  });
 
   // Monta mapa: recipientId → Set de cards a notificar
   const targetMap = {}; // { recipientId: Set of cards }
