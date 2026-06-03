@@ -1,0 +1,2294 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Conferência de Agenda — Oral Unic Carlos Barbosa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+SC:wght@300;400&family=Cormorant:ital,wght@0,400;1,300&family=Josefin+Sans:wght@300;400&display=swap" rel="stylesheet">
+<!-- PDF.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<!-- SheetJS para leitura de XLSX -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  /* ============================================================
+     DESIGN SYSTEM — ORAL UNIC CARLOS BARBOSA
+     Paleta: Vinho Rosado #8B2D42 | Marfim #FDF9F4 | Creme #F5EDE2
+  ============================================================ */
+  :root {
+    --vinho:       #8B2D42;
+    --vinho-deep:  #6A1F30;
+    --vinho-light: #B85C72;
+    --cobre:       #C4955A;
+    --marfim:      #FDF9F4;
+    --creme:       #F5EDE2;
+    --blush:       #EDDDD4;
+    --warm:        #E0C9B8;
+    --moka:        #3D2A20;
+    --tinta:       #1A0F0A;
+    --white:       #ffffff;
+    --border:      #E0C9B8;
+    --text:        #1A0F0A;
+    --text-muted:  #3D2A20;
+    /* Semânticos */
+    --danger:       #C0392B;
+    --danger-light: #FDECEA;
+    --warning:      #B8860B;
+    --warning-light:#FEF6E0;
+    --success:      #2E7D32;
+    --success-light:#EAF4EA;
+    --info:         #6A1F30;
+    --info-light:   #F5EDE2;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Josefin Sans', sans-serif;
+    font-weight: 300;
+    background: var(--marfim);
+    color: var(--text);
+    font-size: 13px;
+    letter-spacing: 0.04em;
+  }
+
+  /* ── HEADER ─────────────────────────────────────── */
+  .header {
+    background: var(--vinho-deep);
+    color: var(--marfim);
+    padding: 0 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 64px;
+    box-shadow: 0 2px 12px rgba(106,31,48,.35);
+  }
+  .header-brand { display: flex; align-items: center; gap: 14px; }
+  .header-logo {
+    width: 36px; height: 36px;
+    background: var(--cobre);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .header h1 {
+    font-family: 'Cormorant SC', serif;
+    font-weight: 400;
+    font-size: 17px;
+    letter-spacing: 0.12em;
+    color: var(--marfim);
+  }
+  .header-sub {
+    font-family: 'Josefin Sans', sans-serif;
+    font-weight: 300;
+    font-size: 10px;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--warm);
+    margin-top: 2px;
+  }
+  .header-date {
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 11px;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--warm);
+    opacity: .7;
+  }
+
+  /* ── LAYOUT ─────────────────────────────────────── */
+  .layout { display: grid; grid-template-columns: 300px 1fr; min-height: calc(100vh - 64px); }
+  .sidebar {
+    background: var(--creme);
+    border-right: 1px solid var(--border);
+    padding: 20px;
+    overflow-y: auto;
+  }
+  .main { padding: 24px; overflow-y: auto; background: var(--marfim); }
+
+  /* ── CARDS ───────────────────────────────────────── */
+  .card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .card-title {
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 10px;
+    font-weight: 400;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--vinho);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--blush);
+  }
+
+  /* ── FORM ────────────────────────────────────────── */
+  label {
+    font-size: 10px;
+    font-weight: 400;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    display: block;
+    margin-bottom: 4px;
+  }
+  select, input[type=text], input[type=time], input[type=number], textarea {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    color: var(--text);
+    background: var(--marfim);
+    margin-bottom: 10px;
+    transition: border-color .15s;
+  }
+  select:focus, input:focus, textarea:focus {
+    outline: none;
+    border-color: var(--vinho);
+    box-shadow: 0 0 0 2px rgba(139,45,66,.12);
+  }
+  textarea { resize: vertical; min-height: 80px; font-size: 12px; }
+
+  /* ── DENTISTAS CHECKBOXES ────────────────────────── */
+  .dentistas-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+  .dentista-check {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 8px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all .15s;
+    background: var(--marfim);
+  }
+  .dentista-check:hover { border-color: var(--vinho); background: var(--blush); }
+  .dentista-check input { accent-color: var(--vinho); width: 13px; height: 13px; cursor: pointer; }
+  .dentista-check span { font-size: 11px; font-weight: 400; letter-spacing: 0.04em; }
+  .dentista-check.checked { border-color: var(--vinho); background: var(--blush); }
+
+  /* ── BUTTONS ──────────────────────────────────────── */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 9px 18px;
+    border-radius: 5px;
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    cursor: pointer;
+    border: none;
+    transition: all .2s;
+  }
+  .btn-primary { background: var(--vinho); color: var(--marfim); width: 100%; }
+  .btn-primary:hover { background: var(--vinho-deep); }
+  .btn-secondary { background: var(--blush); color: var(--vinho); }
+  .btn-secondary:hover { background: var(--warm); }
+  .btn-sm { padding: 5px 12px; font-size: 10px; }
+  .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text-muted); }
+  .btn-ghost:hover { border-color: var(--vinho); color: var(--vinho); }
+  .btn-danger { background: var(--danger-light); color: var(--danger); border: 1px solid #f5c6c2; }
+  .btn-success { background: var(--success-light); color: var(--success); }
+
+  /* ── TABS ─────────────────────────────────────────── */
+  .tabs {
+    display: flex; gap: 0; margin-bottom: 20px;
+    border-bottom: 2px solid var(--border);
+  }
+  .tab {
+    padding: 10px 16px;
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 10px;
+    font-weight: 400;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    transition: all .15s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .tab:hover { color: var(--vinho); }
+  .tab.active { color: var(--vinho); border-color: var(--vinho); }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* ── ISSUES / ALERTAS ─────────────────────────────── */
+  .issue-list { display: flex; flex-direction: column; gap: 8px; }
+  .issue-item {
+    display: flex; gap: 10px; align-items: flex-start;
+    padding: 11px 14px;
+    border-radius: 6px;
+    border-left: 3px solid;
+  }
+  .issue-danger  { background: var(--danger-light);  border-color: var(--danger);  }
+  .issue-warning { background: var(--warning-light); border-color: var(--warning); }
+  .issue-info    { background: var(--info-light);    border-color: var(--vinho-light); }
+  .issue-success { background: var(--success-light); border-color: var(--success); }
+  .issue-icon { font-size: 15px; flex-shrink: 0; margin-top: 1px; }
+  .issue-body { flex: 1; }
+  .issue-title { font-weight: 400; font-size: 13px; margin-bottom: 3px; letter-spacing: .02em; }
+  .issue-detail { font-size: 11px; color: var(--text-muted); line-height: 1.6; letter-spacing: .02em; }
+  .issue-tag {
+    display: inline-block; padding: 1px 7px; border-radius: 3px;
+    font-size: 10px; font-weight: 400; letter-spacing: .04em;
+    background: rgba(139,45,66,.10); color: var(--vinho);
+    margin-right: 4px;
+  }
+
+  /* ── SUMMARY BOXES ────────────────────────────────── */
+  .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+  .summary-box {
+    border-radius: 7px; padding: 14px 16px; text-align: center;
+    border: 1px solid transparent;
+  }
+  .summary-box .num {
+    font-family: 'Cormorant SC', serif;
+    font-size: 30px; font-weight: 300; line-height: 1;
+  }
+  .summary-box .lbl {
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 9px; letter-spacing: .28em; text-transform: uppercase;
+    margin-top: 5px; opacity: .75;
+  }
+
+  /* ── AGENDA TABLE ─────────────────────────────────── */
+  .agenda-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .agenda-table th {
+    background: var(--vinho-deep); color: var(--marfim);
+    padding: 9px 11px; text-align: left;
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 9px; font-weight: 400; letter-spacing: .28em; text-transform: uppercase;
+    position: sticky; top: 0; z-index: 1;
+  }
+  .agenda-table td { padding: 8px 11px; border-bottom: 1px solid var(--blush); vertical-align: middle; }
+  .agenda-table tbody tr:hover td { background: var(--creme); }
+  .agenda-table tbody tr.has-issue td { background: #fef6ed; }
+  .status-badge {
+    display: inline-block; padding: 2px 8px; border-radius: 20px;
+    font-size: 10px; letter-spacing: .04em;
+  }
+  .status-ok   { background: var(--success-light); color: var(--success); }
+  .status-warn { background: var(--warning-light); color: var(--warning); }
+  .status-err  { background: var(--danger-light);  color: var(--danger);  }
+
+  /* ── SECTION TITLE ────────────────────────────────── */
+  .section-title {
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 10px; letter-spacing: .28em; text-transform: uppercase;
+    color: var(--vinho); font-weight: 400;
+    margin: 20px 0 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  /* ── BADGE CONTADOR ───────────────────────────────── */
+  .badge-count {
+    background: var(--danger); color: white;
+    font-size: 9px; font-weight: 400; letter-spacing: .04em;
+    padding: 1px 7px; border-radius: 20px;
+  }
+  .badge-count.warn { background: var(--warning); }
+  .badge-count.ok   { background: var(--success); }
+  .badge-count.info { background: var(--vinho); }
+
+  /* ── FLAGS ────────────────────────────────────────── */
+  .flag { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 3px; }
+  .flag-red    { background: var(--danger); }
+  .flag-yellow { background: var(--warning); }
+  .flag-blue   { background: var(--vinho); }
+
+  /* ── TIME DISPLAY ─────────────────────────────────── */
+  .time-display { font-family: 'Cormorant SC', serif; font-size: 14px; color: var(--vinho); font-weight: 400; }
+
+  /* ── TIMELINE ─────────────────────────────────────── */
+  .timeline { display: flex; flex-direction: column; gap: 4px; }
+  .timeline-slot {
+    display: flex; gap: 10px; align-items: center;
+    padding: 8px 12px; border-radius: 5px;
+  }
+  .timeline-slot.livre { background: var(--danger-light); border-left: 3px solid var(--danger); }
+  .timeline-slot.ocupado { background: var(--success-light); border-left: 3px solid var(--success); }
+  .timeline-time { font-family: 'Cormorant SC', serif; font-size: 13px; min-width: 90px; color: var(--vinho); }
+  .timeline-desc { font-size: 12px; flex: 1; }
+
+  /* ── EMPTY STATE ──────────────────────────────────── */
+  .empty-state { text-align: center; padding: 56px 20px; color: var(--text-muted); }
+  .empty-state .icon { font-size: 38px; margin-bottom: 14px; opacity: .5; }
+  .empty-state h3 {
+    font-family: 'Cormorant SC', serif; font-size: 18px; font-weight: 300;
+    letter-spacing: .12em; margin-bottom: 8px; color: var(--vinho);
+  }
+  .empty-state p { font-size: 12px; line-height: 1.7; letter-spacing: .04em; }
+
+  /* ── TEMPOS EDITOR TABLE ──────────────────────────── */
+  .editor-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .editor-table th {
+    background: var(--vinho); color: var(--marfim);
+    padding: 8px 10px; text-align: left;
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 9px; letter-spacing: .28em; text-transform: uppercase;
+    position: sticky; top: 0; z-index: 2;
+  }
+  .editor-table td { padding: 6px 8px; border-bottom: 1px solid var(--blush); vertical-align: middle; }
+  .editor-table tbody tr:hover td { background: var(--creme); }
+  .editor-table input[type=number] {
+    width: 70px; padding: 4px 6px; margin: 0;
+    text-align: center; font-family: 'Cormorant SC', serif; font-size: 13px;
+  }
+  .editor-table select { width: 120px; padding: 4px 6px; margin: 0; font-size: 11px; }
+  .rx-badge {
+    display: inline-block; padding: 2px 8px; border-radius: 20px;
+    font-size: 10px; letter-spacing: .04em;
+  }
+  .rx-pan  { background: var(--warning-light); color: var(--warning); }
+  .rx-tomo { background: var(--danger-light);  color: var(--danger);  }
+  .rx-none { background: var(--blush); color: var(--text-muted); }
+
+  .toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+  .toolbar input[type=text] { max-width: 240px; margin-bottom: 0; }
+
+  /* ── MODAL ────────────────────────────────────────── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(26,15,10,.45);
+    z-index: 100; align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--white); border-radius: 8px; padding: 24px;
+    width: 480px; max-width: 95vw; max-height: 90vh; overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(106,31,48,.25);
+  }
+  .modal h3 {
+    font-family: 'Cormorant SC', serif; font-size: 17px; font-weight: 300;
+    letter-spacing: .12em; color: var(--vinho); margin-bottom: 16px;
+    padding-bottom: 10px; border-bottom: 1px solid var(--border);
+  }
+  .modal .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .modal .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  .modal-footer { display: flex; gap: 8px; margin-top: 16px; justify-content: flex-end; }
+
+  /* ── RX TAGS NA AGENDA ────────────────────────────── */
+  .rx-tag-pan  { color: var(--warning); font-weight: 700; font-size: 11px; }
+  .rx-tag-tomo { color: var(--danger);  font-weight: 700; font-size: 11px; }
+
+  /* ── DIVIDER ──────────────────────────────────────── */
+  hr.divider { border: none; border-top: 1px solid var(--border); margin: 12px 0; }
+
+  /* ── AGENDA VISUAL (CALENDÁRIO) ──────────────────── */
+  .cal-wrap { overflow-x: auto; overflow-y: auto; max-height: 75vh; position: relative; }
+  .cal-grid {
+    display: grid;
+    min-width: 700px;
+    border-left: 1px solid var(--border);
+  }
+  .cal-header-row {
+    display: contents;
+  }
+  .cal-col-header {
+    background: var(--vinho-deep);
+    color: var(--marfim);
+    padding: 10px 8px;
+    text-align: center;
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 10px; letter-spacing: .18em; text-transform: uppercase;
+    border-right: 1px solid rgba(255,255,255,.1);
+    position: sticky; top: 0; z-index: 10;
+    line-height: 1.5;
+  }
+  .cal-col-header .pct {
+    font-family: 'Cormorant SC', serif;
+    font-size: 13px; letter-spacing: .08em;
+    display: block; margin-top: 3px;
+    opacity: .8;
+  }
+  .cal-time-col {
+    background: var(--creme);
+    border-right: 1px solid var(--border);
+    position: sticky; left: 0; z-index: 5;
+  }
+  .cal-time-label {
+    height: 60px;
+    display: flex; align-items: flex-start; justify-content: flex-end;
+    padding: 4px 8px 0 0;
+    font-family: 'Cormorant SC', serif;
+    font-size: 12px; color: var(--vinho);
+    border-bottom: 1px solid var(--blush);
+  }
+  .cal-body-col {
+    border-right: 1px solid var(--border);
+    position: relative;
+    background: var(--marfim);
+  }
+  .cal-cell {
+    height: 60px;
+    border-bottom: 1px solid var(--blush);
+    position: relative;
+  }
+  .cal-cell.hora-cheia { border-bottom-color: var(--warm); }
+  .cal-block {
+    position: absolute;
+    left: 2px; right: 2px;
+    border-radius: 5px;
+    padding: 4px 6px;
+    font-size: 11px;
+    overflow: hidden;
+    cursor: default;
+    border-left: 3px solid;
+    z-index: 2;
+    box-shadow: 0 1px 3px rgba(0,0,0,.08);
+    transition: box-shadow .15s;
+  }
+  .cal-block:hover { box-shadow: 0 3px 10px rgba(0,0,0,.15); z-index: 3; }
+  .cal-block .cb-nome {
+    font-weight: 400; font-size: 11px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    letter-spacing: .02em;
+  }
+  .cal-block .cb-proc {
+    font-size: 10px; opacity: .75; margin-top: 1px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .cal-block .cb-flags { font-size: 10px; margin-top: 2px; }
+  .cal-block .cb-time { font-family: 'Cormorant SC',serif; font-size: 10px; opacity: .7; }
+  .cal-livre {
+    position: absolute; left: 0; right: 0;
+    background: repeating-linear-gradient(
+      45deg, transparent, transparent 4px,
+      rgba(0,0,0,.03) 4px, rgba(0,0,0,.03) 8px
+    );
+    border-left: 2px solid var(--blush);
+    z-index: 1;
+  }
+  /* Cores por dentista */
+  .dent-0 { background: #f3eaf5; border-color: #8B2D42; color: #4a1020; }
+  .dent-1 { background: #eaf0fb; border-color: #1a56a0; color: #0d2d5e; }
+  .dent-2 { background: #eaf6ee; border-color: #1e7e34; color: #0d3d1a; }
+  .dent-3 { background: #fef6e4; border-color: #B8860B; color: #5a400a; }
+  .dent-4 { background: #fdeaf2; border-color: #c0336e; color: #5e0d30; }
+  .dent-5 { background: #e4f4fb; border-color: #0878a0; color: #033a52; }
+  .dent-6 { background: #f0f8e8; border-color: #5a8a20; color: #2a4010; }
+  .dent-7 { background: #f5f0eb; border-color: #8a6040; color: #3d2010; }
+  .cal-issue-dot {
+    display: inline-block; width: 7px; height: 7px;
+    border-radius: 50%; margin-right: 2px; vertical-align: middle;
+  }
+  /* ── DROP ZONE ────────────────────────────────────── */
+  .drop-zone {
+    border: 2px dashed var(--warm);
+    border-radius: 8px;
+    padding: 20px 14px;
+    text-align: center;
+    cursor: pointer;
+    transition: all .2s;
+    background: var(--marfim);
+    position: relative;
+  }
+  .drop-zone:hover, .drop-zone.dragover {
+    border-color: var(--vinho);
+    background: var(--blush);
+  }
+  .drop-zone.success {
+    border-color: var(--success);
+    background: var(--success-light);
+  }
+  .drop-zone.loading {
+    border-color: var(--cobre);
+    background: #fef8ee;
+    cursor: wait;
+  }
+  .drop-zone-icon { font-size: 26px; margin-bottom: 6px; display: block; }
+  .drop-zone-label {
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 10px; letter-spacing: .28em; text-transform: uppercase;
+    color: var(--text-muted); line-height: 1.6;
+  }
+  .drop-zone input[type=file] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer;
+    width: 100%; height: 100%; margin: 0; padding: 0;
+  }
+  .drop-status {
+    font-size: 11px; margin-top: 8px; letter-spacing: .04em;
+    color: var(--text-muted); min-height: 16px;
+  }
+  .drop-status.ok  { color: var(--success); font-weight: 600; }
+  .drop-status.err { color: var(--danger);  font-weight: 600; }
+  .drop-progress {
+    height: 3px; background: var(--blush); border-radius: 2px;
+    margin-top: 8px; overflow: hidden; display: none;
+  }
+  .drop-progress-bar {
+    height: 100%; background: var(--vinho);
+    border-radius: 2px; width: 0%; transition: width .3s;
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════
+     HEADER
+══════════════════════════════════════════════════ -->
+<div class="header">
+  <div class="header-brand">
+    <div class="header-logo">🦷</div>
+    <div>
+      <h1>Oral Unic Carlos Barbosa</h1>
+      <div class="header-sub">Conferência de Agenda Clínica</div>
+    </div>
+  </div>
+  <div class="header-date" id="headerDate">Domingo, 31 Mai 2026</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     LAYOUT
+══════════════════════════════════════════════════ -->
+<div class="layout">
+
+  <!-- ── SIDEBAR ── -->
+  <div class="sidebar">
+
+    <div class="card">
+      <div class="card-title">📅 Dia da Semana</div>
+      <label>Selecione o dia</label>
+      <select id="diaSemana">
+        <option value="">— Selecione —</option>
+        <option value="segunda">Segunda-feira</option>
+        <option value="terca">Terça-feira</option>
+        <option value="quarta">Quarta-feira</option>
+        <option value="quinta">Quinta-feira</option>
+        <option value="sexta">Sexta-feira</option>
+        <option value="sabado">Sábado</option>
+      </select>
+    </div>
+
+    <div class="card">
+      <div class="card-title">👨‍⚕️ Dentistas Presentes</div>
+      <p style="font-size:10px;color:var(--text-muted);margin-bottom:10px;letter-spacing:.04em;">Marque quem está no dia</p>
+      <div class="dentistas-grid" id="dentistasGrid"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📋 Agenda do Dia</div>
+
+      <!-- DRAG & DROP PDF -->
+      <div class="drop-zone" id="dropZone">
+        <input type="file" id="pdfInput" accept=".xlsx,.xls,.csv,.txt,.pdf" onchange="onFileSelect(this)">
+        <span class="drop-zone-icon" id="dropIcon">📄</span>
+        <div class="drop-zone-label" id="dropLabel">
+          Arraste o Excel (.xlsx) da agenda aqui<br>
+          <span style="opacity:.65;font-size:9px;">ou clique para selecionar · também aceita PDF e CSV</span>
+        </div>
+        <div class="drop-progress" id="dropProgress">
+          <div class="drop-progress-bar" id="dropProgressBar"></div>
+        </div>
+        <div class="drop-status" id="dropStatus"></div>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:8px;margin:10px 0;">
+        <hr style="flex:1;border:none;border-top:1px solid var(--border);">
+        <span style="font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:var(--text-muted);">ou cole</span>
+        <hr style="flex:1;border:none;border-top:1px solid var(--border);">
+      </div>
+
+      <label>Agenda (texto)</label>
+      <textarea id="agendaInput" placeholder="08:00 | 08:45 | João Silva | Restaurações | Dra Ana&#10;08:45 | 09:30 | Maria Santos | Profilaxia | Dr Scharles" rows="7"></textarea>
+
+      <hr class="divider">
+      <label>Pendências financeiras (um por linha)</label>
+      <textarea id="financeiroInput" placeholder="João Silva&#10;Carlos Pereira" rows="3"></textarea>
+
+      <button class="btn btn-primary" onclick="processarAgenda()" style="margin-top:4px;">
+        🔍 Analisar Agenda
+      </button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">⚙️ Horários de Atendimento</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div><label>Manhã — início</label><input type="time" id="inicioManha" value="08:00"></div>
+        <div><label>Manhã — fim</label><input type="time" id="fimManha" value="12:00"></div>
+        <div><label>Tarde — início</label><input type="time" id="inicioTarde" value="13:30"></div>
+        <div><label>Tarde — fim</label><input type="time" id="fimTarde" value="19:00"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── MAIN AREA ── -->
+  <div class="main" id="mainArea">
+    <div class="empty-state">
+      <div class="icon">🦷</div>
+      <h3>Nenhuma agenda analisada</h3>
+      <p>Selecione o dia, marque os dentistas presentes,<br>cole a agenda e clique em <strong>Analisar Agenda</strong>.</p>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     MODAL — ADICIONAR / EDITAR TEMPO CLÍNICO
+══════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <h3 id="modalTitle">Novo Tempo Clínico</h3>
+    <input type="hidden" id="modalIdx" value="-1">
+
+    <label>Procedimento</label>
+    <input type="text" id="mProc" placeholder="Ex: Restaurações">
+
+    <div class="form-row">
+      <div>
+        <label>Tempo (minutos)</label>
+        <input type="number" id="mMin" min="5" max="300" step="5" value="30">
+      </div>
+      <div>
+        <label>Exame necessário</label>
+        <select id="mRx">
+          <option value="">Nenhum</option>
+          <option value="panoramico">Panorâmico</option>
+          <option value="tomografia">Tomografia</option>
+        </select>
+      </div>
+    </div>
+
+    <label>Dentistas (separados por vírgula)</label>
+    <input type="text" id="mDentistas" placeholder="Dra Ana, Dr Scharles">
+
+    <div class="form-row">
+      <div>
+        <label><input type="checkbox" id="mAntes" style="width:auto;margin:0 5px 0 0;"> Exame antes da consulta</label>
+      </div>
+      <div>
+        <label><input type="checkbox" id="mApos" style="width:auto;margin:0 5px 0 0;"> Exame após a consulta</label>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="fecharModal()">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="salvarTempo()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     JAVASCRIPT
+══════════════════════════════════════════════════ -->
+<script>
+// ============================================================
+// BASE DE DADOS — TEMPOS CLÍNICOS (editável em runtime)
+// Revisado por Dr. Aurélio 31/05/26
+// rx: null | "panoramico" | "tomografia"
+// ============================================================
+let TEMPOS = [
+  { proc: "Profilaxia",                               min: 30,  dentistas: ["Dra Ana"],                          rx: null },
+  { proc: "Profilaxia",                               min: 45,  dentistas: ["Dr Scharles"],                      rx: null },
+  { proc: "Restaurações",                             min: 45,  dentistas: ["Dra Ana"],                          rx: null },
+  { proc: "Restaurações",                             min: 60,  dentistas: ["Dr Scharles"],                      rx: null },
+  { proc: "Moldagem Clareamento",                     min: 15,  dentistas: ["Dra Ana","Dr Scharles"],            rx: null },
+  { proc: "Entrega de clareamento",                   min: 15,  dentistas: ["Dra Ana","Dr Scharles"],            rx: null },
+  { proc: "Acompanhamento de Clareamento",            min: 15,  dentistas: ["Dra Ana","Dr Scharles"],            rx: null },
+  { proc: "Clareamento de consultório",               min: 60,  dentistas: ["Dra Ana"],                          rx: null },
+  { proc: "Remoção de sutura",                        min: 15,  dentistas: ["Dra Ana","Dr Scharles"],            rx: null },
+  { proc: "Acesso dente urgência",                    min: 30,  dentistas: ["Dra Ana","Dr Scharles"],            rx: "panoramico" },
+  { proc: "Endodontia Anteriores",                    min: 60,  dentistas: ["Dra Ana"],                          rx: null },
+  { proc: "Endodontia Pré-molares",                   min: 75,  dentistas: ["Dra Ana"],                          rx: null },
+  { proc: "Endodontia Posteriores",                   min: 90,  dentistas: ["Dra Ana"],                          rx: null },
+  { proc: "Pino Anterior",                            min: 30,  dentistas: ["Dra Ana"],                          rx: null },
+  { proc: "Pino Posterior",                           min: 45,  dentistas: ["Dra Ana"],                          rx: null },
+  { proc: "Clareamento Interno",                      min: 15,  dentistas: ["Endo"],                             rx: null },
+  { proc: "Orto Colagem Superior",                    min: 45,  dentistas: ["Ortodontista"],                     rx: null },
+  { proc: "Orto Colagem Inferior",                    min: 60,  dentistas: ["Ortodontista"],                     rx: null },
+  { proc: "Ortodontia Manutenção",                    min: 30,  dentistas: ["Ortodontista"],                     rx: null },
+  { proc: "Alinhadores Avaliação",                    min: 15,  dentistas: ["Dra Louise"],                       rx: null },
+  { proc: "Alinhadores Entrega",                      min: 30,  dentistas: ["Dra Louise"],                       rx: null },
+  { proc: "Remoção Aparelho Superior",                min: 45,  dentistas: ["Ortodontista","Clínico"],           rx: null },
+  { proc: "Remoção Aparelho Inferior",                min: 45,  dentistas: ["Ortodontista","Clínico"],           rx: null },
+  { proc: "Escaneamento Bruxismo",                    min: 30,  dentistas: ["Clínico","Protesista"],             rx: null },
+  { proc: "Entrega placa de bruxismo",                min: 30,  dentistas: ["Clínico","Protesista"],             rx: null },
+  // PT/PPR — 1 arcada
+  { proc: "Moldagem inicial PT PPR 1 arcada",         min: 15,  dentistas: ["Dra Ana"],                          rx: null },
+  { proc: "Moldagem funcional PT 1 arcada",           min: 30,  dentistas: ["Dra Ana"],                          rx: null },
+  { proc: "Prova armação metálica PPR 1 arcada",      min: 30,  dentistas: ["Dra Ana"],                          rx: null },
+  { proc: "Prova de rolete PT 1 arcada",              min: 30,  dentistas: ["Dra Ana"],                          rx: null },
+  { proc: "Prova de dentes PT PPR 1 arcada",          min: 30,  dentistas: ["Dra Ana"],                          rx: null },
+  { proc: "Entrega PT PPR 1 arcada",                  min: 30,  dentistas: ["Dra Ana"],                          rx: null },
+  // PT/PPR — 2 arcadas
+  { proc: "Moldagem inicial PT PPR 2 arcadas",        min: 15,  dentistas: ["Dra Ana"],                          rx: null },
+  { proc: "Moldagem funcional PT 2 arcadas",          min: 45,  dentistas: ["Dra Ana"],                          rx: null },
+  { proc: "Prova armação metálica PPR 2 arcadas",     min: 30,  dentistas: ["Dra Ana"],                          rx: null },
+  { proc: "Prova de rolete PT 2 arcadas",             min: 45,  dentistas: ["Dra Ana"],                          rx: null },
+  { proc: "Prova de dentes PT PPR 2 arcadas",         min: 30,  dentistas: ["Dra Ana"],                          rx: null },
+  { proc: "Entrega PT PPR 2 arcadas",                 min: 30,  dentistas: ["Dra Ana"],                          rx: null },
+  { proc: "Ajuste PT PPR",                            min: 15,  dentistas: ["Dra Ana"],                          rx: null },
+  // Provisório Stefany
+  { proc: "P Provisório Rolete 1 arcada",             min: 30,  dentistas: ["Dra Stefany"],                      rx: null },
+  { proc: "P Provisório Rolete 2 arcadas",            min: 45,  dentistas: ["Dra Stefany"],                      rx: null },
+  { proc: "P Provisório Prova Dentes 1 arcada",       min: 30,  dentistas: ["Dra Stefany"],                      rx: null },
+  { proc: "P Provisório Prova Dentes 2 arcadas",      min: 30,  dentistas: ["Dra Stefany"],                      rx: null },
+  { proc: "P Provisório entrega 1 arcada",            min: 30,  dentistas: ["Dra Stefany"],                      rx: null },
+  { proc: "P Provisório entrega 2 arcadas",           min: 45,  dentistas: ["Dra Stefany"],                      rx: null },
+  // Definitivo Stefany
+  { proc: "P Definitivo Moldagem 1 arcada",           min: 45,  dentistas: ["Dra Stefany"],                      rx: "panoramico", antes: true },
+  { proc: "P Definitivo Moldagem 2 arcadas",          min: 60,  dentistas: ["Dra Stefany"],                      rx: "panoramico", antes: true },
+  { proc: "P Definitivo PT Moldagem funcional",       min: 75,  dentistas: ["Dra Stefany"],                      rx: null },
+  { proc: "P Definitivo Rolete 1 arcada",             min: 45,  dentistas: ["Dra Stefany"],                      rx: null },
+  { proc: "P Definitivo Rolete 2 arcadas",            min: 60,  dentistas: ["Dra Stefany"],                      rx: null },
+  { proc: "P Definitivo PT Rolete",                   min: 60,  dentistas: ["Dra Stefany"],                      rx: null },
+  { proc: "P Definitivo Prova Dente 1 arcada",        min: 30,  dentistas: ["Dra Stefany"],                      rx: null },
+  { proc: "P Definitivo Prova Dente 2 arcadas",       min: 45,  dentistas: ["Dra Stefany"],                      rx: null },
+  { proc: "P Definitivo PT Prova Dentes",             min: 30,  dentistas: ["Dra Stefany"],                      rx: null },
+  { proc: "P Definitivo Barra 1 arcada",              min: 30,  dentistas: ["Dra Stefany"],                      rx: null, apos: true },
+  { proc: "P Definitivo Barra 2 arcadas",             min: 30,  dentistas: ["Dra Stefany"],                      rx: null, apos: true },
+  { proc: "P Definitivo PT Barra",                    min: 30,  dentistas: ["Dra Stefany"],                      rx: null },
+  { proc: "P Definitivo Prova Dente Barra 1 arcada",  min: 30,  dentistas: ["Dra Stefany"],                      rx: null },
+  { proc: "P Definitivo Prova Dente Barra 2 arcadas", min: 45,  dentistas: ["Dra Stefany"],                      rx: null },
+  { proc: "P Definitivo PT Prova Dente Barra",        min: 30,  dentistas: ["Dra Stefany"],                      rx: null },
+  { proc: "P Definitivo Entrega 1 arcada",            min: 45,  dentistas: ["Dra Stefany"],                      rx: null },
+  { proc: "P Definitivo Entrega 2 arcadas",           min: 60,  dentistas: ["Dra Stefany"],                      rx: null },
+  { proc: "P Definitivo PT Entrega",                  min: 45,  dentistas: ["Dra Stefany"],                      rx: null },
+  { proc: "Ajuste etapas Protocolo",                  min: 30,  dentistas: ["Dra Stefany"],                      rx: null },
+  // Manutenção Protocolo
+  { proc: "Manutenção Protocolo 1 arcada",            min: 45,  dentistas: ["Dra Ana","Dr Scharles"],            rx: "panoramico", antes: true },
+  { proc: "Manutenção Protocolo 2 arcadas",           min: 75,  dentistas: ["Dra Ana","Dr Scharles"],            rx: "panoramico", antes: true },
+  { proc: "Manutenção Protocolo 1 arcada Prof",       min: 60,  dentistas: ["Dra Ana","Dr Scharles"],            rx: "panoramico", antes: true },
+  { proc: "Reembasamento Protocolo Moldagem",         min: 30,  dentistas: ["Dra Ana","Dr Scharles"],            rx: null },
+  { proc: "Reembasamento Protocolo Entrega",          min: 30,  dentistas: ["Dra Ana","Dr Scharles"],            rx: null },
+  // Cirurgia / Implantes — Pré-op = TOMOGRAFIA
+  { proc: "Pré-op exodontia",                         min: 15,  dentistas: ["Dr Scharles"],                      rx: "tomografia", antes: true },
+  { proc: "Pré-op protocolos sedação implantes",      min: 30,  dentistas: ["Dr Scharles"],                      rx: "tomografia", antes: true },
+  { proc: "Pré-op Zigomáticos",                       min: 30,  dentistas: ["Dr Aurélio"],                       rx: "tomografia", antes: true },
+  // Implantes / Escaneamento / Reavaliação / Finalização = PANORÂMICO
+  { proc: "Escaneamento implante unitário",           min: 30,  dentistas: ["Dra Stefany","Dr Narton"],          rx: "panoramico", antes: true },
+  { proc: "Entrega Dente Unitário",                   min: 30,  dentistas: ["Dra Stefany","Dr Narton"],          rx: null },
+  { proc: "Escaneamento Mock-up",                     min: 30,  dentistas: ["Dra Stefany"],                      rx: null },
+  { proc: "Prova de Mock-up",                         min: 30,  dentistas: ["Dra Stefany"],                      rx: null },
+  { proc: "Reabertura Implantes Unitários",           min: 15,  dentistas: ["Dr Scharles"],                      rx: "panoramico", antes: true },
+  { proc: "Reabertura Implantes Múltiplos",           min: 30,  dentistas: ["Dr Scharles"],                      rx: "panoramico", antes: true },
+  { proc: "Reavaliações",                             min: 15,  dentistas: ["Dra Stefany"],                      rx: "panoramico", antes: true },
+  { proc: "Avaliação Dr Aurélio Dr Scharles",         min: 45,  dentistas: ["Dr Aurélio","Dr Scharles","Dra Stefany"], rx: "panoramico" },
+  { proc: "Avaliação Dra Mone paciente jovem",        min: 30,  dentistas: ["Dra Mone"],                         rx: "panoramico" },
+  { proc: "Avaliação Dra Mone paciente idoso",        min: 45,  dentistas: ["Dra Mone"],                         rx: "panoramico" },
+  { proc: "Finalização Protocolo Implantes",          min: 30,  dentistas: ["Dr Aurélio","Dra Mone"],            rx: "panoramico", antes: true },
+  { proc: "Finalização Clínico Geral Orto",           min: 15,  dentistas: ["Dra Mone"],                         rx: "panoramico", antes: true },
+  // Pós-implante
+  { proc: "Pós-op implante",                          min: 30,  dentistas: ["Dr Scharles","Dr Aurélio"],         rx: "panoramico" },
+  { proc: "Pós-op protocolo",                         min: 30,  dentistas: ["Dr Scharles","Dr Aurélio"],         rx: "panoramico" },
+];
+
+// Palavras-chave para regras de PAN/TOMO (override por keywords)
+const KEYWORDS_PAN  = ["avaliação","reavaliação","finalização","escaneamento","pós implante","pós-op","reabertura","manutenção protocolo"];
+const KEYWORDS_TOMO = ["pré-op","pre-op","pré op","pre op","pré operatorio","pre operatorio","preoperatorio","sedacao","zigomatico"];
+
+const TODOS_DENTISTAS = [
+  { id: "dra-ana",      nome: "Dra Ana",      cor: "#8B2D42" },
+  { id: "dr-scharles",  nome: "Dr Scharles",  cor: "#6A1F30" },
+  { id: "dra-stefany",  nome: "Dra Stefany",  cor: "#2E7D32" },
+  { id: "dr-aurelio",   nome: "Dr Aurélio",   cor: "#B8860B" },
+  { id: "dra-mone",     nome: "Dra Mone",     cor: "#C4955A" },
+  { id: "dra-fernanda", nome: "Dra Fernanda", cor: "#0369a1" },
+  { id: "tsb-thais",    nome: "TSB Thais",    cor: "#6A5ACD" },
+  { id: "ortodontista", nome: "Ortodontista", cor: "#6A1F30" },
+];
+
+// ── UTILS ────────────────────────────────────────────
+function normalizar(s) {
+  return (s || '').toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-z0-9\s]/g,' ').replace(/\s+/g,' ').trim();
+}
+function timeToMin(s) { const [h,m] = s.split(':').map(Number); return h*60+m; }
+function minToTime(n) { return `${Math.floor(n/60).toString().padStart(2,'0')}:${(n%60).toString().padStart(2,'0')}`; }
+
+// ── PDF.JS CONFIG ────────────────────────────────────
+if (typeof pdfjsLib !== 'undefined') {
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+}
+
+// ── DRAG & DROP + LEITURA DE PDF ─────────────────────
+function initDropZone() {
+  const zone = document.getElementById('dropZone');
+  if (!zone) return;
+
+  zone.addEventListener('dragover', e => {
+    e.preventDefault();
+    zone.classList.add('dragover');
+  });
+  zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault();
+    zone.classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if (file) processFile(file);
+  });
+}
+
+function onFileSelect(input) {
+  const file = input.files[0];
+  if (file) processFile(file);
+}
+
+function processFile(file) {
+  const zone     = document.getElementById('dropZone');
+  const icon     = document.getElementById('dropIcon');
+  const label    = document.getElementById('dropLabel');
+  const status   = document.getElementById('dropStatus');
+  const progress = document.getElementById('dropProgress');
+  const bar      = document.getElementById('dropProgressBar');
+
+  const setUI = (state, msg, pct) => {
+    zone.className = 'drop-zone' + (state ? ' ' + state : '');
+    status.className = 'drop-status' + (state === 'success' ? ' ok' : state === 'error' ? ' err' : '');
+    status.textContent = msg;
+    if (pct !== undefined) {
+      progress.style.display = 'block';
+      bar.style.width = pct + '%';
+    }
+  };
+
+  const ext = file.name.split('.').pop().toLowerCase();
+
+  if (ext === 'xlsx' || ext === 'xls') {
+    setUI('loading', 'Lendo Excel...', 20);
+    icon.textContent = '⏳';
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const wb = XLSX.read(ev.target.result, { type: 'array', cellDates: true });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, defval: '' });
+        setUI('loading', 'Convertendo colunas...', 60);
+        const agenda = converterXlsxRows(rows);
+        if (!agenda.trim()) {
+          setUI('', '⚠️ Nenhuma consulta encontrada no arquivo.', undefined);
+          icon.textContent = '⚠️';
+          return;
+        }
+        document.getElementById('agendaInput').value = agenda;
+        const n = agenda.split('\n').filter(Boolean).length;
+        setUI('success', `✅ ${file.name} — ${n} consultas`, 100);
+        icon.textContent = '✅';
+        label.textContent = file.name;
+      } catch(err) {
+        setUI('', `❌ Erro ao ler Excel: ${err.message}`, undefined);
+        icon.textContent = '❌';
+        console.error(err);
+      }
+    };
+    reader.readAsArrayBuffer(file);
+
+  } else if (ext === 'pdf') {
+    setUI('loading', 'Lendo PDF...', 10);
+    icon.textContent = '⏳';
+
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      try {
+        if (typeof pdfjsLib === 'undefined') {
+          throw new Error('PDF.js não carregou. Use txt/csv.');
+        }
+        setUI('loading', 'Extraindo texto...', 30);
+        const pdf = await pdfjsLib.getDocument({ data: ev.target.result }).promise;
+        let textoTotal = '';
+
+        for (let p = 1; p <= pdf.numPages; p++) {
+          const page = await pdf.getPage(p);
+          const content = await page.getTextContent();
+          // Reconstruir linhas agrupando por Y aproximado
+          const items = content.items;
+          const linhas = {};
+          items.forEach(item => {
+            const y = Math.round(item.transform[5] / 5) * 5;
+            linhas[y] = linhas[y] || [];
+            linhas[y].push({ x: item.transform[4], text: item.str });
+          });
+          // Ordenar por Y decrescente (topo → base), então por X
+          const ysOrdenados = Object.keys(linhas).map(Number).sort((a,b)=>b-a);
+          ysOrdenados.forEach(y => {
+            const cols = linhas[y].sort((a,b)=>a.x-b.x).map(i=>i.text.trim()).filter(Boolean);
+            textoTotal += cols.join('\t') + '\n';
+          });
+          setUI('loading', `Lendo página ${p}/${pdf.numPages}...`, 30 + (p/pdf.numPages)*50);
+        }
+
+        setUI('loading', 'Convertendo para agenda...', 85);
+        const agendaConvertida = converterTextoIndex(textoTotal);
+
+        if (agendaConvertida.length < 3) {
+          setUI('', `⚠️ ${file.name} — verifique o formato`, undefined);
+          icon.textContent = '⚠️';
+          // Ainda assim coloca o texto bruto para revisão manual
+          document.getElementById('agendaInput').value = textoTotal.trim();
+          return;
+        }
+
+        document.getElementById('agendaInput').value = agendaConvertida;
+        setUI('success', `✅ ${file.name} — ${agendaConvertida.split('\n').filter(Boolean).length} consultas extraídas`, 100);
+        icon.textContent = '✅';
+        label.textContent = file.name;
+
+      } catch (err) {
+        setUI('', `❌ Erro: ${err.message}`, undefined);
+        icon.textContent = '❌';
+        console.error(err);
+      }
+    };
+    reader.readAsArrayBuffer(file);
+
+  } else {
+    // TXT / CSV — leitura simples
+    const reader = new FileReader();
+    reader.onload = ev => {
+      document.getElementById('agendaInput').value = ev.target.result;
+      const linhas = ev.target.result.split('\n').filter(l=>l.trim()).length;
+      setUI('success', `✅ ${file.name} — ${linhas} linhas`, 100);
+      icon.textContent = '✅';
+      label.textContent = file.name;
+    };
+    reader.readAsText(file, 'UTF-8');
+  }
+}
+
+// ── CONVERTER LINHAS DO XLSX (SheetJS) ───────────────
+// Colunas do Index: HorárioInicial | HorárioFinal | N°Ficha | N°Avaliação | Paciente | Tratamento | Dentista | Observação | Tel | Cel
+function converterXlsxRows(rows) {
+  const result = [];
+  // Encontrar linha de cabeçalho (linha que tem "Horário")
+  let dataStart = 0;
+  for (let i = 0; i < rows.length; i++) {
+    const r = rows[i].join('|').toLowerCase();
+    if (r.includes('hor') && r.includes('paciente')) { dataStart = i + 1; break; }
+    if (r.includes('hor') && r.includes('ficha'))    { dataStart = i + 1; break; }
+  }
+
+  for (let i = dataStart; i < rows.length; i++) {
+    const row = rows[i];
+    if (!row || row.length < 5) continue;
+
+    const hIni = (row[0] || '').toString().trim();
+    const hFim = (row[1] || '').toString().trim();
+    if (!/^\d{1,2}:\d{2}$/.test(hIni)) continue; // linha sem horário, pular
+
+    const ficha     = (row[2] || '').toString().trim();
+    // row[3] = N° Avaliação — ignorar
+    const paciente  = capitalizarNome((row[4] || '').toString().trim());
+    const trat      = (row[5] || '').toString().replace(/\s+/g,' ').trim();
+    const dentBruto = (row[6] || '').toString().trim();
+    const obs       = (row[7] || '').toString().trim();
+
+    if (!paciente || !trat) continue;
+
+    const dentista = normalizarNomeDentista(dentBruto);
+    const fichaTag = ficha && ficha !== '0' ? ` #FICHA:${ficha}` : '';
+    result.push(`${hIni} | ${hFim} | ${paciente} | ${trat} | ${dentista} | ${obs}${fichaTag}`);
+  }
+  return result.join('\n');
+}
+
+// ── CONVERTER TEXTO EXTRAÍDO DO PDF INDEX ────────────
+// Identifica linhas do formato "Index" da Oral Unic:
+// HH:MM  HH:MM  Paciente  Tratamento  Dentista  Observação
+function converterTextoIndex(texto) {
+  const linhas = texto.split('\n').map(l=>l.trim()).filter(Boolean);
+  const result = [];
+  const reHora = /^\d{1,2}:\d{2}$/;
+
+  // Detectar colunas por tabs ou espaços múltiplos
+  for (let i = 0; i < linhas.length; i++) {
+    const cols = linhas[i].split(/\t+/).map(s=>s.trim()).filter(Boolean);
+
+    // Precisa ter pelo menos 2 colunas de horário + dados
+    if (cols.length < 4) continue;
+    if (!reHora.test(cols[0]) || !reHora.test(cols[1])) continue;
+
+    const hIni  = cols[0];
+    const hFim  = cols[1];
+    // Após os dois horários: N° Ficha e N° Avaliação são números — capturar e pular
+    let offset = 2;
+    let nFicha = '';
+    if (/^\d{1,7}$/.test(cols[offset])) { nFicha = cols[offset]; offset++; }
+    if (/^\d{5,8}$/.test(cols[offset])) offset++; // N° Avaliação (descarta)
+
+    const paciente    = cols[offset]   || '';
+    const tratamento  = cols[offset+1] || '';
+    const dentistaBruto = cols[offset+2] || '';
+    const obs         = cols.slice(offset+3).join(' ') || '';
+
+    if (!paciente || !tratamento) continue;
+
+    const dentista = normalizarNomeDentista(dentistaBruto);
+    const trat = tratamento.replace(/\s+/g,' ').trim();
+    // Inclui nFicha na obs como #FICHA:XXXX para o parser capturar
+    const obsComFicha = nFicha ? `${obs}#FICHA:${nFicha}`.trim() : obs;
+
+    result.push(`${hIni} | ${hFim} | ${capitalizarNome(paciente)} | ${trat} | ${dentista} | ${obsComFicha}`);
+  }
+  return result.join('\n');
+}
+
+function normalizarNomeDentista(nome) {
+  const n = nome.toUpperCase();
+  if (n.includes('ANA')) return 'Dra Ana';
+  if (n.includes('SCHARLES') || n.includes('FERRI')) return 'Dr Scharles';
+  if (n.includes('STEFANY') || n.includes('BITTENCOURT')) return 'Dra Stefany';
+  if (n.includes('AURELIO') || n.includes('AURÉLIO')) return 'Dr Aurélio';
+  if (n.includes('MONE')) return 'Dra Mone';
+  if (n.includes('FERNANDA')) return 'Dra Fernanda';
+  if (n.includes('TSB') || (n.includes('THAIS') && !n.includes('BITTENCOURT'))) return 'TSB Thais';
+  if (n.includes('ORTO')) return 'Ortodontista';
+  return nome.trim();
+}
+
+function capitalizarNome(s) {
+  return s.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+}
+
+// ── AGENDA SEGUNDA 01/06 (pré-carregada) ──────────────
+const AGENDA_SEGUNDA_0106 = `08:00 | 08:15 | Lorenzo Fink | Clareamento Caseiro | Dr Scharles | #FICHA:2557
+08:00 | 08:30 | Claudia Cislaghi Pedruzzi | Implante unitário Grand Morse | Dra Stefany | REMOÇÃO COROA 21 + ESC #FICHA:1398
+08:00 | 09:00 | Maria Gorreti Kinzel | Higienização de implante protocolo | Dra Ana | Higienização + reembase - PAGAMENTO COM BRENDHA #FICHA:1066
+08:15 | 10:00 | Leni da Silva Werner | Consulta inicial | Dr Scharles | cirurgia instalação de implante + provisório #FICHA:2448
+09:15 | 10:00 | Ueslei Djovani Pranke | Restauração 1 Face | Dra Ana | #FICHA:2625
+09:30 | 10:15 | Daiana Ayres Pereira | Limpeza Ultrassom | Dra Stefany | Limpeza #FICHA:2722
+10:00 | 11:00 | Maria Helena Silva de Lima | Consulta inicial | Dra Ana | Restauração do 25 - não encontrei no sistema #FICHA:2559
+10:00 | 11:15 | Juliana Quevedo | Tratamento Periodontal Moderado | Dr Scharles | Rasub #FICHA:2695
+10:15 | 11:00 | Luiz Lazari | Protocolos Fase Protética Acrílica | Dra Stefany | #FICHA:2644
+10:30 | 11:15 | Elisangela do Nascimento | Avaliação | Dr Aurélio | Quer ver a gengiva retraída #FICHA:0
+11:00 | 11:15 | Bruno Gelmini | Consulta inicial | Dra Ana | reavaliar elemento suspeita de trinca #FICHA:2473
+11:00 | 12:00 | Iris Andrioli Thums | Protocolos Fase Protética Acrílica | Dra Stefany | #FICHA:2640
+11:15 | 11:30 | Alini Magali Kremer da Rosa | Consulta inicial | Dr Scharles | Pré + tomo para implante 26 #FICHA:467
+11:30 | 12:00 | Iliana Lucinete Pezenatto | Consulta inicial | Dr Scharles | bolha do lado do dente que teve infecção #FICHA:2465
+13:30 | 14:15 | Gilson Kinzel | Restauração 2 Faces | Dra Ana | #FICHA:2516
+13:30 | 13:45 | Miguel Hammes | Consulta inicial | Dr Scharles | Pré-operatório + revisão clareamento #FICHA:2686
+13:30 | 14:15 | Karine Kemper | Avaliação | Dr Aurélio | KARINE - CHECKUP #FICHA:0
+13:30 | 14:15 | Jandira Ritter | Manutenção Protética Ajuste Prótese | Dra Stefany | entrega #FICHA:2571
+14:15 | 15:00 | Andreia Melo Deconto | Coroa Dissilicato de Lítio | Dr Aurélio | #FICHA:2142
+14:15 | 14:30 | Claudir Pontin | Clareamento Caseiro | Dra Ana | #FICHA:2589
+14:15 | 14:30 | Emir Francisco Benelli | Implante unitário Grand Morse | Dra Stefany | Caiu bioplic #FICHA:2298
+14:30 | 15:00 | Lirio Locatelli | Prótese Total entrega | Dra Ana | entrega #FICHA:2621
+14:30 | 15:00 | Beatriz Maria Chesini Girardi | Protocolos Fase Protética Acrílica | Dra Stefany | #FICHA:2446
+14:30 | 15:15 | Jotecia Chies | Limpeza Ultrassom | Dr Scharles | Profilaxia #FICHA:55
+15:00 | 15:30 | Simone Andreola | Implante unitário Grand Morse | Dra Stefany | #FICHA:1257
+15:00 | 15:45 | Arnoldo Luiz Daniel | Prótese Total | Dr Aurélio | Reembase PT sup #FICHA:2429
+15:00 | 16:00 | Catiane Siqueira Vieira Kemerich | Consulta inicial | Dra Ana | rest. 46,35,24,34 - necessário pgto! R$400 #FICHA:1939
+15:15 | 16:15 | Rosani Maria Bruchez Sipp | Higienização de implante protocolo | Dr Scharles | Higienização de protocolo duplo #FICHA:974
+15:30 | 16:30 | Vera Lucia Rambo | Prótese Total entrega | Dra Stefany | entrega pot dupla tardio #FICHA:450
+15:45 | 16:00 | Ivori Zaro | Consulta inicial | Dr Aurélio | indicado implante 47 - paciente questionador #FICHA:2593
+16:00 | 16:45 | Marlize Mazui Rosso | Endodontia Molares | Dra Ana | ENDO 17 #FICHA:2395
+16:00 | 16:45 | Junior Sauthier | Avaliação | Dr Aurélio | Siso incomodando #FICHA:0
+16:15 | 17:45 | Geovani Sauthier | Consulta inicial | Dr Scharles | NÃO FEZ PRÉ - Exo + Implante e provisório 12 #FICHA:171
+17:00 | 17:30 | Marisa Scotta Kinzel | Protocolos Fase Protética Acrílica | Dra Stefany | #FICHA:2528
+17:00 | 17:45 | Maria Gorreti Kinzel | Higienização de implante protocolo | Dra Ana | Entrega reembase #FICHA:1066
+17:30 | 18:15 | Andreia Bianchini Bohn | Protocolos Fase Protética Acrílica | Dra Stefany | #FICHA:2444
+17:45 | 18:15 | Andreia Elisa Neis Christ | Consulta inicial | Dra Ana | PAN - dente quebrou possivelmente 36 - verificar pagamento #FICHA:1005
+17:45 | 18:15 | Claudina Velasques de Menezes | Reavaliação | Dr Scharles | Para Placa de Bruxismo - passar com Brendha #FICHA:1607
+18:00 | 18:30 | Brayan Silveira Vieira | Avaliação | Dr Aurélio | Siso está incomodando #FICHA:0
+18:15 | 19:00 | Patricia Seibel Vrielink | Consulta inicial | Dr Scharles | Rasub + profilaxia #FICHA:2375
+18:15 | 19:00 | Adelmo Jochem | Consulta inicial | Dra Ana | higienização de protocolo superior - possíveis cobranças com Brendha #FICHA:489
+18:15 | 18:45 | Claudia Cislaghi Pedruzzi | Consulta inicial | Dra Stefany | Instalação coroa + ajuste dente 21 #FICHA:1398`;
+
+// ── INIT ─────────────────────────────────────────────
+function init() {
+  const grid = document.getElementById('dentistasGrid');
+  grid.innerHTML = '';
+  TODOS_DENTISTAS.forEach(d => {
+    const div = document.createElement('div');
+    div.className = 'dentista-check';
+    div.id = 'wrap-'+d.id;
+    div.innerHTML = `<input type="checkbox" id="${d.id}" value="${d.nome}">
+      <span style="color:${d.cor}">${d.nome}</span>`;
+    div.querySelector('input').addEventListener('change', e => div.classList.toggle('checked', e.target.checked));
+    grid.appendChild(div);
+  });
+  // Set header date
+  document.getElementById('headerDate').textContent =
+    new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'short',year:'numeric'});
+  initDropZone();
+}
+
+// ── PRÉ-CARREGAR AGENDA SEGUNDA ────────────────────────
+function carregarSegunda() {
+  document.getElementById('agendaInput').value = AGENDA_SEGUNDA_0106;
+  document.getElementById('diaSemana').value = 'segunda';
+  // Marcar dentistas presentes na segunda
+  ['dra-ana','dr-scharles','dra-stefany','dr-aurelio'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.checked = true; el.closest('.dentista-check').classList.add('checked'); }
+  });
+  alert('✅ Agenda de Segunda-feira 01/06 carregada!\nClique em "Analisar Agenda" para ver os resultados.');
+}
+
+// ── PARSE AGENDA — aceita 3 formatos ──────────────────
+// Formato 1: HH:MM | HH:MM | Paciente | Proc | Dentista | Obs  (com horário final)
+// Formato 2: HH:MM | Paciente | Proc | Dentista | Obs           (sem horário final)
+// Formato 3: separadores ; ou tab
+function parseAgenda(texto) {
+  const linhas = texto.split('\n').map(l=>l.trim()).filter(l=>l);
+  const consultas = [];
+  linhas.forEach((linha, idx) => {
+    const p = linha.split(/\||;|\t/).map(s=>s.trim());
+    if (p.length < 3) return;
+
+    let horarioInicio, horarioFim, paciente, procedimento, dentista, obs;
+
+    // Detectar se a segunda coluna é também um horário (formato com horário final)
+    const isHorario = s => /^\d{1,2}:\d{2}$/.test(s);
+
+    if (isHorario(p[0]) && isHorario(p[1])) {
+      // Formato: HH:MM | HH:MM | Paciente | Proc | Dentista | Obs
+      horarioInicio = p[0];
+      horarioFim    = p[1];
+      paciente      = p[2];
+      procedimento  = p[3]||'';
+      dentista      = p[4]||'';
+      obs           = p[5]||'';
+    } else if (isHorario(p[0])) {
+      // Formato: HH:MM | Paciente | Proc | Dentista | Obs
+      horarioInicio = p[0];
+      horarioFim    = null;
+      paciente      = p[1];
+      procedimento  = p[2]||'';
+      dentista      = p[3]||'';
+      obs           = p[4]||'';
+    } else return;
+
+    const m = horarioInicio.match(/^(\d{1,2}):(\d{2})$/);
+    if (!m) return;
+    const hIni = +m[1]*60 + +m[2];
+
+    let hFim = null;
+    if (horarioFim) {
+      const mf = horarioFim.match(/^(\d{1,2}):(\d{2})$/);
+      if (mf) hFim = +mf[1]*60 + +mf[2];
+    }
+
+    // Extrair nº de ficha embutido na obs pelo conversor PDF (#FICHA:XXXX)
+    let fichaNum = '';
+    let obsLimpa = obs;
+    const fichaMatch = obs.match(/#FICHA:(\d+)/);
+    if (fichaMatch) { fichaNum = fichaMatch[1]; obsLimpa = obs.replace(/#FICHA:\d+/,'').trim(); }
+
+    consultas.push({
+      id: idx,
+      horario: horarioInicio,
+      horarioFim: horarioFim || null,
+      horarioMin: hIni,
+      horarioFimMin: hFim,
+      duracao: hFim ? hFim - hIni : null,
+      paciente: paciente || '(sem nome)',
+      procedimento,
+      dentista,
+      obs: obsLimpa,
+      ficha: fichaNum,
+    });
+  });
+  return consultas.sort((a,b)=>a.horarioMin-b.horarioMin);
+}
+
+// ── MAPEAMENTO: categorias do Excel → palavras-chave ──
+// O Excel usa "Categoria - Subcategoria - Tipo"
+// Extraímos as partes relevantes para busca
+function extrairChavesProcedimento(proc) {
+  const p = normalizar(proc);
+  // Separar por " - " e pegar todas as partes
+  const partes = p.split(/\s+-\s+|\s*-\s*/);
+  // Construir set de tokens relevantes de todas as partes
+  const tokens = new Set();
+  partes.forEach(parte => {
+    parte.split(' ').filter(t=>t.length>2).forEach(t=>tokens.add(t));
+  });
+  return { p, partes, tokens };
+}
+
+// ── BUSCAR TEMPO CLÍNICO ──────────────────────────────
+function buscarTC(proc, dent) {
+  const { p: pN, partes, tokens: procTokens } = extrairChavesProcedimento(proc);
+  const dN = normalizar(dent);
+
+  // Mapeamentos diretos para procedimentos do Excel
+  const MAPA = [
+    { match: ['higienizacao','implante'],          idx: () => TEMPOS.findIndex(t=>normalizar(t.proc).includes('manutencao protocolo 1 arcada') && !normalizar(t.proc).includes('prof')) },
+    { match: ['higienizacao','protocolo'],         idx: () => TEMPOS.findIndex(t=>normalizar(t.proc).includes('manutencao protocolo 1 arcada') && !normalizar(t.proc).includes('prof')) },
+    { match: ['limpeza','ultrassom'],              idx: () => TEMPOS.findIndex(t=>normalizar(t.proc).includes('profilaxia') && t.dentistas.some(d=>normalizar(d).includes(dN)||dN.includes(normalizar(d)))) },
+    { match: ['limpeza'],                          idx: () => TEMPOS.findIndex(t=>normalizar(t.proc).includes('profilaxia') && t.dentistas.some(d=>normalizar(d).includes(dN)||dN.includes(normalizar(d)))) },
+    { match: ['restauracao','1 face'],             idx: () => TEMPOS.findIndex(t=>normalizar(t.proc).includes('restauracoes') && t.dentistas.some(d=>normalizar(d).includes(dN)||dN.includes(normalizar(d)))) },
+    { match: ['restauracao','2 faces'],            idx: () => TEMPOS.findIndex(t=>normalizar(t.proc).includes('restauracoes') && t.dentistas.some(d=>normalizar(d).includes(dN)||dN.includes(normalizar(d)))) },
+    { match: ['restauracao'],                      idx: () => TEMPOS.findIndex(t=>normalizar(t.proc).includes('restauracoes') && t.dentistas.some(d=>normalizar(d).includes(dN)||dN.includes(normalizar(d)))) },
+    { match: ['clareamento','caseiro'],            idx: () => TEMPOS.findIndex(t=>normalizar(t.proc).includes('moldagem clareamento')) },
+    { match: ['clareamento','consulto'],           idx: () => TEMPOS.findIndex(t=>normalizar(t.proc).includes('clareamento de consultorio')) },
+    { match: ['tratamento periodontal'],           idx: () => TEMPOS.findIndex(t=>normalizar(t.proc).includes('rasub')||normalizar(t.proc).includes('periodontal')) },
+    { match: ['protocolos','protetica'],           idx: () => TEMPOS.findIndex(t=>normalizar(t.proc).includes('p definitivo') && normalizar(t.proc).includes('entrega 1')) },
+    { match: ['protocolos','acrilica'],            idx: () => TEMPOS.findIndex(t=>normalizar(t.proc).includes('p definitivo') && normalizar(t.proc).includes('entrega 1')) },
+    { match: ['fase protetica'],                   idx: () => TEMPOS.findIndex(t=>normalizar(t.proc).includes('p definitivo') && normalizar(t.proc).includes('entrega 1')) },
+    { match: ['protese total'],                    idx: () => TEMPOS.findIndex(t=>normalizar(t.proc).includes('entrega pt ppr 1 arcada')) },
+    { match: ['ppr'],                              idx: () => TEMPOS.findIndex(t=>normalizar(t.proc).includes('entrega pt ppr 1 arcada')) },
+    { match: ['implante unitario'],                idx: () => TEMPOS.findIndex(t=>normalizar(t.proc).includes('escaneamento implante unitario')) },
+    { match: ['implante'],                         idx: () => TEMPOS.findIndex(t=>normalizar(t.proc).includes('escaneamento implante unitario')) },
+    { match: ['endodontia','molares'],             idx: () => TEMPOS.findIndex(t=>normalizar(t.proc).includes('endodontia posteriores')) },
+    { match: ['endodontia','pre-molares'],         idx: () => TEMPOS.findIndex(t=>normalizar(t.proc).includes('endodontia pre-molares')) },
+    { match: ['endodontia','anteriores'],          idx: () => TEMPOS.findIndex(t=>normalizar(t.proc).includes('endodontia anteriores')) },
+    { match: ['endodontia'],                       idx: () => TEMPOS.findIndex(t=>normalizar(t.proc).includes('endodontia posteriores')) },
+    { match: ['coroa','dissilicato'],              idx: () => TEMPOS.findIndex(t=>normalizar(t.proc).includes('avaliacao dr aurelio')) },
+    { match: ['reabilitacoes','indiretas'],        idx: () => TEMPOS.findIndex(t=>normalizar(t.proc).includes('avaliacao dr aurelio')) },
+    { match: ['avaliacao'],                        idx: () => TEMPOS.findIndex(t=>normalizar(t.proc).includes('avaliacao dr aurelio')) },
+    { match: ['reavaliacoes'],                     idx: () => TEMPOS.findIndex(t=>normalizar(t.proc).includes('reavaliacoes')) },
+    { match: ['reavaliacao'],                      idx: () => TEMPOS.findIndex(t=>normalizar(t.proc).includes('reavaliacoes')) },
+    { match: ['pre operatorio','implante'],        idx: () => TEMPOS.findIndex(t=>normalizar(t.proc).includes('pre-op protocolos')) },
+    { match: ['pre operatorio','exodontia'],       idx: () => TEMPOS.findIndex(t=>normalizar(t.proc).includes('pre-op exodontia')) },
+    { match: ['pre operatorio','zigomatico'],      idx: () => TEMPOS.findIndex(t=>normalizar(t.proc).includes('pre-op zigomaticos')) },
+    { match: ['pre operatorio','sedacao'],         idx: () => TEMPOS.findIndex(t=>normalizar(t.proc).includes('pre-op protocolos sedacao')) },
+    { match: ['pre operatorio'],                   idx: () => TEMPOS.findIndex(t=>normalizar(t.proc).includes('pre-op exodontia')) },
+    { match: ['preoperatorio'],                    idx: () => TEMPOS.findIndex(t=>normalizar(t.proc).includes('pre-op exodontia')) },
+    { match: ['consulta inicial'],                 idx: () => -2 }, // sinalizar para alerta dedicado
+    { match: ['manutencao protetica'],             idx: () => TEMPOS.findIndex(t=>normalizar(t.proc).includes('ajuste pt ppr')) },
+    { match: ['ajuste protese'],                   idx: () => TEMPOS.findIndex(t=>normalizar(t.proc).includes('ajuste pt ppr')) },
+    { match: ['reembasamento'],                    idx: () => TEMPOS.findIndex(t=>normalizar(t.proc).includes('reembasamento protocolo')) },
+  ];
+
+  // Tentar mapeamento direto primeiro
+  for (const m of MAPA) {
+    const bate = m.match.every(kw => pN.includes(normalizar(kw)));
+    if (bate) {
+      const i = m.idx();
+      if (i >= 0) return TEMPOS[i];
+      if (i === -1) return null;
+      if (i === -2) return 'consulta_inicial'; // sinaliza para alerta dedicado
+    }
+  }
+
+  // Fallback: score por tokens
+  let best = null, bestScore = 0;
+  for (const tc of TEMPOS) {
+    const tcN = normalizar(tc.proc);
+    const tcTokens = tcN.split(' ').filter(t=>t.length>2);
+    let score = 0;
+    tcTokens.forEach(t => { if (pN.includes(t)) score += 2; });
+    procTokens.forEach(t => { if (tcN.includes(t)) score += 1; });
+    if (tc.dentistas.some(d=>normalizar(d).includes(dN)||dN.includes(normalizar(d)))) score += 1;
+    if (score > bestScore) { bestScore = score; best = tc; }
+  }
+  return bestScore >= 4 ? best : null;
+}
+
+// ── REGRA PAN/TOMO ────────────────────────────────────
+// Retorna: null | { tipo: 'panoramico'|'tomografia', quando: 'antes'|'apos' }
+function detectarExame(proc, obs) {
+  const p = normalizar(proc);
+  const o = normalizar(obs);
+  const jaTemPan  = o.includes('pan') || o.includes('panoram');
+  const jaTemTomo = o.includes('tomo');
+
+  // ── Procedimentos que NUNCA precisam de exame
+  const semExame = [
+    'bruxismo', 'placa', 'reembasamento', 'restaura', 'multiplos', 'multiplas',
+    'clareamento', 'sutura', 'ajuste', 'consulta inicial', 'endodontia',
+    'pino', 'profilaxia', 'limpeza', 'ortodontia', 'orto', 'alinhador',
+  ];
+  if (semExame.some(k => p.includes(k))) return null;
+
+  // ── TOMOGRAFIA ANTES: apenas pré-operatório explícito e zigomático/sedação
+  if (KEYWORDS_TOMO.some(k => p.includes(normalizar(k)))) {
+    return jaTemTomo ? null : { tipo: 'tomografia', quando: 'antes' };
+  }
+
+  // ── PAN ANTES
+  const panAntes = [
+    'escaneamento', 'higienizacao', 'rolete', 'rodete',
+    'avaliacao', 'reavaliacao', 'finalizacao', 'reabertura',
+    'manutencao protocolo', 'pos-op', 'pos op', 'pos implante',
+  ];
+  if (panAntes.some(k => p.includes(k))) {
+    return jaTemPan ? null : { tipo: 'panoramico', quando: 'antes' };
+  }
+
+  // ── PAN APÓS: coroa, faceta, protocolo cirurgia, implante unitário/grand morse
+  const panApos = ['coroa', 'faceta', 'grand morse', 'protocolo'];
+  if (panApos.some(k => p.includes(k))) {
+    return jaTemPan ? null : { tipo: 'panoramico', quando: 'apos' };
+  }
+  // Implante sem escaneamento/pré = instalação cirúrgica → PAN após
+  if (p.includes('implante') && !p.includes('escaneamento') && !p.includes('pre')) {
+    return jaTemPan ? null : { tipo: 'panoramico', quando: 'apos' };
+  }
+
+  return null;
+}
+
+// ── TEMPO AGENDADO ────────────────────────────────────
+// Prioriza horário final real (quando disponível no Index)
+function tempoAgendado(consultas, idx) {
+  const c = consultas[idx];
+  // Se tem horário final explícito (formato Index), usa direto
+  if (c.horarioFimMin) return c.horarioFimMin - c.horarioMin;
+  // Senão, próxima consulta do mesmo dentista
+  const dN = normalizar(c.dentista);
+  for (let i = idx+1; i < consultas.length; i++) {
+    const n = consultas[i];
+    const nN = normalizar(n.dentista);
+    if (dN===nN || nN.includes(dN) || dN.includes(nN))
+      return n.horarioMin - c.horarioMin;
+  }
+  const fm = timeToMin(document.getElementById('fimManha').value);
+  const ft = timeToMin(document.getElementById('fimTarde').value);
+  return (c.horarioMin < fm ? fm : ft) - c.horarioMin;
+}
+
+// ── CALCULAR TEMPO LIVRE ──────────────────────────────
+function calcularLivres(consultas, dentistas) {
+  const iM = timeToMin(document.getElementById('inicioManha').value);
+  const fM = timeToMin(document.getElementById('fimManha').value);
+  const iT = timeToMin(document.getElementById('inicioTarde').value);
+  const fT = timeToMin(document.getElementById('fimTarde').value);
+  const livres = [];
+  dentistas.forEach(d => {
+    const dN = normalizar(d);
+    const cons = consultas.filter(c => {
+      const cN = normalizar(c.dentista);
+      return cN.includes(dN)||dN.includes(cN);
+    }).sort((a,b)=>a.horarioMin-b.horarioMin);
+    [{ i:iM, f:fM }, { i:iT, f:fT }].forEach(turno => {
+      let cur = turno.i;
+      cons.filter(c=>c.horarioMin>=turno.i&&c.horarioMin<turno.f).forEach(c => {
+        if (c.horarioMin > cur)
+          livres.push({ dentista:d, inicio:cur, fim:c.horarioMin, duracao:c.horarioMin-cur });
+        const tc = buscarTC(c.procedimento, c.dentista);
+        const fimReal = c.horarioFimMin || (c.horarioMin + (tc && tc !== 'consulta_inicial' ? tc.min : 30));
+        cur = Math.max(cur, fimReal);
+      });
+      if (cur < turno.f) livres.push({ dentista:d, inicio:cur, fim:turno.f, duracao:turno.f-cur });
+    });
+  });
+  return livres;
+}
+
+// ── PROCESSAR ────────────────────────────────────────
+function processarAgenda() {
+  try {
+  const texto = document.getElementById('agendaInput').value.trim();
+  if (!texto) { alert('Cole a agenda antes de analisar.'); return; }
+  const consultas = parseAgenda(texto);
+  if (!consultas.length) { alert('Nenhuma consulta encontrada.\nFormato: HH:MM | Paciente | Procedimento | Dentista | Obs'); return; }
+
+  const dentistasPresentes = [...document.querySelectorAll('#dentistasGrid input:checked')].map(i=>i.value);
+  const listaPend = document.getElementById('financeiroInput').value.trim().split('\n').map(l=>l.trim()).filter(Boolean);
+  const nomeDia = document.getElementById('diaSemana').options[document.getElementById('diaSemana').selectedIndex].text;
+
+  const issues = { tempoErrado:[], exame:[], financeiro:[], duplicado:[], consultaInicial:[] };
+
+  // ── DUPLICADOS — apenas mesma ficha (nº real, ≠ 0) ──
+  const fichasVistas = {};
+  const fichasJaMarcadas = new Set();
+
+  consultas.forEach(c => {
+    if (!c.ficha || c.ficha === '0') return;
+    if (fichasVistas[c.ficha]) {
+      if (!fichasJaMarcadas.has(c.ficha)) {
+        fichasJaMarcadas.add(c.ficha);
+        issues.duplicado.push({ c, anterior: fichasVistas[c.ficha], motivo: `Ficha nº ${c.ficha}` });
+      }
+    } else {
+      fichasVistas[c.ficha] = c;
+    }
+  });
+
+  consultas.forEach((c, idx) => {
+
+    // Consulta Inicial — sempre alertar para verificação
+    // Detecta tanto pelo MAPA quanto diretamente por keyword no procedimento
+    const procNorm = normalizar(c.procedimento);
+    const ehConsultaInicial = procNorm.includes('consulta inicial') || buscarTC(c.procedimento, c.dentista) === 'consulta_inicial';
+    if (ehConsultaInicial) {
+      issues.consultaInicial.push({ c });
+    }
+
+    // Tempo e Exame — pular para consulta inicial
+    if (!ehConsultaInicial) {
+      const tc = buscarTC(c.procedimento, c.dentista);
+      if (tc && tc !== 'consulta_inicial') {
+        const ta = tempoAgendado(consultas, idx);
+        const diff = ta - tc.min;
+        if (Math.abs(diff) > 5) issues.tempoErrado.push({ c, esperado:tc.min, agendado:ta, diff });
+      }
+      const ex = detectarExame(c.procedimento, c.obs);
+      if (ex) issues.exame.push({ c, tipo: ex.tipo, quando: ex.quando });
+    }
+
+
+    // Financeiro — lista manual + detecção automática por obs
+    const obsN = normalizar(c.obs);
+    const temPgtoNaObs = obsN.match(/necessario pgto|necessar.*pag|pag.*brendha|cobranca|cobranc|r\$\s*\d+/);
+    const nomeNaLista = listaPend.some(lp=>normalizar(c.paciente).includes(normalizar(lp))||normalizar(lp).includes(normalizar(c.paciente)));
+    if (nomeNaLista || temPgtoNaObs)
+      issues.financeiro.push({ c, motivo: temPgtoNaObs ? 'Observação sinaliza pendência' : 'Listado como devedor' });
+
+  });
+
+  const livres = dentistasPresentes.length ? calcularLivres(consultas, dentistasPresentes) : [];
+  renderResultados(consultas, issues, livres, nomeDia, dentistasPresentes);
+  } catch(e) {
+    console.error('Erro ao processar agenda:', e);
+    alert('Erro ao processar: ' + e.message + '\n\nAbra o Console (F12) para mais detalhes.');
+  }
+}
+
+// ── RENDER PRINCIPAL ─────────────────────────────────
+function renderResultados(consultas, issues, livres, nomeDia, dentPresentes) {
+  window._lastIssues = { issues, livres, consultas, nomeDia, dentPresentes };
+  const main = document.getElementById('mainArea');
+  const total = Object.values(issues).reduce((a,v)=>a+v.length,0);
+  const livreMin = livres.reduce((a,s)=>a+s.duracao,0);
+  const selectEl = document.getElementById('diaSemana');
+  const diaLabel = selectEl.options[selectEl.selectedIndex].text;
+
+  main.innerHTML = `
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px;gap:12px;">
+      <div>
+        <h2 style="font-family:'Cormorant SC',serif;font-size:20px;font-weight:300;letter-spacing:.12em;color:var(--vinho);">
+          ${diaLabel || 'Agenda do Dia'}
+        </h2>
+        <p style="font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:var(--text-muted);margin-top:4px;">
+          ${consultas.length} consultas &nbsp;·&nbsp; ${dentPresentes.length > 0 ? dentPresentes.join(', ') : 'Nenhum dentista selecionado'}
+        </p>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="exportarRelatorio()">📄 Exportar PDF</button>
+    </div>
+
+    <div class="summary-grid">
+      <div class="summary-box" style="background:var(--danger-light);border-color:#f5c6c2;">
+        <div class="num" style="color:var(--danger);">${total}</div>
+        <div class="lbl" style="color:var(--danger);">Ocorrências</div>
+      </div>
+      <div class="summary-box" style="background:var(--blush);border-color:var(--warm);">
+        <div class="num" style="color:var(--vinho);">${consultas.length}</div>
+        <div class="lbl" style="color:var(--vinho);">Consultas</div>
+      </div>
+      <div class="summary-box" style="background:var(--warning-light);border-color:#f0d78a;">
+        <div class="num" style="color:var(--warning);">${livreMin}</div>
+        <div class="lbl" style="color:var(--warning);">Min Livres</div>
+      </div>
+      <div class="summary-box" style="background:var(--success-light);border-color:#b7d9b9;">
+        <div class="num" style="color:var(--success);">${consultas.length - total}</div>
+        <div class="lbl" style="color:var(--success);">OK</div>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('ocorrencias',this)">🚨 Ocorrências <span class="badge-count" style="margin-left:4px;">${total}</span></div>
+      <div class="tab" onclick="switchTab('visual',this)">🗓 Agenda Visual</div>
+      <div class="tab" onclick="switchTab('rx',this)">🩻 RX ${issues.exame.length>0?`<span class="badge-count warn" style="margin-left:4px;">${issues.exame.length}</span>`:''}</div>
+      <div class="tab" onclick="switchTab('agenda',this)">📋 Tabela</div>
+      <div class="tab" onclick="switchTab('tempo',this)">⏱ Tempo Livre ${livreMin>0?`<span class="badge-count warn" style="margin-left:4px;">${livreMin}min</span>`:''}</div>
+      <div class="tab" onclick="switchTab('tempos-editor',this)">✏️ Tempos Clínicos</div>
+    </div>
+
+    <div id="tab-ocorrencias" class="tab-content active">${renderOcorrencias(issues)}</div>
+    <div id="tab-visual" class="tab-content">${renderVisual(consultas, issues, dentPresentes)}</div>
+    <div id="tab-rx" class="tab-content">${renderRX(issues.exame, diaLabel, dentPresentes)}</div>
+    <div id="tab-agenda" class="tab-content">${renderTabela(consultas, issues)}</div>
+    <div id="tab-tempo" class="tab-content">${renderLivres(livres, dentPresentes)}</div>
+    <div id="tab-tempos-editor" class="tab-content">${renderEditor()}</div>
+  `;
+}
+
+function switchTab(id, el) {
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  if(el) el.classList.add('active');
+  const tc = document.getElementById('tab-'+id);
+  if(tc) tc.classList.add('active');
+}
+
+// ── RENDER OCORRÊNCIAS ────────────────────────────────
+function renderOcorrencias(issues) {
+  let html = '<div class="issue-list">';
+  let temAlgo = false;
+
+  const bloco = (titulo, items, renderItem) => {
+    if (!items.length) return '';
+    temAlgo = true;
+    return `<div class="section-title">${titulo} <span class="badge-count">${items.length}</span></div>` +
+      items.map(renderItem).join('');
+  };
+
+
+  html += bloco('🔁 Pacientes Duplicados', issues.duplicado, ({c, anterior, motivo}) => `
+    <div class="issue-item issue-danger">
+      <div class="issue-icon">⚠️</div>
+      <div class="issue-body">
+        <div class="issue-title">${anterior.paciente} — aparece mais de uma vez</div>
+        <div class="issue-detail">
+          <span class="issue-tag">${motivo}</span>
+          ${anterior.ficha ? `<span class="issue-tag">Ficha ${anterior.ficha}</span>` : ''}
+          <br>
+          1ª: <strong>${anterior.horario}</strong> ${anterior.procedimento} · ${anterior.dentista}<br>
+          2ª: <strong>${c.horario}</strong> ${c.procedimento} · ${c.dentista}
+          ${c.ficha && c.ficha !== anterior.ficha ? `<br><em style="font-size:10px;color:var(--danger);">⚠ Fichas diferentes: ${anterior.ficha||'—'} e ${c.ficha}</em>` : ''}
+        </div>
+      </div>
+    </div>`);
+
+  html += bloco('💸 Pendência Financeira / Cobrança', issues.financeiro, ({c, motivo}) => `
+    <div class="issue-item issue-warning">
+      <div class="issue-icon">💰</div>
+      <div class="issue-body">
+        <div class="issue-title">${c.paciente}</div>
+        <div class="issue-detail">
+          <span class="issue-tag">${c.horario}</span>
+          <span class="issue-tag">${c.procedimento}</span>
+          <span class="issue-tag">${c.dentista}</span>
+          ${motivo || 'Débito pendente'}.
+          ${c.obs ? `<br><em style="font-size:10px;">"${c.obs}"</em>` : ''}
+        </div>
+      </div>
+    </div>`);
+
+  html += bloco('⏱ Tempo Clínico Diferente do Padrão', issues.tempoErrado, ({c, esperado, agendado, diff}) => {
+    const tipo = diff > 0 ? 'issue-warning' : 'issue-danger';
+    const icon = diff > 0 ? '🔼' : '🔽';
+    const msg  = diff > 0 ? `${diff}min a <strong>mais</strong>` : `${Math.abs(diff)}min a <strong>menos</strong>`;
+    return `
+    <div class="issue-item ${tipo}">
+      <div class="issue-icon">${icon}</div>
+      <div class="issue-body">
+        <div class="issue-title">${c.paciente} — ${c.procedimento}</div>
+        <div class="issue-detail">
+          <span class="issue-tag">${c.horario}</span>
+          <span class="issue-tag">${c.dentista}</span>
+          Padrão: <strong>${esperado}min</strong> · Agendado: <strong>${agendado}min</strong> — ${msg} do padrão
+        </div>
+      </div>
+    </div>`;
+  });
+
+  html += bloco('🩻 Precisam de PAN ou TOMO', issues.exame, ({c, tipo, quando}) => {
+    const label  = tipo === 'panoramico' ? 'Panorâmico' : 'Tomografia';
+    const cls    = tipo === 'panoramico' ? 'issue-warning' : 'issue-danger';
+    const quando_label = quando === 'apos'
+      ? `<span class="issue-tag" style="background:#e8f5e9;color:#2E7D32;">📸 Após a consulta</span>`
+      : `<span class="issue-tag" style="background:#fdecea;color:#C0392B;">📸 Antes da consulta</span>`;
+    return `
+    <div class="issue-item ${cls}">
+      <div class="issue-icon">🩻</div>
+      <div class="issue-body">
+        <div class="issue-title">${c.paciente} — ${label} necessário</div>
+        <div class="issue-detail">
+          <span class="issue-tag">${c.horario}</span>
+          <span class="issue-tag">${c.procedimento}</span>
+          <span class="issue-tag">${c.dentista}</span>
+          ${quando_label}
+          Procedimento exige <strong>${label}</strong> — não identificado nas observações.
+        </div>
+      </div>
+    </div>`;
+  });
+
+  html += bloco('⚠️ Agendado como Consulta Inicial — Verificar', issues.consultaInicial, ({c}) => `
+    <div class="issue-item issue-warning">
+      <div class="issue-icon">⚠️</div>
+      <div class="issue-body">
+        <div class="issue-title">${c.paciente} — Consulta Inicial</div>
+        <div class="issue-detail">
+          <span class="issue-tag">${c.horario}</span>
+          <span class="issue-tag">${c.dentista}</span>
+          Agendado como <strong>Consulta Inicial</strong> — confirmar qual é o <strong>procedimento real</strong> a ser realizado.
+          ${c.obs ? `<br><em style="font-size:10px;">"${c.obs}"</em>` : ''}
+        </div>
+      </div>
+    </div>`);
+
+
+  if (!temAlgo) html += `
+    <div class="empty-state">
+      <div class="icon">✅</div>
+      <h3>Agenda sem ocorrências</h3>
+      <p>Todos os procedimentos estão dentro dos padrões clínicos.</p>
+    </div>`;
+
+  return html + '</div>';
+}
+
+// ── RENDER VISUAL (CALENDÁRIO) ───────────────────────
+function renderVisual(consultas, issues, dentPresentes) {
+  if (!consultas.length) return `<div class="empty-state"><div class="icon">🗓</div><h3>Sem dados</h3><p>Analise a agenda primeiro.</p></div>`;
+
+  // Dentistas com consultas no dia
+  const dentistasNoDia = [];
+  const dentSet = new Set();
+  consultas.forEach(c => {
+    const k = normalizar(c.dentista);
+    if (!dentSet.has(k) && c.dentista) { dentSet.add(k); dentistasNoDia.push(c.dentista); }
+  });
+
+  const iM = timeToMin(document.getElementById('inicioManha').value);
+  const fM = timeToMin(document.getElementById('fimManha').value);
+  const iT = timeToMin(document.getElementById('inicioTarde').value);
+  const fT = timeToMin(document.getElementById('fimTarde').value);
+  const PX_POR_MIN = 1; // 1px por minuto = 60px por hora
+
+  // Slots de tempo para exibição (de 15 em 15 min)
+  const slots = [];
+  for (let t = iM; t <= fT; t += 15) {
+    if (t >= fM && t < iT) continue; // pular intervalo almoço
+    slots.push(t);
+  }
+  const minToY = min => {
+    // Quantos minutos do início da manhã, descontando o intervalo
+    let y = 0;
+    if (min <= fM) { y = min - iM; }
+    else if (min < iT) { y = fM - iM; }
+    else { y = (fM - iM) + (min - iT); }
+    return y * PX_POR_MIN;
+  };
+  const totalAltura = minToY(fT) + 4;
+
+  // Issues por consulta id
+  const issueIds = new Set([
+    ...issues.tempoErrado, ...issues.exame,
+    ...issues.financeiro, ...issues.duplicado, ...issues.consultaInicial
+  ].map(i => i.c.id));
+
+  // Ocupação por dentista (para % de ocupação)
+  const ocupPorDent = {};
+  dentistasNoDia.forEach(d => {
+    const dN = normalizar(d);
+    const cons = consultas.filter(c => normalizar(c.dentista) === dN || normalizar(c.dentista).includes(dN) || dN.includes(normalizar(c.dentista)));
+    let ocup = 0;
+    cons.forEach(c => { if (c.horarioFimMin) ocup += c.horarioFimMin - c.horarioMin; });
+    const turnoTotal = (fM - iM) + (fT - iT);
+    ocupPorDent[dN] = turnoTotal > 0 ? Math.round(ocup / turnoTotal * 100) : 0;
+  });
+
+  const numCols = dentistasNoDia.length + 1; // +1 coluna de horário
+  const colWidth = Math.max(160, Math.floor(900 / dentistasNoDia.length));
+
+  // Cores fixas por índice de dentista
+  const dentColor = (idx) => `dent-${idx % 8}`;
+
+  // Cabeçalho
+  let headerCols = `<div class="cal-col-header" style="width:56px;min-width:56px;"></div>`;
+  dentistasNoDia.forEach((d, i) => {
+    const dN = normalizar(d);
+    const pct = ocupPorDent[dN] || 0;
+    const pctColor = pct >= 80 ? '#16a34a' : pct >= 50 ? '#B8860B' : '#C0392B';
+    headerCols += `<div class="cal-col-header" style="min-width:${colWidth}px;">
+      ${d}
+      <span class="pct" style="color:${pctColor};">${pct}% ocupado</span>
+    </div>`;
+  });
+
+  // Linhas de horário + blocos
+  let timeCol = '';
+  let bodyColsMap = {};
+  dentistasNoDia.forEach(d => { bodyColsMap[normalizar(d)] = ''; });
+
+  slots.forEach((t, si) => {
+    const isHoraCheia = t % 60 === 0;
+    const label = isHoraCheia ? minToTime(t) : '';
+    timeCol += `<div class="cal-time-label" style="height:${15*PX_POR_MIN}px;">${label}</div>`;
+    dentistasNoDia.forEach(d => {
+      bodyColsMap[normalizar(d)] += `<div class="cal-cell${isHoraCheia?' hora-cheia':''}" style="height:${15*PX_POR_MIN}px;"></div>`;
+    });
+  });
+
+  // Posicionar blocos de consulta
+  const blocosPorDent = {};
+  dentistasNoDia.forEach(d => { blocosPorDent[normalizar(d)] = []; });
+
+  consultas.forEach(c => {
+    const dN = normalizar(c.dentista);
+    // Achar qual dentista da lista corresponde
+    const dentMatch = dentistasNoDia.find(d => {
+      const dk = normalizar(d);
+      return dk === dN || dk.includes(dN) || dN.includes(dk);
+    });
+    if (!dentMatch) return;
+    const key = normalizar(dentMatch);
+    const yTop  = minToY(c.horarioMin);
+    const dur   = c.horarioFimMin ? c.horarioFimMin - c.horarioMin : (buscarTC(c.procedimento, c.dentista)?.min || 30);
+    const yH    = Math.max(dur * PX_POR_MIN, 18);
+    const temIssue = issueIds.has(c.id);
+    blocosPorDent[key].push({ c, yTop, yH, temIssue });
+  });
+
+  // Montar colunas de corpo com blocos absolutos
+  let bodyHtml = '';
+  dentistasNoDia.forEach((d, i) => {
+    const key = normalizar(d);
+    const cls = dentColor(i);
+    let blocos = '';
+    blocosPorDent[key].forEach(({ c, yTop, yH, temIssue }) => {
+      const flags = [];
+      if (issues.tempoErrado.some(x=>x.c.id===c.id))  flags.push(`<span class="cal-issue-dot" style="background:var(--warning);"></span>`);
+      if (issues.exame.some(x=>x.c.id===c.id))         flags.push(`<span class="cal-issue-dot" style="background:var(--info);"></span>`);
+      if (issues.financeiro.some(x=>x.c.id===c.id))    flags.push(`<span class="cal-issue-dot" style="background:var(--cobre);"></span>`);
+      if (issues.duplicado.some(x=>x.c.id===c.id))     flags.push(`<span class="cal-issue-dot" style="background:var(--danger);"></span>`);
+      if (issues.consultaInicial.some(x=>x.c.id===c.id)) flags.push(`<span class="cal-issue-dot" style="background:var(--vinho-light);"></span>`);
+
+      blocos += `<div class="cal-block ${cls}" style="top:${yTop}px;height:${yH}px;"
+        title="${c.paciente} | ${c.procedimento} | ${c.horario}–${c.horarioFim||'?'} ${c.obs?'| '+c.obs:''}">
+        <div class="cb-time">${c.horario}${c.horarioFim?' – '+c.horarioFim:''}</div>
+        <div class="cb-nome">${c.paciente}${c.ficha&&c.ficha!=='0'?` <span style="opacity:.6;font-size:9px;">· ${c.ficha}</span>`:''}</div>
+        ${yH > 30 ? `<div class="cb-proc">${c.procedimento}</div>` : ''}
+        ${flags.length ? `<div class="cb-flags">${flags.join('')}</div>` : ''}
+      </div>`;
+    });
+
+    bodyHtml += `<div class="cal-body-col" style="min-width:${colWidth}px;height:${totalAltura}px;position:relative;">
+      ${bodyColsMap[key]}
+      ${blocos}
+    </div>`;
+  });
+
+  const legendaHtml = `
+    <div style="display:flex;gap:16px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">
+      <span style="font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:var(--text-muted);">Alertas:</span>
+      <span><span class="cal-issue-dot" style="background:var(--warning);display:inline-block;"></span> <span style="font-size:11px;">Tempo errado</span></span>
+      <span><span class="cal-issue-dot" style="background:var(--info);display:inline-block;"></span> <span style="font-size:11px;">PAN/TOMO</span></span>
+      <span><span class="cal-issue-dot" style="background:var(--cobre);display:inline-block;"></span> <span style="font-size:11px;">Financeiro</span></span>
+      <span><span class="cal-issue-dot" style="background:var(--danger);display:inline-block;"></span> <span style="font-size:11px;">Duplicado</span></span>
+      <span><span class="cal-issue-dot" style="background:var(--vinho-light);display:inline-block;"></span> <span style="font-size:11px;">Consulta inicial</span></span>
+    </div>`;
+
+  const diaEl = document.getElementById('diaSemana');
+  const diaLabel = diaEl.options[diaEl.selectedIndex].text || 'Agenda';
+
+  return `
+  <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+    <button class="btn btn-ghost btn-sm" onclick="exportarAgendaVisual()">📄 Exportar Agenda Visual PDF</button>
+  </div>
+  ${legendaHtml}
+  <div class="cal-wrap" id="calGridWrap">
+    <div class="cal-grid" id="calGrid" style="grid-template-columns:56px ${dentistasNoDia.map(()=>colWidth+'px').join(' ')};">
+      ${headerCols}
+      <div class="cal-time-col">${timeCol}</div>
+      ${bodyHtml}
+    </div>
+  </div>`;
+}
+
+// ── RENDER RX ─────────────────────────────────────────
+function renderRX(exames, diaLabel, dentPresentes) {
+  if (!exames.length) return `<div class="empty-state"><div class="icon">✅</div><h3>Nenhum RX necessário</h3><p>Nenhum procedimento do dia exige Panorâmico ou Tomografia.</p></div>`;
+
+  // Mapear com índice real no array exames
+  const antesIdx = exames.map((e,i) => ({...e, _i:i})).filter(e => e.quando === 'antes');
+  const aposIdx  = exames.map((e,i) => ({...e, _i:i})).filter(e => e.quando === 'apos');
+
+  const linhaRX = ({c, tipo, quando, _i}) => {
+    const label = tipo === 'panoramico' ? '🦷 Panorâmico' : '🔬 Tomografia';
+    const cor   = tipo === 'panoramico' ? 'var(--warning)' : 'var(--danger)';
+    const outroTipo    = tipo === 'panoramico' ? 'tomografia' : 'panoramico';
+    const outroLabel   = tipo === 'panoramico' ? 'Mudar p/ Tomo' : 'Mudar p/ Pan';
+    const outroQuando  = quando === 'antes' ? 'apos' : 'antes';
+    const outroPosLabel = quando === 'antes' ? 'Mover p/ Após' : 'Mover p/ Antes';
+    return `<tr id="rxrow-${_i}">
+      <td><span class="time-display">${c.horario}</span>${c.horarioFim?`<span style="color:var(--text-muted);font-size:11px;"> → ${c.horarioFim}</span>`:''}</td>
+      <td>${c.paciente}${c.ficha&&c.ficha!=='0'?`<span style="color:var(--text-muted);font-size:10px;"> · ${c.ficha}</span>`:''}</td>
+      <td style="font-size:11px;">${c.procedimento}</td>
+      <td style="font-size:11px;">${c.dentista}</td>
+      <td><span style="font-weight:600;color:${cor};">${label}</span></td>
+      <td style="font-size:10px;color:var(--text-muted);">${c.obs||'—'}</td>
+      <td style="white-space:nowrap;display:flex;flex-direction:column;gap:3px;padding:6px 8px;">
+        <button class="btn btn-ghost btn-sm" style="font-size:9px;padding:3px 7px;" onclick="rxMudarTipo(${_i},'${outroTipo}')">⇄ ${outroLabel}</button>
+        <button class="btn btn-ghost btn-sm" style="font-size:9px;padding:3px 7px;" onclick="rxMudarQuando(${_i},'${outroQuando}')">⇅ ${outroPosLabel}</button>
+        <button class="btn btn-danger btn-sm" style="font-size:9px;padding:3px 7px;" onclick="rxExcluir(${_i})">✕ Excluir</button>
+      </td>
+    </tr>`;
+  };
+
+  const tabelaHTML = (rows) => `
+    <div style="overflow-x:auto;">
+    <table class="agenda-table">
+      <thead><tr>
+        <th>Horário</th><th>Paciente</th><th>Procedimento</th><th>Dentista</th><th>Exame</th><th>Obs</th><th style="width:140px;">Ações</th>
+      </tr></thead>
+      <tbody>${rows.map(r => linhaRX(r)).join('')}</tbody>
+    </table></div>`;
+
+  return `
+    <div style="display:flex;justify-content:flex-end;margin-bottom:14px;">
+      <button class="btn btn-ghost btn-sm" onclick="exportarRX()">📄 Exportar RX PDF</button>
+    </div>
+    ${antesIdx.length ? `<div class="section-title">📸 Antes da Consulta <span class="badge-count">${antesIdx.length}</span></div>${tabelaHTML(antesIdx)}` : ''}
+    ${aposIdx.length  ? `<div class="section-title" style="margin-top:20px;">📸 Após a Consulta <span class="badge-count ok">${aposIdx.length}</span></div>${tabelaHTML(aposIdx)}` : ''}
+  `;
+}
+
+function rxExcluir(idx) {
+  if (!window._lastIssues) return;
+  window._lastIssues.issues.exame.splice(idx, 1);
+  _reRenderRX();
+}
+function rxMudarTipo(idx, novoTipo) {
+  if (!window._lastIssues) return;
+  window._lastIssues.issues.exame[idx].tipo = novoTipo;
+  _reRenderRX();
+}
+function rxMudarQuando(idx, novoQuando) {
+  if (!window._lastIssues) return;
+  window._lastIssues.issues.exame[idx].quando = novoQuando;
+  _reRenderRX();
+}
+function _reRenderRX() {
+  const { issues, consultas, dentPresentes } = window._lastIssues;
+  const diaEl = document.getElementById('diaSemana');
+  const diaLabel = diaEl.options[diaEl.selectedIndex].text;
+  const tab = document.getElementById('tab-rx');
+  if (tab) tab.innerHTML = renderRX(issues.exame, diaLabel, dentPresentes);
+  // Atualizar badge da aba
+  document.querySelectorAll('.tab').forEach(t => {
+    if (t.textContent.includes('RX')) {
+      t.innerHTML = `🩻 RX ${issues.exame.length > 0 ? `<span class="badge-count warn" style="margin-left:4px;">${issues.exame.length}</span>` : ''}`;
+      t.onclick = () => switchTab('rx', t);
+    }
+  });
+}
+
+// ── EXPORTAR RX PDF ───────────────────────────────────
+function exportarRX() {
+  if (!window._lastIssues) { alert('Analise a agenda antes de exportar.'); return; }
+  const { issues, consultas, dentPresentes } = window._lastIssues;
+  const diaEl = document.getElementById('diaSemana');
+  const dia = diaEl.options[diaEl.selectedIndex].text || 'Agenda';
+  const agora = new Date().toLocaleString('pt-BR');
+  const exames = issues.exame;
+
+  const antes = exames.filter(e => e.quando === 'antes');
+  const apos  = exames.filter(e => e.quando === 'apos');
+
+  const linhaHTML = ({c, tipo, quando}) => {
+    const label = tipo === 'panoramico' ? 'Panorâmico' : 'Tomografia';
+    const cor   = tipo === 'panoramico' ? '#B8860B' : '#C0392B';
+    return `<tr>
+      <td style="font-family:'Cormorant SC',serif;font-size:14px;color:#8B2D42;">${c.horario}${c.horarioFim?' → '+c.horarioFim:''}</td>
+      <td><strong>${c.paciente}</strong>${c.ficha&&c.ficha!=='0'?` <span style="color:#999;font-size:11px;">· ${c.ficha}</span>`:''}</td>
+      <td style="font-size:11px;">${c.procedimento}</td>
+      <td style="font-size:11px;">${c.dentista}</td>
+      <td style="font-weight:600;color:${cor};">${label}</td>
+      <td style="font-size:11px;color:#666;">${c.obs||'—'}</td>
+    </tr>`;
+  };
+
+  const tabelaSection = (titulo, rows, cor) => !rows.length ? '' : `
+    <h3 style="font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:${cor};border-bottom:2px solid ${cor};padding-bottom:6px;margin:20px 0 10px;">${titulo} (${rows.length})</h3>
+    <table style="width:100%;border-collapse:collapse;font-size:12px;">
+      <thead><tr style="background:#6A1F30;color:#FDF9F4;">
+        <th style="padding:7px 10px;text-align:left;font-size:9px;letter-spacing:.2em;text-transform:uppercase;">Horário</th>
+        <th style="padding:7px 10px;text-align:left;">Paciente</th>
+        <th style="padding:7px 10px;text-align:left;">Procedimento</th>
+        <th style="padding:7px 10px;text-align:left;">Dentista</th>
+        <th style="padding:7px 10px;text-align:left;">Exame</th>
+        <th style="padding:7px 10px;text-align:left;">Obs</th>
+      </tr></thead>
+      <tbody>${rows.map(linhaHTML).join('')}</tbody>
+    </table>`;
+
+  abrirJanela(`RX-${dia.replace(/\s/g,'-')}.html`, `<!DOCTYPE html><html lang="pt-BR"><head>
+  <meta charset="UTF-8">
+  <title>Relatório de RX — ${dia}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+SC:wght@300;400&family=Josefin+Sans:wght@300;400&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'Josefin Sans',sans-serif;font-weight:300;background:#fff;color:#1A0F0A;font-size:12px;padding:28px 36px;}
+    td{padding:7px 10px;border-bottom:1px solid #E0C9B8;vertical-align:middle;}
+    tr:hover td{background:#fdf9f4;}
+    .print-btn{display:inline-block;margin-bottom:20px;padding:8px 20px;background:#8B2D42;color:#fff;border:none;border-radius:5px;font-family:'Josefin Sans',sans-serif;font-size:10px;letter-spacing:.22em;text-transform:uppercase;cursor:pointer;}
+    @media print{.no-print{display:none!important;} @page{margin:14mm 16mm;size:A4;} td{padding:5px 8px;}}
+  </style></head><body>
+  <button class="print-btn no-print" onclick="window.print()">🖨 Imprimir / Salvar PDF</button>
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;padding-bottom:12px;border-bottom:2px solid #8B2D42;margin-bottom:20px;">
+    <div>
+      <div style="font-family:'Cormorant SC',serif;font-size:22px;font-weight:400;letter-spacing:.1em;color:#8B2D42;">Oral Unic Carlos Barbosa</div>
+      <div style="font-size:9px;letter-spacing:.28em;text-transform:uppercase;color:#3D2A20;margin-top:4px;">Relatório de Exames — Panorâmico e Tomografia</div>
+    </div>
+    <div style="text-align:right;font-size:10px;color:#3D2A20;line-height:1.7;">${dia}<br>${dentPresentes.join(', ')}<br>${agora}</div>
+  </div>
+  <div style="display:flex;gap:14px;margin-bottom:24px;">
+    <div style="flex:1;border:1px solid #E0C9B8;border-radius:6px;padding:12px;text-align:center;">
+      <div style="font-family:'Cormorant SC',serif;font-size:28px;color:#C0392B;">${exames.length}</div>
+      <div style="font-size:9px;letter-spacing:.22em;text-transform:uppercase;opacity:.7;">Total de Exames</div>
+    </div>
+    <div style="flex:1;border:1px solid #E0C9B8;border-radius:6px;padding:12px;text-align:center;">
+      <div style="font-family:'Cormorant SC',serif;font-size:28px;color:#C0392B;">${antes.length}</div>
+      <div style="font-size:9px;letter-spacing:.22em;text-transform:uppercase;opacity:.7;">Antes da Consulta</div>
+    </div>
+    <div style="flex:1;border:1px solid #E0C9B8;border-radius:6px;padding:12px;text-align:center;">
+      <div style="font-family:'Cormorant SC',serif;font-size:28px;color:#2E7D32;">${apos.length}</div>
+      <div style="font-size:9px;letter-spacing:.22em;text-transform:uppercase;opacity:.7;">Após a Consulta</div>
+    </div>
+  </div>
+  ${tabelaSection('📸 Antes da Consulta', antes, '#C0392B')}
+  ${tabelaSection('📸 Após a Consulta', apos, '#2E7D32')}
+  </body></html>`);
+}
+
+// ── RENDER TABELA ─────────────────────────────────────
+function renderTabela(consultas, issues) {
+  const ids = new Set([
+    ...issues.tempoErrado, ...issues.exame,
+    ...issues.financeiro, ...issues.duplicado, ...issues.consultaInicial
+  ].map(i=>i.c.id));
+
+  return `<div style="overflow-x:auto;">
+  <table class="agenda-table">
+    <thead><tr>
+      <th>Horário</th><th>Ficha</th><th>Paciente</th><th>Procedimento</th>
+      <th>Dentista</th><th>Agendado</th><th>Padrão</th><th>RX</th><th>Obs</th><th>Status</th>
+    </tr></thead>
+    <tbody>
+    ${consultas.map((c,idx) => {
+      const comIssue = ids.has(c.id);
+      const isConsultaInicial = normalizar(c.procedimento).includes('consulta inicial');
+      const tcRaw = buscarTC(c.procedimento, c.dentista);
+      const tc = (!isConsultaInicial && tcRaw && tcRaw !== 'consulta_inicial') ? tcRaw : null;
+      const ta = tempoAgendado(consultas, idx);
+      const diff = tc ? ta - tc.min : 0;
+      const flags = [
+        issues.tempoErrado.some(i=>i.c.id===c.id)       ? '<span class="flag flag-red" title="Tempo errado"></span>':'',
+        issues.exame.some(i=>i.c.id===c.id)              ? '<span class="flag flag-yellow" title="Precisa exame"></span>':'',
+        issues.financeiro.some(i=>i.c.id===c.id)         ? '<span class="flag flag-yellow" title="Pendência financeira"></span>':'',
+        issues.duplicado.some(i=>i.c.id===c.id)          ? '<span class="flag flag-red" title="Duplicado"></span>':'',
+        issues.consultaInicial.some(i=>i.c.id===c.id)    ? '<span class="flag flag-yellow" title="Verificar consulta inicial"></span>':'',
+      ].join('');
+      const rxHtml = tc?.rx==='panoramico' ? '<span class="rx-tag-pan">PAN</span>'
+        : tc?.rx==='tomografia' ? '<span class="rx-tag-tomo">TOMO</span>'
+        : isConsultaInicial ? '<span style="font-size:10px;color:var(--warning);">?</span>' : '—';
+      const stCls  = comIssue ? 'status-warn' : 'status-ok';
+      const stLbl  = comIssue ? '⚠ Verificar' : '✓ OK';
+      const horFim = c.horarioFim ? `<span style="color:var(--text-muted);font-size:11px;"> → ${c.horarioFim}</span>` : '';
+      // Tempo agendado com cor se diferente do padrão
+      let taHtml = `<span style="font-family:'Cormorant SC',serif;font-size:13px;">${ta}min</span>`;
+      if (isConsultaInicial) {
+        taHtml = `<span style="font-size:11px;color:var(--warning);">Verificar</span>`;
+      } else if (tc && Math.abs(diff) > 5) {
+        const cor = diff > 0 ? 'var(--warning)' : 'var(--danger)';
+        const seta = diff > 0 ? '▲' : '▼';
+        taHtml = `<span style="font-family:'Cormorant SC',serif;font-size:13px;color:${cor};font-weight:700;">${ta}min ${seta}</span>`;
+      }
+      return `<tr class="${comIssue?'has-issue':''}">
+        <td><span class="time-display">${c.horario}</span>${horFim}</td>
+        <td style="font-family:'Cormorant SC',serif;font-size:12px;color:var(--text-muted);">${c.ficha||'—'}</td>
+        <td>${flags} ${c.paciente}</td>
+        <td>${c.procedimento}</td>
+        <td style="font-size:11px;">${c.dentista}</td>
+        <td>${taHtml}</td>
+        <td style="font-family:'Cormorant SC',serif;font-size:13px;color:var(--vinho);">${tc?tc.min+'min':isConsultaInicial?'—':'—'}</td>
+        <td>${rxHtml}</td>
+        <td style="font-size:11px;color:var(--text-muted);max-width:180px;">${c.obs||'—'}</td>
+        <td><span class="status-badge ${stCls}">${stLbl}</span></td>
+      </tr>`;
+    }).join('')}
+    </tbody>
+  </table></div>`;
+}
+
+// ── RENDER TEMPO LIVRE ────────────────────────────────
+function renderLivres(livres, dentistas) {
+  if (!dentistas.length) return `<div class="empty-state"><div class="icon">👥</div><h3>Selecione os dentistas</h3><p>Marque os presentes para calcular o tempo livre.</p></div>`;
+  if (!livres.length)    return `<div class="empty-state"><div class="icon">✅</div><h3>Sem tempo livre</h3><p>Agenda totalmente preenchida.</p></div>`;
+
+  const porDent = {};
+  livres.forEach(s => { (porDent[s.dentista]=porDent[s.dentista]||[]).push(s); });
+
+  return Object.entries(porDent).map(([d, slots]) => `
+    <div class="card">
+      <div class="card-title">⏱ ${d} — ${slots.reduce((a,s)=>a+s.duracao,0)}min livres</div>
+      <div class="timeline">
+        ${slots.map(s=>`
+          <div class="timeline-slot livre">
+            <div class="timeline-time">${minToTime(s.inicio)} – ${minToTime(s.fim)}</div>
+            <div class="timeline-desc">${s.duracao} minutos disponíveis</div>
+          </div>`).join('')}
+      </div>
+    </div>`).join('');
+}
+
+// ── RENDER EDITOR DE TEMPOS ───────────────────────────
+function renderEditor() {
+  const busca = '<div class="toolbar"><input type="text" id="editorBusca" placeholder="Buscar procedimento..." oninput="filtrarEditor()" style="max-width:280px;margin:0;"><button class="btn btn-primary btn-sm" onclick="abrirModal(-1)">+ Novo Procedimento</button></div>';
+
+  const tabela = `
+    <div style="overflow-x:auto;max-height:560px;overflow-y:auto;">
+    <table class="editor-table" id="editorTable">
+      <thead><tr>
+        <th style="min-width:240px;">Procedimento</th>
+        <th>Tempo</th>
+        <th>Dentistas</th>
+        <th>Exame</th>
+        <th style="width:90px;">Ações</th>
+      </tr></thead>
+      <tbody id="editorBody">
+        ${TEMPOS.map((tc,i) => renderEditorRow(tc,i)).join('')}
+      </tbody>
+    </table></div>
+    <p style="font-size:10px;letter-spacing:.04em;color:var(--text-muted);margin-top:10px;">
+      ✏️ Alterações ficam ativas durante esta sessão. Exporte o relatório para registrar.
+    </p>`;
+
+  return busca + tabela;
+}
+
+function renderEditorRow(tc, i) {
+  const rxClass = tc.rx==='panoramico' ? 'rx-pan' : tc.rx==='tomografia' ? 'rx-tomo' : 'rx-none';
+  const rxLabel = tc.rx==='panoramico' ? 'PAN' : tc.rx==='tomografia' ? 'TOMO' : '—';
+  return `<tr id="erow-${i}" data-proc="${tc.proc.toLowerCase()}">
+    <td>${tc.proc}</td>
+    <td><span style="font-family:'Cormorant SC',serif;font-size:14px;color:var(--vinho);">${tc.min}min</span></td>
+    <td style="font-size:11px;color:var(--text-muted);">${tc.dentistas.join(', ')}</td>
+    <td><span class="rx-badge ${rxClass}">${rxLabel}</span></td>
+    <td style="display:flex;gap:4px;">
+      <button class="btn btn-ghost btn-sm" onclick="abrirModal(${i})" title="Editar">✏️</button>
+      <button class="btn btn-danger btn-sm" onclick="excluirTempo(${i})" title="Excluir">✕</button>
+    </td>
+  </tr>`;
+}
+
+function filtrarEditor() {
+  const q = normalizar(document.getElementById('editorBusca')?.value||'');
+  document.querySelectorAll('#editorBody tr').forEach(tr => {
+    tr.style.display = !q || tr.dataset.proc?.includes(q) ? '' : 'none';
+  });
+}
+
+// ── MODAL ─────────────────────────────────────────────
+function abrirModal(idx) {
+  const overlay = document.getElementById('modalOverlay');
+  document.getElementById('modalIdx').value = idx;
+  if (idx >= 0) {
+    const tc = TEMPOS[idx];
+    document.getElementById('modalTitle').textContent = 'Editar Tempo Clínico';
+    document.getElementById('mProc').value = tc.proc;
+    document.getElementById('mMin').value  = tc.min;
+    document.getElementById('mRx').value   = tc.rx || '';
+    document.getElementById('mDentistas').value = tc.dentistas.join(', ');
+    document.getElementById('mAntes').checked = !!tc.antes;
+    document.getElementById('mApos').checked  = !!tc.apos;
+  } else {
+    document.getElementById('modalTitle').textContent = 'Novo Tempo Clínico';
+    document.getElementById('mProc').value = '';
+    document.getElementById('mMin').value  = 30;
+    document.getElementById('mRx').value   = '';
+    document.getElementById('mDentistas').value = '';
+    document.getElementById('mAntes').checked = false;
+    document.getElementById('mApos').checked  = false;
+  }
+  overlay.classList.add('open');
+}
+
+function fecharModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+}
+
+function salvarTempo() {
+  const idx   = +document.getElementById('modalIdx').value;
+  const proc  = document.getElementById('mProc').value.trim();
+  const min   = +document.getElementById('mMin').value;
+  const rx    = document.getElementById('mRx').value || null;
+  const dents = document.getElementById('mDentistas').value.split(',').map(s=>s.trim()).filter(Boolean);
+  const antes = document.getElementById('mAntes').checked;
+  const apos  = document.getElementById('mApos').checked;
+  if (!proc || !min) { alert('Preencha procedimento e tempo.'); return; }
+  const obj = { proc, min, dentistas: dents, rx, ...(antes?{antes:true}:{}), ...(apos?{apos:true}:{}) };
+  if (idx >= 0) TEMPOS[idx] = obj;
+  else TEMPOS.push(obj);
+  fecharModal();
+  // Re-render editor na tab ativa
+  const body = document.getElementById('editorBody');
+  if (body) body.innerHTML = TEMPOS.map((tc,i)=>renderEditorRow(tc,i)).join('');
+}
+
+function excluirTempo(i) {
+  if (!confirm(`Excluir "${TEMPOS[i].proc}"?`)) return;
+  TEMPOS.splice(i, 1);
+  const body = document.getElementById('editorBody');
+  if (body) body.innerHTML = TEMPOS.map((tc,ii)=>renderEditorRow(tc,ii)).join('');
+}
+
+// ── UTILITÁRIO: baixar HTML como arquivo ──────────────
+function abrirJanela(nomeArquivo, htmlContent) {
+  const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = nomeArquivo;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+}
+
+// ── EXPORTAR PDF — Ocorrências + Tempos Livres ────────
+function exportarRelatorio() {
+  if (!window._lastIssues) { alert('Analise a agenda antes de exportar.'); return; }
+  const { issues, livres, consultas, nomeDia, dentPresentes } = window._lastIssues;
+  const diaEl = document.getElementById('diaSemana');
+  const dia = diaEl.options[diaEl.selectedIndex].text || 'Agenda';
+  const agora = new Date().toLocaleString('pt-BR');
+
+  const secao = (titulo, cor, items) => {
+    if (!items.length) return '';
+    return `<div class="secao">
+      <div class="secao-titulo" style="border-color:${cor};color:${cor};">${titulo} <span class="badge">${items.length}</span></div>
+      ${items.map(html => html).join('')}
+    </div>`;
+  };
+
+  // Montar HTML das ocorrências
+  const blocoOcorr = (c, label, detalhe, cor) => `
+    <div class="item" style="border-left-color:${cor};">
+      <div class="item-header">
+        <strong>${c.paciente}</strong>
+        <span class="tags">
+          <span class="tag">${c.horario}${c.horarioFim ? ' – '+c.horarioFim : ''}</span>
+          <span class="tag">${c.dentista}</span>
+        </span>
+      </div>
+      <div class="item-proc">${c.procedimento}</div>
+      <div class="item-detail">${detalhe}</div>
+      ${c.obs ? `<div class="item-obs">"${c.obs}"</div>` : ''}
+    </div>`;
+
+  const htmlDupl = issues.duplicado.map(({c, anterior, motivo}) =>
+    blocoOcorr(c, 'Paciente duplicado', `${motivo} · 1ª vez: ${anterior.horario} (${anterior.procedimento})`, '#C0392B'));
+
+  const htmlFin = issues.financeiro.map(({c, motivo}) =>
+    blocoOcorr(c, 'Pendência financeira', motivo || 'Débito pendente', '#B8860B'));
+
+  const htmlTempo = issues.tempoErrado.map(({c, esperado, agendado, diff}) =>
+    blocoOcorr(c, 'Tempo clínico diferente', `Padrão: ${esperado}min · Agendado: ${agendado}min (${diff > 0 ? '+' : ''}${diff}min)`, diff > 0 ? '#B8860B' : '#C0392B'));
+
+  const htmlExame = issues.exame.map(({c, tipo}) =>
+    blocoOcorr(c, `${tipo === 'panoramico' ? 'Panorâmico' : 'Tomografia'} necessário`,
+      `Procedimento exige ${tipo === 'panoramico' ? 'Panorâmico (PAN)' : 'Tomografia (TOMO)'} — não identificado nas observações.`,
+      tipo === 'panoramico' ? '#B8860B' : '#C0392B'));
+
+  const htmlConsInicial = issues.consultaInicial.map(({c}) =>
+    blocoOcorr(c, 'Agendado como Consulta Inicial', 'Confirmar procedimento real a ser realizado.', '#8B2D42'));
+
+  // Tempos livres por dentista
+  const porDent = {};
+  livres.forEach(s => { (porDent[s.dentista] = porDent[s.dentista] || []).push(s); });
+  const htmlLivres = Object.entries(porDent).map(([d, slots]) => {
+    const totalMin = slots.reduce((a,s)=>a+s.duracao,0);
+    return `<div class="item" style="border-left-color:#2E7D32;">
+      <div class="item-header"><strong>${d}</strong><span class="tags"><span class="tag ok">${totalMin}min livres</span></span></div>
+      <div class="item-detail">${slots.map(s=>`${s.inicio < 720 ? 'Manhã' : 'Tarde'}: ${minToTime(s.inicio)} – ${minToTime(s.fim)} (${s.duracao}min)`).join(' &nbsp;·&nbsp; ')}</div>
+    </div>`;
+  }).join('');
+
+  const totalOcorr = issues.duplicado.length + issues.financeiro.length + issues.tempoErrado.length + issues.exame.length + issues.consultaInicial.length;
+
+  abrirJanela(`Relatorio-Conferencia-${dia.replace(/\s/g,'-')}.html`, `<!DOCTYPE html><html lang="pt-BR"><head>
+  <meta charset="UTF-8">
+  <title>Relatório de Conferência — ${dia}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+SC:wght@300;400&family=Josefin+Sans:wght@300;400&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'Josefin Sans',sans-serif;font-weight:300;background:#fff;color:#1A0F0A;font-size:12px;padding:28px 36px;}
+    .rpt-header{display:flex;justify-content:space-between;align-items:flex-end;padding-bottom:14px;border-bottom:2px solid #8B2D42;margin-bottom:22px;}
+    .rpt-title{font-family:'Cormorant SC',serif;font-size:22px;font-weight:400;letter-spacing:.1em;color:#8B2D42;}
+    .rpt-sub{font-size:9px;letter-spacing:.28em;text-transform:uppercase;color:#3D2A20;margin-top:4px;}
+    .rpt-meta{text-align:right;font-size:10px;color:#3D2A20;letter-spacing:.04em;line-height:1.7;}
+    .resumo{display:flex;gap:14px;margin-bottom:24px;}
+    .resumo-box{flex:1;border:1px solid #E0C9B8;border-radius:6px;padding:12px 14px;text-align:center;}
+    .resumo-num{font-family:'Cormorant SC',serif;font-size:28px;font-weight:300;line-height:1;}
+    .resumo-lbl{font-size:9px;letter-spacing:.22em;text-transform:uppercase;margin-top:4px;opacity:.7;}
+    .num-danger{color:#C0392B;} .num-warn{color:#B8860B;} .num-ok{color:#2E7D32;} .num-vinho{color:#8B2D42;}
+    .secao{margin-bottom:22px;}
+    .secao-titulo{font-size:9px;letter-spacing:.28em;text-transform:uppercase;font-weight:400;padding-bottom:6px;border-bottom:2px solid;margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+    .badge{background:currentColor;color:#fff;font-size:9px;padding:1px 7px;border-radius:20px;opacity:.85;}
+    .item{border-left:3px solid #ccc;padding:9px 12px;margin-bottom:7px;border-radius:0 5px 5px 0;background:#fafafa;page-break-inside:avoid;}
+    .item-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:3px;}
+    .item-header strong{font-size:13px;font-weight:400;letter-spacing:.02em;}
+    .tags{display:flex;gap:5px;flex-wrap:wrap;}
+    .tag{background:#F5EDE2;color:#3D2A20;font-size:9px;letter-spacing:.04em;padding:1px 7px;border-radius:3px;}
+    .tag.ok{background:#EAF4EA;color:#2E7D32;}
+    .item-proc{font-size:10px;color:#3D2A20;margin-bottom:3px;letter-spacing:.04em;}
+    .item-detail{font-size:11px;color:#1A0F0A;line-height:1.5;}
+    .item-obs{font-size:10px;color:#8B2D42;margin-top:4px;font-style:italic;}
+    .print-btn{display:inline-block;margin-bottom:20px;padding:8px 20px;background:#8B2D42;color:#fff;border:none;border-radius:5px;font-family:'Josefin Sans',sans-serif;font-size:10px;letter-spacing:.22em;text-transform:uppercase;cursor:pointer;}
+    @media print{body{padding:16px 20px;} @page{margin:14mm 16mm;size:A4;} .no-print{display:none!important;} .secao{page-break-inside:avoid;}}
+  </style></head><body>
+  <button class="print-btn no-print" onclick="window.print()">🖨 Imprimir / Salvar PDF</button>
+  <div class="rpt-header">
+    <div><div class="rpt-title">Oral Unic Carlos Barbosa</div><div class="rpt-sub">Relatório de Conferência de Agenda</div></div>
+    <div class="rpt-meta">${dia}<br>${dentPresentes.length ? dentPresentes.join(', ') : '—'}<br>Gerado em ${agora}</div>
+  </div>
+  <div class="resumo">
+    <div class="resumo-box"><div class="resumo-num num-vinho">${consultas.length}</div><div class="resumo-lbl">Consultas</div></div>
+    <div class="resumo-box"><div class="resumo-num num-danger">${totalOcorr}</div><div class="resumo-lbl">Ocorrências</div></div>
+    <div class="resumo-box"><div class="resumo-num num-warn">${issues.consultaInicial.length}</div><div class="resumo-lbl">Cons. Inicial</div></div>
+    <div class="resumo-box"><div class="resumo-num num-ok">${livres.reduce((a,s)=>a+s.duracao,0)}</div><div class="resumo-lbl">Min Livres</div></div>
+  </div>
+  ${secao('🔁 Pacientes Duplicados', '#C0392B', htmlDupl)}
+  ${secao('💸 Pendências Financeiras', '#B8860B', htmlFin)}
+  ${secao('⚠️ Agendado como Consulta Inicial', '#8B2D42', htmlConsInicial)}
+  ${secao('⏱ Tempo Clínico Diferente do Padrão', '#B8860B', htmlTempo)}
+  ${secao('🩻 Precisam de PAN ou TOMO', '#C0392B', htmlExame)}
+  ${livres.length ? `<div class="secao"><div class="secao-titulo" style="border-color:#2E7D32;color:#2E7D32;">⏳ Tempo Livre na Agenda <span class="badge">${livres.length} slots</span></div>${htmlLivres}</div>` : ''}
+  </body></html>`);
+}
+
+// ── EXPORTAR AGENDA VISUAL PDF ────────────────────────
+function exportarAgendaVisual() {
+  if (!window._lastIssues) { alert('Analise a agenda antes de exportar.'); return; }
+  const { consultas, dentPresentes } = window._lastIssues;
+  const diaEl = document.getElementById('diaSemana');
+  const dia = diaEl.options[diaEl.selectedIndex].text || 'Agenda';
+  const agora = new Date().toLocaleString('pt-BR');
+
+  const calWrap = document.getElementById('calGridWrap');
+  if (!calWrap) { alert('Abra a aba "Agenda Visual" e tente novamente.'); return; }
+  const calHtml = calWrap.innerHTML;
+
+  const styles = Array.from(document.styleSheets[0]?.cssRules || [])
+    .map(r => { try { return r.cssText; } catch(e) { return ''; } }).join('\n');
+
+  abrirJanela(`Agenda-Visual-${dia.replace(/\s/g,'-')}.html`, `<!DOCTYPE html><html lang="pt-BR"><head>
+  <meta charset="UTF-8">
+  <title>Agenda Visual — ${dia}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+SC:wght@300;400&family=Josefin+Sans:wght@300;400&display=swap" rel="stylesheet">
+  <style>
+    ${styles}
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'Josefin Sans',sans-serif;font-weight:300;background:#FDF9F4;color:#1A0F0A;font-size:13px;padding:24px 28px;}
+    .rpt-header{display:flex;justify-content:space-between;align-items:flex-end;padding-bottom:12px;border-bottom:2px solid #8B2D42;margin-bottom:18px;}
+    .rpt-title{font-family:'Cormorant SC',serif;font-size:20px;font-weight:400;letter-spacing:.1em;color:#8B2D42;}
+    .rpt-sub{font-size:9px;letter-spacing:.28em;text-transform:uppercase;color:#3D2A20;margin-top:3px;}
+    .rpt-meta{text-align:right;font-size:10px;color:#3D2A20;letter-spacing:.04em;line-height:1.7;}
+    .print-btn{display:inline-block;margin-bottom:18px;padding:8px 20px;background:#8B2D42;color:#fff;border:none;border-radius:5px;font-family:'Josefin Sans',sans-serif;font-size:10px;letter-spacing:.22em;text-transform:uppercase;cursor:pointer;}
+    .cal-wrap{overflow-x:auto;overflow-y:visible;max-height:none;}
+    @media print{body{padding:10px 12px;} .no-print{display:none!important;} .cal-wrap{overflow:visible;} @page{margin:10mm 8mm;size:A4 landscape;}}
+  </style></head><body>
+  <button class="print-btn no-print" onclick="window.print()">🖨 Imprimir / Salvar PDF</button>
+  <div class="rpt-header">
+    <div><div class="rpt-title">Oral Unic Carlos Barbosa</div><div class="rpt-sub">Agenda Visual do Dia</div></div>
+    <div class="rpt-meta">${dia}<br>${dentPresentes.length ? dentPresentes.join(', ') : '—'}<br>${agora}</div>
+  </div>
+  <div class="cal-wrap">${calHtml}</div>
+  </body></html>`);
+}
+
+// Click fora do modal fecha
+document.getElementById('modalOverlay').addEventListener('click', function(e){
+  if(e.target===this) fecharModal();
+});
+
+// START
+init();
+</script>
+</body>
+</html>
