@@ -10,7 +10,7 @@
 <!-- Firebase SDK -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getFirestore, collection, doc, getDocs, setDoc, deleteDoc, onSnapshot, query, where } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getFirestore, collection, doc, getDoc, getDocs, setDoc, deleteDoc, onSnapshot, query, where } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyB9zXOuoxC20uG7BUlfKBxHiLcJRNmq4n8",
@@ -33,6 +33,7 @@
   window.__getDocs = getDocs;
   window.__setDoc = setDoc;
   window.__deleteDoc = deleteDoc;
+  window.__getDoc = getDoc;
   window.__onSnapshot = onSnapshot;
   window.__query = query;
   window.__where = where;
@@ -2116,7 +2117,7 @@ function setCurrentUserId(id) {
 // Migra fotos do localStorage para o Firestore — envia qualquer foto local que o Firestore não tenha ainda
 async function migrateLocalPhotosToFirestore() {
   if (!window.__db) return;
-  const { getDoc } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+  const getDoc = window.__getDoc;
   USERS.forEach(async u => {
     const local = localStorage.getItem('ou_photo_' + u.id);
     if (!local) return;
@@ -2241,7 +2242,7 @@ async function loadInitialData(userId) {
 
   // Agenda e delegações (documentos únicos em ou_shared)
   try {
-    const { getDoc } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+    const getDoc = window.__getDoc;
     const [agDoc, delDoc] = await Promise.all([
       getDoc(window.__doc('ou_shared', 'agenda')),
       getDoc(window.__doc('ou_shared', 'delegations')),
@@ -2983,7 +2984,7 @@ function syncDoneToOrigin(card) {
 }
 
 async function _syncDoneToOriginAsync(card) {
-  const { getDoc } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+  const getDoc = window.__getDoc;
 
   // --- Delegação: marca original como concluído e notifica dono ---
   if (card.delegatedFrom) {
