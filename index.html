@@ -2486,7 +2486,8 @@ function renderCard(card) {
   }
   let delegHtml = '';
   const isPending = card.isDelegation && card.delegationStatus === 'pending';
-  const isAcceptedDelegation = card.isDelegation && card.delegationStatus === 'accepted' && card.column !== 'done';
+  const isAcceptedDelegation = (card.isDelegation && card.delegationStatus === 'accepted' && card.column !== 'done')
+    || (card.delegatedFrom && card.delegationStatus !== 'pending' && card.column !== 'done');
   const isDoneDelegation = card.delegationDone && card.column !== 'done'; // verde no card do dono
   if (isPending) {
     // Encontra o delegationId para poder aceitar/recusar direto do card
@@ -3007,8 +3008,9 @@ function openCardModal(cardId, defaultCol) {
           </div>` : ''}
         </div>
         <div class="modal-footer">
-          ${isEdit ? `<button class="btn-danger" onclick="deleteCard('${cardId}');closeModal('card-modal-overlay')">Excluir</button>` : ''}
+          ${isEdit ? `<button class="btn-danger" onclick="deleteCard('${cardId}')">Excluir</button>` : ''}
           <button class="btn-secondary" onclick="closeModal('card-modal-overlay')">Cancelar</button>
+          ${isEdit && card && card.delegatedFrom && card.delegationStatus !== 'pending' && card.column !== 'done' ? `<button class="btn-primary" style="background:#16a34a;" onclick="closeModal('card-modal-overlay');finalizarDelegacao('${cardId}')">✅ Finalizar</button>` : ''}
           <button class="btn-primary" onclick="saveCard('${cardId || ''}','${defaultCol || ''}')">
             ${isEdit ? 'Salvar' : 'Adicionar'}
           </button>
