@@ -1628,7 +1628,10 @@
             <div class="col-dot"></div>
             <span class="col-title" id="col-title-todo" contenteditable="true" spellcheck="false" onblur="saveColTitle('todo',this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}">A Fazer</span>
           </div>
-          <span class="col-count" id="count-todo">0</span>
+          <div style="display:flex;align-items:center;gap:4px;">
+            <button onclick="sortColAuto('todo')" title="Ordenar por prioridade e prazo" style="background:none;border:none;cursor:pointer;font-size:0.85rem;padding:2px 4px;border-radius:4px;color:var(--gray-400);" onmouseover="this.style.background='var(--gray-100)'" onmouseout="this.style.background='none'">⇅</button>
+            <span class="col-count" id="count-todo">0</span>
+          </div>
         </div>
         <div class="col-cards" id="cards-todo"></div>
         <button class="add-card-btn" onclick="openAddCard('todo')">+ Adicionar</button>
@@ -1640,7 +1643,10 @@
             <div class="col-dot"></div>
             <span class="col-title" id="col-title-progress" contenteditable="true" spellcheck="false" onblur="saveColTitle('progress',this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}">Em Progresso</span>
           </div>
-          <span class="col-count" id="count-progress">0</span>
+          <div style="display:flex;align-items:center;gap:4px;">
+            <button onclick="sortColAuto('progress')" title="Ordenar por prioridade e prazo" style="background:none;border:none;cursor:pointer;font-size:0.85rem;padding:2px 4px;border-radius:4px;color:var(--gray-400);" onmouseover="this.style.background='var(--gray-100)'" onmouseout="this.style.background='none'">⇅</button>
+            <span class="col-count" id="count-progress">0</span>
+          </div>
         </div>
         <div class="col-cards" id="cards-progress"></div>
         <button class="add-card-btn" onclick="openAddCard('progress')">+ Adicionar</button>
@@ -1652,7 +1658,10 @@
             <div class="col-dot"></div>
             <span class="col-title" id="col-title-waiting" contenteditable="true" spellcheck="false" onblur="saveColTitle('waiting',this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}">Aguardando</span>
           </div>
-          <span class="col-count" id="count-waiting">0</span>
+          <div style="display:flex;align-items:center;gap:4px;">
+            <button onclick="sortColAuto('waiting')" title="Ordenar por prioridade e prazo" style="background:none;border:none;cursor:pointer;font-size:0.85rem;padding:2px 4px;border-radius:4px;color:var(--gray-400);" onmouseover="this.style.background='var(--gray-100)'" onmouseout="this.style.background='none'">⇅</button>
+            <span class="col-count" id="count-waiting">0</span>
+          </div>
         </div>
         <div class="col-cards" id="cards-waiting"></div>
         <button class="add-card-btn" onclick="openAddCard('waiting')">+ Adicionar</button>
@@ -1664,7 +1673,10 @@
             <div class="col-dot"></div>
             <span class="col-title" id="col-title-done" contenteditable="true" spellcheck="false" onblur="saveColTitle('done',this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}">Concluído</span>
           </div>
-          <span class="col-count" id="count-done">0</span>
+          <div style="display:flex;align-items:center;gap:4px;">
+            <button onclick="sortColAuto('done')" title="Ordenar por prioridade e prazo" style="background:none;border:none;cursor:pointer;font-size:0.85rem;padding:2px 4px;border-radius:4px;color:var(--gray-400);" onmouseover="this.style.background='var(--gray-100)'" onmouseout="this.style.background='none'">⇅</button>
+            <span class="col-count" id="count-done">0</span>
+          </div>
         </div>
         <div class="col-cards" id="cards-done"></div>
         <button class="add-card-btn" onclick="openAddCard('done')">+ Adicionar</button>
@@ -2447,11 +2459,37 @@ function getDefaultColTitle(col) {
   return { todo: 'A Fazer', progress: 'Em Progresso', waiting: 'Aguardando', done: 'Concluído' }[col] || col;
 }
 
+function getCardOrder(col) {
+  try { return JSON.parse(localStorage.getItem('cardOrder_' + currentUser.id + '_' + col) || 'null'); } catch { return null; }
+}
+function saveCardOrder(col, ids) {
+  localStorage.setItem('cardOrder_' + currentUser.id + '_' + col, JSON.stringify(ids));
+}
+
+function sortedColCards(cards, col) {
+  const colCards = cards.filter(c => c.column === col);
+  const order = getCardOrder(col);
+  if (order) {
+    // Respeita ordem salva, novos cards vão pro topo
+    const orderMap = {};
+    order.forEach((id, i) => { orderMap[id] = i; });
+    colCards.sort((a, b) => {
+      const ai = orderMap[a.id] !== undefined ? orderMap[a.id] : -1;
+      const bi = orderMap[b.id] !== undefined ? orderMap[b.id] : -1;
+      if (ai === -1 && bi === -1) return 0;
+      if (ai === -1) return -1;
+      if (bi === -1) return 1;
+      return ai - bi;
+    });
+  }
+  return colCards;
+}
+
 function renderKanban() {
   const cards = getCards(currentUser.id);
   const cols = ['todo','progress','waiting','done'];
   cols.forEach(col => {
-    const colCards = cards.filter(c => c.column === col);
+    const colCards = sortedColCards(cards, col);
     document.getElementById('count-' + col).textContent = colCards.length;
     const container = document.getElementById('cards-' + col);
     if (colCards.length === 0) {
@@ -2463,16 +2501,34 @@ function renderKanban() {
       </div>`;
     } else {
       container.innerHTML = colCards.map(c => renderCard(c)).join('');
-      // Add drag listeners
       colCards.forEach(c => {
         const el = document.getElementById('card-' + c.id);
         if (el) {
           el.addEventListener('dragstart', e => onDragStart(e, c.id, col));
           el.addEventListener('dragend', onDragEnd);
+          // Reordenação dentro da coluna
+          el.addEventListener('dragover', e => onCardDragOver(e, c.id, col));
         }
       });
     }
   });
+}
+
+function sortColAuto(col) {
+  const PRIO = { alta: 0, media: 1, baixa: 2 };
+  const cards = getCards(currentUser.id).filter(c => c.column === col);
+  cards.sort((a, b) => {
+    const pa = PRIO[a.priority] ?? 1;
+    const pb = PRIO[b.priority] ?? 1;
+    if (pa !== pb) return pa - pb;
+    // Mesmo prioridade: mais próximo do prazo primeiro, sem prazo vai pro final
+    const da = a.dueDate ? new Date(a.dueDate + 'T' + (a.dueTime || '23:59') + ':00').getTime() : Infinity;
+    const db = b.dueDate ? new Date(b.dueDate + 'T' + (b.dueTime || '23:59') + ':00').getTime() : Infinity;
+    return da - db;
+  });
+  saveCardOrder(col, cards.map(c => c.id));
+  renderKanban();
+  showToast('Ordenado por prioridade e prazo', 'success');
 }
 
 function renderCard(card) {
@@ -2799,9 +2855,36 @@ function refuseFromCard(delegId, cardId) {
 // ============================================================
 // DRAG AND DROP
 // ============================================================
+let dragOverCardId = null;
+let dragOverPos = null; // 'before' | 'after'
+
+function onCardDragOver(e, targetCardId, col) {
+  if (dragFromCol !== col) return; // só reordena na mesma coluna
+  if (dragCardId === targetCardId) return;
+  e.preventDefault();
+  e.stopPropagation();
+  const el = document.getElementById('card-' + targetCardId);
+  if (!el) return;
+  const rect = el.getBoundingClientRect();
+  const mid = rect.top + rect.height / 2;
+  const pos = e.clientY < mid ? 'before' : 'after';
+  // Remove indicadores anteriores
+  document.querySelectorAll('.drop-indicator').forEach(d => d.remove());
+  dragOverCardId = targetCardId;
+  dragOverPos = pos;
+  // Mostra linha indicadora
+  const indicator = document.createElement('div');
+  indicator.className = 'drop-indicator';
+  indicator.style.cssText = 'height:3px;background:#7c3aed;border-radius:2px;margin:2px 0;pointer-events:none;';
+  if (pos === 'before') el.parentNode.insertBefore(indicator, el);
+  else el.parentNode.insertBefore(indicator, el.nextSibling);
+}
+
 function onDragStart(e, cardId, fromCol) {
   dragCardId = cardId;
   dragFromCol = fromCol;
+  dragOverCardId = null;
+  dragOverPos = null;
   e.dataTransfer.effectAllowed = 'move';
   setTimeout(() => {
     const el = document.getElementById('card-' + cardId);
@@ -2813,6 +2896,7 @@ function onDragEnd(e) {
   const el = document.getElementById('card-' + dragCardId);
   if (el) el.classList.remove('dragging');
   document.querySelectorAll('.kanban-col').forEach(c => c.classList.remove('drag-over'));
+  document.querySelectorAll('.drop-indicator').forEach(d => d.remove());
 }
 
 function onDragOver(e, col) {
@@ -2830,26 +2914,43 @@ function onDragLeave(e) {
 function onDrop(e, toCol) {
   e.preventDefault();
   document.getElementById('col-' + toCol).classList.remove('drag-over');
-  if (!dragCardId || dragFromCol === toCol) return;
+  document.querySelectorAll('.drop-indicator').forEach(d => d.remove());
+  if (!dragCardId) return;
+
   const cards = getCards(currentUser.id);
   const card = cards.find(c => c.id === dragCardId);
   if (!card) return;
-  // Don't allow moving pending delegation cards out of todo
-  if (card.delegationStatus === 'pending' && toCol !== 'todo') {
-    showToast('Aceite a delegação antes de mover.', 'error');
-    return;
-  }
-  card.column = toCol;
-  saveCards(currentUser.id, cards);
 
-  // Quando mover para concluído, sincroniza com card original (delegação ou compartilhado)
-  if (toCol === 'done') {
-    syncDoneToOrigin(card);
+  if (dragFromCol === toCol) {
+    // Reordenação dentro da mesma coluna
+    if (dragOverCardId && dragOverCardId !== dragCardId) {
+      const colCards = sortedColCards(cards, toCol);
+      const ids = colCards.map(c => c.id);
+      const fromIdx = ids.indexOf(dragCardId);
+      if (fromIdx !== -1) ids.splice(fromIdx, 1);
+      let toIdx = ids.indexOf(dragOverCardId);
+      if (toIdx === -1) toIdx = ids.length;
+      else if (dragOverPos === 'after') toIdx++;
+      ids.splice(toIdx, 0, dragCardId);
+      saveCardOrder(toCol, ids);
+      renderKanban();
+    }
+  } else {
+    // Mover entre colunas
+    if (card.delegationStatus === 'pending' && toCol !== 'todo') {
+      showToast('Aceite a delegação antes de mover.', 'error');
+      return;
+    }
+    card.column = toCol;
+    saveCards(currentUser.id, cards);
+    if (toCol === 'done') syncDoneToOrigin(card);
+    renderKanban();
   }
 
-  renderKanban();
   dragCardId = null;
   dragFromCol = null;
+  dragOverCardId = null;
+  dragOverPos = null;
 }
 
 function finalizarDelegacao(cardId) {
@@ -3048,8 +3149,9 @@ function saveCard(cardId, defaultCol) {
     }
     showToast('Tarefa atualizada!', 'success');
   } else {
+    const newId = genId();
     cards.push({
-      id: genId(),
+      id: newId,
       title,
       description: desc,
       priority,
@@ -3062,6 +3164,10 @@ function saveCard(cardId, defaultCol) {
       isDelegation: false,
       delegationStatus: null
     });
+    // Coloca novo card no topo da ordem
+    const order = getCardOrder(col) || cards.filter(c => c.column === col).map(c => c.id).filter(id => id !== newId);
+    order.unshift(newId);
+    saveCardOrder(col, order);
     showToast('Tarefa adicionada!', 'success');
   }
   saveCards(currentUser.id, cards);
