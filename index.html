@@ -3066,7 +3066,27 @@ function saveCard(cardId, defaultCol) {
 }
 
 function deleteCard(cardId) {
-  if (!confirm('Excluir esta tarefa?')) return;
+  const html = `
+    <div class="modal-overlay" id="delete-confirm-overlay" onclick="closeOnOverlay(event,'delete-confirm-overlay')">
+      <div class="modal" role="dialog" style="max-width:340px;">
+        <div class="modal-header">
+          <span class="modal-title">🗑️ Excluir tarefa</span>
+          <button class="modal-close" onclick="closeModal('delete-confirm-overlay')">✕</button>
+        </div>
+        <div class="modal-body">
+          <p style="margin:0 0 20px;font-size:0.93rem;">Tem certeza que deseja excluir esta tarefa? Esta ação não pode ser desfeita.</p>
+          <div style="display:flex;gap:8px;justify-content:flex-end;">
+            <button onclick="closeModal('delete-confirm-overlay')" style="padding:8px 18px;border-radius:6px;border:1px solid var(--gray-300);background:#fff;cursor:pointer;font-size:0.88rem;">Cancelar</button>
+            <button onclick="_confirmDeleteCard('${cardId}')" style="padding:8px 18px;border-radius:6px;border:none;background:#ef4444;color:#fff;cursor:pointer;font-size:0.88rem;font-weight:700;">Excluir</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+
+function _confirmDeleteCard(cardId) {
+  closeModal('delete-confirm-overlay');
   const cards = getCards(currentUser.id).filter(c => c.id !== cardId);
   saveCards(currentUser.id, cards);
   closeModal('card-modal-overlay');
