@@ -2175,16 +2175,22 @@ function startRealtimeListeners() {
           } else {
             window._cache.cards[userId] = incoming;
           }
+          // Remove duplicatas pelo id (mantém o primeiro encontrado)
+          const seen = new Set();
+          let deduped = (window._cache.cards[userId] || []).filter(c => {
+            if (!c.id || seen.has(c.id)) return false;
+            seen.add(c.id); return true;
+          });
+          let needsSave = deduped.length < (window._cache.cards[userId] || []).length;
+          window._cache.cards[userId] = deduped;
           // Move para Concluído qualquer card com delegationDone=true que ainda não esteja lá
-          const cached = window._cache.cards[userId] || [];
-          let needsSave = false;
-          cached.forEach(c => {
+          deduped.forEach(c => {
             if (c.delegationDone && c.column !== 'done') {
               c.column = 'done';
               needsSave = true;
             }
           });
-          if (needsSave) saveCards(userId, cached);
+          if (needsSave) saveCards(userId, deduped);
         } catch { /* mantém o que havia no cache */ }
       }
       // doc não existe → não toca no cache
