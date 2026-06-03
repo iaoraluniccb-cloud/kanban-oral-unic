@@ -3009,7 +3009,7 @@ async function _syncDoneToOriginAsync(card) {
 
     const originCard = originCards.find(c =>
       (originCardId && c.id === originCardId) ||
-      (c.delegationIdMap && c.delegationIdMap[currentUser.id]) ||
+      (c.delegationIdMap && c.delegationIdMap[currentUser.id] === card.delegationId) ||
       (c.delegatedTo?.includes(currentUser.id) && c.title === card.title) ||
       c.title === card.title
     );
