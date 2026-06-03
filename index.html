@@ -806,6 +806,14 @@
 
   /* ===== AGENDA ===== */
   #agenda-tab { padding: 20px; }
+  #gestao-tab { display: none; flex-direction: column; flex: 1; overflow: hidden; }
+  #gestao-tab.active { display: flex; }
+  .gestao-subnav { display: flex; gap: 8px; padding: 12px 20px 0; background: var(--header-bg, #6b1a3a); }
+  .gestao-subbtn { padding: 7px 18px; border-radius: 8px 8px 0 0; border: none; cursor: pointer; font-size: 0.85rem; font-weight: 600; background: rgba(255,255,255,0.12); color: #fff; transition: background 0.15s; }
+  .gestao-subbtn.active { background: #C4955A; color: #fff; }
+  .gestao-subbtn:hover:not(.active) { background: rgba(255,255,255,0.22); }
+  .gestao-iframe-wrap { flex: 1; overflow: hidden; }
+  .gestao-iframe-wrap iframe { width: 100%; height: 100%; border: none; display: block; }
 
   .agenda-header {
     display: flex;
@@ -1588,6 +1596,7 @@
         <span class="tab-badge hidden" id="vello-badge"></span>
       </button>
       <button class="tab-btn" id="tab-agenda-btn" onclick="switchTab('agenda')">Agenda</button>
+      <button class="tab-btn" id="tab-gestao-btn" onclick="switchTab('gestao')">Gestão</button>
     </nav>
     <div class="header-right">
       <div class="current-user-info">
@@ -1722,6 +1731,17 @@
     </div>
     <div id="day-detail-panel"></div>
     <div id="overdue-team-panel" style="display:none;margin-top:20px;"></div>
+  </div>
+
+  <!-- Aba Gestão -->
+  <div id="gestao-tab">
+    <div class="gestao-subnav">
+      <button class="gestao-subbtn active" id="gestao-btn-solides" onclick="switchGestao('solides')">Sólides</button>
+      <button class="gestao-subbtn" id="gestao-btn-conferencia" onclick="switchGestao('conferencia')">Conferência de Agenda</button>
+    </div>
+    <div class="gestao-iframe-wrap" id="gestao-iframe-wrap">
+      <iframe id="gestao-iframe" src="" allowfullscreen></iframe>
+    </div>
   </div>
 </div>
 
@@ -2415,13 +2435,21 @@ function logout() {
 function switchTab(tab) {
   document.getElementById('vello-tab').classList.remove('active');
   document.getElementById('agenda-tab').classList.remove('active');
+  document.getElementById('gestao-tab').classList.remove('active');
   document.getElementById('tab-vello-btn').classList.remove('active');
   document.getElementById('tab-agenda-btn').classList.remove('active');
+  document.getElementById('tab-gestao-btn').classList.remove('active');
 
   if (tab === 'vello') {
     document.getElementById('vello-tab').classList.add('active');
     document.getElementById('tab-vello-btn').classList.add('active');
     renderVello();
+  } else if (tab === 'gestao') {
+    document.getElementById('gestao-tab').classList.add('active');
+    document.getElementById('tab-gestao-btn').classList.add('active');
+    // Carrega sub-aba padrão se iframe ainda não foi carregado
+    const iframe = document.getElementById('gestao-iframe');
+    if (!iframe.src || iframe.src === window.location.href) switchGestao('solides');
   } else {
     document.getElementById('agenda-tab').classList.add('active');
     document.getElementById('tab-agenda-btn').classList.add('active');
@@ -2440,6 +2468,17 @@ function switchTab(tab) {
     const savedToken = localStorage.getItem('ou_gcal_' + currentUser?.id);
     if (savedToken) { _gcalAccessToken = savedToken; fetchGoogleCalendarEvents(); }
   }
+}
+
+const GESTAO_URLS = {
+  solides: 'https://sistema-9s5itw75p-iaoraluniccb-8815s-projects.vercel.app/',
+  conferencia: 'file:///C:/Users/DWOS/Documentos/Ia%20Carlos%20Barbosa/projects/conferencia-agenda/app.html'
+};
+
+function switchGestao(sub) {
+  document.querySelectorAll('.gestao-subbtn').forEach(b => b.classList.remove('active'));
+  document.getElementById('gestao-btn-' + sub).classList.add('active');
+  document.getElementById('gestao-iframe').src = GESTAO_URLS[sub];
 }
 
 // ============================================================
