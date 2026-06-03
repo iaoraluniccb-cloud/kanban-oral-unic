@@ -2466,14 +2466,34 @@ function saveCardOrder(col, ids) {
   localStorage.setItem('cardOrder_' + currentUser.id + '_' + col, JSON.stringify(ids));
 }
 
+const PRIO_ORDER = { alta: 0, media: 1, baixa: 2 };
+
+function autoSortCards(colCards) {
+  return [...colCards].sort((a, b) => {
+    // 1º prioridade
+    const pa = PRIO_ORDER[a.priority] ?? 1;
+    const pb = PRIO_ORDER[b.priority] ?? 1;
+    if (pa !== pb) return pa - pb;
+    // 2º prazo mais próximo (sem prazo vai pro final)
+    const da = a.dueDate ? new Date(a.dueDate + 'T' + (a.dueTime || '23:59') + ':00').getTime() : Infinity;
+    const db = b.dueDate ? new Date(b.dueDate + 'T' + (b.dueTime || '23:59') + ':00').getTime() : Infinity;
+    return da - db;
+  });
+}
+
 function sortedColCards(cards, col) {
   const colCards = cards.filter(c => c.column === col);
   const order = getCardOrder(col);
   if (order) {
-    // Respeita ordem salva, novos cards vão pro topo
+    // Respeita ordem manual salva, mas dentro de cada bloco de prioridade mantém a ordem manual
+    // Novos cards (não na order) ficam no topo do seu bloco de prioridade
     const orderMap = {};
     order.forEach((id, i) => { orderMap[id] = i; });
     colCards.sort((a, b) => {
+      const pa = PRIO_ORDER[a.priority] ?? 1;
+      const pb = PRIO_ORDER[b.priority] ?? 1;
+      if (pa !== pb) return pa - pb;
+      // Mesma prioridade: respeita ordem manual
       const ai = orderMap[a.id] !== undefined ? orderMap[a.id] : -1;
       const bi = orderMap[b.id] !== undefined ? orderMap[b.id] : -1;
       if (ai === -1 && bi === -1) return 0;
@@ -2481,8 +2501,10 @@ function sortedColCards(cards, col) {
       if (bi === -1) return 1;
       return ai - bi;
     });
+    return colCards;
   }
-  return colCards;
+  // Sem ordem manual: ordena automaticamente
+  return autoSortCards(colCards);
 }
 
 function renderKanban() {
@@ -2515,20 +2537,10 @@ function renderKanban() {
 }
 
 function sortColAuto(col) {
-  const PRIO = { alta: 0, media: 1, baixa: 2 };
-  const cards = getCards(currentUser.id).filter(c => c.column === col);
-  cards.sort((a, b) => {
-    const pa = PRIO[a.priority] ?? 1;
-    const pb = PRIO[b.priority] ?? 1;
-    if (pa !== pb) return pa - pb;
-    // Mesmo prioridade: mais próximo do prazo primeiro, sem prazo vai pro final
-    const da = a.dueDate ? new Date(a.dueDate + 'T' + (a.dueTime || '23:59') + ':00').getTime() : Infinity;
-    const db = b.dueDate ? new Date(b.dueDate + 'T' + (b.dueTime || '23:59') + ':00').getTime() : Infinity;
-    return da - db;
-  });
-  saveCardOrder(col, cards.map(c => c.id));
+  // Limpa ordem manual e deixa o auto-sort agir
+  localStorage.removeItem('cardOrder_' + currentUser.id + '_' + col);
   renderKanban();
-  showToast('Ordenado por prioridade e prazo', 'success');
+  showToast('Ordenação automática restaurada', 'success');
 }
 
 function renderCard(card) {
