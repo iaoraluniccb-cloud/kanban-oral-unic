@@ -680,6 +680,29 @@
   .kanban-card.overdue-card .card-title { color: #7f1d1d; }
   .kanban-card.overdue-card:hover { box-shadow: 0 4px 12px rgba(139,45,66,0.25); }
 
+  /* Card com delegação concluída — verde para o dono */
+  .kanban-card.done-delegation-card {
+    border-left: 4px solid #16a34a;
+    background: #f0fdf4;
+  }
+  .kanban-card.done-delegation-card .card-title { color: #14532d; }
+  .kanban-card.done-delegation-card:hover { box-shadow: 0 4px 12px rgba(22,163,74,0.25); }
+
+  .btn-finalizar-delegacao {
+    width: 100%;
+    margin-top: 8px;
+    padding: 6px 0;
+    background: #16a34a;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.02em;
+  }
+  .btn-finalizar-delegacao:hover { background: #15803d; }
+
   .delegation-badge {
     font-size: 0.68rem;
     padding: 2px 7px;
@@ -2463,6 +2486,8 @@ function renderCard(card) {
   }
   let delegHtml = '';
   const isPending = card.isDelegation && card.delegationStatus === 'pending';
+  const isAcceptedDelegation = card.isDelegation && card.delegationStatus === 'accepted' && card.column !== 'done';
+  const isDoneDelegation = card.delegationDone && card.column !== 'done'; // verde no card do dono
   if (isPending) {
     // Encontra o delegationId para poder aceitar/recusar direto do card
     const delegId = card.delegationId || '';
@@ -2484,7 +2509,7 @@ function renderCard(card) {
   }
 
   return `
-    <div class="kanban-card${isPending ? ' pending-delegation' : ''}${isOverdue && !isPending ? ' overdue-card' : ''}${card.sharedWith?.length ? ' shared-card' : ''}" id="card-${card.id}" draggable="${!isPending}">
+    <div class="kanban-card${isPending ? ' pending-delegation' : ''}${isOverdue && !isPending ? ' overdue-card' : ''}${isDoneDelegation ? ' done-delegation-card' : ''}${card.sharedWith?.length ? ' shared-card' : ''}" id="card-${card.id}" draggable="${!isPending}">
       <div class="card-top">
         <div class="card-title">${escHtml(card.title)}</div>
         <span class="priority-badge priority-${card.priority}">${cap(card.priority)}</span>
@@ -2513,6 +2538,7 @@ function renderCard(card) {
         </div>
       </div>
       ${isPending ? delegHtml : ''}
+      ${isAcceptedDelegation ? `<button class="btn-finalizar-delegacao" onclick="finalizarDelegacao('${card.id}')">✅ Marcar como Finalizado</button>` : ''}
     </div>
   `;
 }
@@ -2823,6 +2849,17 @@ function onDrop(e, toCol) {
   dragFromCol = null;
 }
 
+function finalizarDelegacao(cardId) {
+  const cards = getCards(currentUser.id);
+  const card = cards.find(c => c.id === cardId);
+  if (!card) return;
+  card.column = 'done';
+  saveCards(currentUser.id, cards);
+  syncDoneToOrigin(card);
+  renderKanban();
+  showToast('Atividade finalizada!', 'success');
+}
+
 function syncDoneToOrigin(card) {
   // Usa leitura direta do Firestore para garantir dados frescos
   _syncDoneToOriginAsync(card).catch(e => console.error('syncDoneToOrigin error:', e));
@@ -2849,8 +2886,9 @@ async function _syncDoneToOriginAsync(card) {
       c.title === card.title
     );
 
-    if (originCard && originCard.column !== 'done') {
+    if (originCard) {
       originCard.column = 'done';
+      originCard.delegationDone = true;
       // Atualiza cache local também
       window._cache.cards[originUserId] = originCards;
       await saveCards(originUserId, originCards);
