@@ -2993,9 +2993,18 @@ async function _syncDoneToOriginAsync(card) {
     const snap = await getDoc(window.__doc('ou_cards', originUserId));
     const originCards = snap.exists() ? JSON.parse(snap.data().cards || '[]') : [];
 
-    // Pega o cardId original via lista de delegações
-    const delegation = getDelegations().find(d => d.id === card.delegationId);
-    const originCardId = delegation?.cardId;
+    // Busca delegações direto do Firestore para evitar race condition com cache desatualizado
+    let originCardId = null;
+    try {
+      const delSnap = await getDoc(window.__doc('ou_shared', 'delegations'));
+      const freshDelegations = delSnap.exists() ? JSON.parse(delSnap.data().data || '[]') : [];
+      const delegation = freshDelegations.find(d => d.id === card.delegationId);
+      originCardId = delegation?.cardId || null;
+      if (freshDelegations.length) window._cache.delegations = freshDelegations;
+    } catch (e) {
+      const delegation = getDelegations().find(d => d.id === card.delegationId);
+      originCardId = delegation?.cardId || null;
+    }
 
     const originCard = originCards.find(c =>
       (originCardId && c.id === originCardId) ||
