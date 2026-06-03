@@ -2983,7 +2983,7 @@ function syncDoneToOrigin(card) {
 }
 
 async function _syncDoneToOriginAsync(card) {
-  const { getDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+  const { getDoc } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
 
   // --- Delegação: marca original como concluído e notifica dono ---
   if (card.delegatedFrom) {
