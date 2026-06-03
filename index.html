@@ -2175,6 +2175,16 @@ function startRealtimeListeners() {
           } else {
             window._cache.cards[userId] = incoming;
           }
+          // Move para Concluído qualquer card com delegationDone=true que ainda não esteja lá
+          const cached = window._cache.cards[userId] || [];
+          let needsSave = false;
+          cached.forEach(c => {
+            if (c.delegationDone && c.column !== 'done') {
+              c.column = 'done';
+              needsSave = true;
+            }
+          });
+          if (needsSave) saveCards(userId, cached);
         } catch { /* mantém o que havia no cache */ }
       }
       // doc não existe → não toca no cache
