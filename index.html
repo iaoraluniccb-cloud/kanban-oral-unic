@@ -2596,6 +2596,7 @@ function renderCard(card) {
         })()}
       </div>` : ''}
       ${delegatedToHtml}
+      ${isDoneDelegation ? `<div style="font-size:0.75rem;color:#16a34a;font-weight:700;margin-bottom:4px;">✅ Concluído por quem recebeu</div>` : ''}
       <div class="card-footer">
         <div class="card-meta">
           ${dateHtml}
@@ -3021,13 +3022,14 @@ async function _syncDoneToOriginAsync(card) {
     saveNotifications(originUserId, notifs);
   }
 
-  // --- Compartilhado: sincroniza card original e todas as cópias ---
+  // --- Compartilhado: marca card original como verde (delegationDone) e notifica ---
   if (card.sharedChatId || card.sharedOriginId || card.sharedWith?.length) {
     const chatId = card.sharedChatId;
     const originId = card.sharedOriginId || card.id;
     const allUsers = Object.keys(window._cache.cards || {});
 
     for (const uid of allUsers) {
+      if (uid === currentUser.id) continue; // quem concluiu já foi tratado
       // Lê direto do Firestore para dados frescos
       const snap = await getDoc(window.__doc('ou_cards', uid));
       const cardArr = snap.exists() ? JSON.parse(snap.data().cards || '[]') : [];
@@ -3038,8 +3040,12 @@ async function _syncDoneToOriginAsync(card) {
           c.sharedOriginId === originId ||
           (chatId && c.sharedChatId === chatId);
         if (isRelated && c.column !== 'done') {
-          c.column = 'done';
+          // Marca verde sem mover para done — dono decide
+          c.delegationDone = true;
           changed = true;
+        }
+        if (isRelated && c.column === 'done') {
+          // Já estava done, nada a fazer
         }
       });
       if (changed) {
