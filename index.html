@@ -3003,10 +3003,9 @@ async function _syncDoneToOriginAsync(card) {
       c.title === card.title
     );
 
-    if (originCard) {
-      originCard.column = 'done';
+    if (originCard && originCard.column !== 'done') {
+      // Não move para done automaticamente — marca verde e deixa o dono decidir
       originCard.delegationDone = true;
-      // Atualiza cache local também
       window._cache.cards[originUserId] = originCards;
       await saveCards(originUserId, originCards);
     }
