@@ -1738,6 +1738,8 @@
     <div class="gestao-subnav">
       <button class="gestao-subbtn active" id="gestao-btn-solides" onclick="switchGestao('solides')">RH</button>
       <button class="gestao-subbtn" id="gestao-btn-conferencia" onclick="switchGestao('conferencia')">Conferência de Agenda</button>
+      <button class="gestao-subbtn" id="gestao-btn-avaliacao" onclick="switchGestao('avaliacao')">Avaliação</button>
+      <button class="gestao-subbtn" id="gestao-btn-simulador" onclick="switchGestao('simulador')">Simulador de Vendas</button>
     </div>
     <div class="gestao-iframe-wrap" id="gestao-iframe-wrap">
       <iframe id="gestao-iframe" src="" allowfullscreen></iframe>
@@ -2477,7 +2479,9 @@ function switchTab(tab) {
 
 const GESTAO_URLS = {
   solides: 'https://iaoraluniccb-cloud.github.io/athena-oralunic/rh.html',
-  conferencia: './conferencia-agenda.html'
+  conferencia: './conferencia-agenda.html',
+  avaliacao: 'https://consulta-audio-app.vercel.app/#app',
+  simulador: 'https://iaoraluniccb-cloud.github.io/simulador-vendas/'
 };
 
 function switchGestao(sub) {
