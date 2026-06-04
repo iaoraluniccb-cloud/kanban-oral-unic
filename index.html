@@ -2413,6 +2413,10 @@ async function login(userId) {
   // Botão de recarregar dados visível só para ADMs
   const diagBtn = document.getElementById('diag-btn');
   if (diagBtn) diagBtn.style.display = ADM_USERS.includes(userId) ? 'inline-flex' : 'none';
+  // Aba Gestão visível apenas para Mone, Thais e Jarina
+  const GESTAO_USERS = ['thais', 'dra_mone', 'jarina'];
+  const gestaoBtn = document.getElementById('tab-gestao-btn');
+  if (gestaoBtn) gestaoBtn.style.display = GESTAO_USERS.includes(userId) ? '' : 'none';
   // Verifica cards fora do prazo e notifica ADMs
   setTimeout(checkOverdueAndNotify, 1500);
   // Marca app como pronto (libera listeners de chat para re-renderizar)
