@@ -1596,7 +1596,7 @@
         <span class="tab-badge hidden" id="vello-badge"></span>
       </button>
       <button class="tab-btn" id="tab-agenda-btn" onclick="switchTab('agenda')">Agenda</button>
-      <button class="tab-btn" id="tab-gestao-btn" onclick="switchTab('gestao')">Gestão</button>
+      <button class="tab-btn" id="tab-gestao-btn" onclick="switchTab('gestao')" style="display:none">Gestão</button>
     </nav>
     <div class="header-right">
       <div class="current-user-info">
@@ -2430,6 +2430,7 @@ function logout() {
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('app').style.display = 'none';
   document.getElementById('adm-switch-wrap').style.display = 'none';
+  document.getElementById('tab-gestao-btn').style.display = 'none';
   selectedDay = null;
 }
 
