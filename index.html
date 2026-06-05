@@ -1751,6 +1751,7 @@
     <div class="gestao-subnav">
       <button class="gestao-subbtn active" id="aval-btn-avaliacao" onclick="switchAvaliacao('avaliacao')">Avaliação</button>
       <button class="gestao-subbtn" id="aval-btn-simulador" onclick="switchAvaliacao('simulador')">Simulador de Vendas</button>
+      <button class="gestao-subbtn" id="aval-btn-sorriso" onclick="switchAvaliacao('sorriso')">Foto Antes e Depois</button>
     </div>
     <div class="gestao-iframe-wrap" id="avaliacao-iframe-wrap">
       <iframe id="avaliacao-iframe" src="" allowfullscreen></iframe>
@@ -2505,6 +2506,7 @@ const GESTAO_URLS = {
 };
 
 const AVALIACAO_URLS = {
+  sorriso: 'https://iaoraluniccb-cloud.github.io/simulador-sorriso/',
   avaliacao: 'https://iaoraluniccb-cloud.github.io/consulta-audio-app/',
   simulador: 'https://iaoraluniccb-cloud.github.io/simulador-vendas/'
 };
@@ -2512,6 +2514,10 @@ const AVALIACAO_URLS = {
 function switchAvaliacao(sub) {
   document.querySelectorAll('#avaliacao-tab .gestao-subbtn').forEach(b => b.classList.remove('active'));
   document.getElementById('aval-btn-' + sub).classList.add('active');
+  if (sub === 'sorriso') {
+    window.open(AVALIACAO_URLS[sub], '_blank');
+    return;
+  }
   document.getElementById('avaliacao-iframe').src = AVALIACAO_URLS[sub];
 }
 
