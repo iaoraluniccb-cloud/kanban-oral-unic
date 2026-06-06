@@ -810,6 +810,26 @@
   #gestao-tab.active { display: flex; }
   #avaliacao-tab { display: none; flex-direction: column; flex: 1; overflow: hidden; }
   #avaliacao-tab.active { display: flex; }
+  /* ===== ABA PENDENTES ===== */
+  #pendentes-tab { display: none; flex-direction: column; flex: 1; overflow: auto; padding: 20px; }
+  #pendentes-tab.active { display: flex; }
+  .pendentes-header { font-size: 1rem; font-weight: 700; color: #b91c1c; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+  .pendentes-header span.count { background: #fca5a5; color: #7f1d1d; font-size: 0.75rem; padding: 2px 8px; border-radius: 99px; font-weight: 700; }
+  .pendentes-empty { background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 12px; padding: 18px 20px; color: #166534; font-size: 0.87rem; }
+  .pendentes-person { background: #fff; border: 1.5px solid #e5e7eb; border-radius: 12px; margin-bottom: 14px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
+  .pendentes-person-header { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: #f9fafb; border-bottom: 1px solid #e5e7eb; }
+  .pendentes-person-dot { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; }
+  .pendentes-person-name { font-size: 0.88rem; font-weight: 700; color: #111827; }
+  .pendentes-person-count { font-size: 0.75rem; color: #9ca3af; margin-left: 2px; }
+  .pendentes-card-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 9px 16px; border-bottom: 1px solid #f3f4f6; }
+  .pendentes-card-row:last-child { border-bottom: none; }
+  .pendentes-card-info { flex: 1; min-width: 0; }
+  .pendentes-card-title { font-size: 0.84rem; color: #1e293b; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pendentes-card-meta { font-size: 0.73rem; color: #ef4444; margin-top: 1px; }
+  .pendentes-cobrar-btn { flex-shrink: 0; background: #0ea5e9; color: #fff; border: none; border-radius: 6px; padding: 4px 11px; font-size: 0.76rem; font-weight: 600; cursor: pointer; white-space: nowrap; transition: background 0.15s; }
+  .pendentes-cobrar-btn:hover { background: #0284c7; }
+  .pendentes-cobrar-btn.has-chat { background: #7c3aed; }
+  .pendentes-cobrar-btn.has-chat:hover { background: #6d28d9; }
   .gestao-subnav { display: flex; gap: 8px; padding: 12px 20px 0; background: var(--header-bg, #6b1a3a); }
   .gestao-subbtn { padding: 7px 18px; border-radius: 8px 8px 0 0; border: none; cursor: pointer; font-size: 0.85rem; font-weight: 600; background: rgba(255,255,255,0.12); color: #fff; transition: background 0.15s; }
   .gestao-subbtn.active { background: #C4955A; color: #fff; }
@@ -1598,6 +1618,7 @@
         <span class="tab-badge hidden" id="vello-badge"></span>
       </button>
       <button class="tab-btn" id="tab-agenda-btn" onclick="switchTab('agenda')">Agenda</button>
+      <button class="tab-btn" id="tab-pendentes-btn" onclick="switchTab('pendentes')" style="display:none">Pendentes <span class="tab-badge hidden" id="pendentes-badge"></span></button>
       <button class="tab-btn" id="tab-gestao-btn" onclick="switchTab('gestao')" style="display:none">Gestão</button>
       <button class="tab-btn" id="tab-avaliacao-btn" onclick="switchTab('avaliacao')" style="display:none">Avaliação</button>
     </nav>
@@ -1734,6 +1755,11 @@
     </div>
     <div id="day-detail-panel"></div>
     <div id="overdue-team-panel" style="display:none;margin-top:20px;"></div>
+  </div>
+
+  <!-- Aba Pendentes -->
+  <div id="pendentes-tab">
+    <div id="pendentes-content"></div>
   </div>
 
   <!-- Aba Gestão -->
@@ -2230,6 +2256,15 @@ function startRealtimeListeners() {
       // doc não existe → não toca no cache
       if (currentUser && currentUser.id === userId) renderKanban();
       if (currentUser && ADM_USERS.includes(currentUser.id)) renderOverdueTeamPanel();
+      if (currentUser && ['thais','dra_mone'].includes(currentUser.id)) {
+        if (document.getElementById('pendentes-tab')?.classList.contains('active')) renderPendentes();
+        else { // atualiza badge mesmo sem estar na aba
+          const _allC = window._cache.cards || {};
+          const _cnt = Object.entries(_allC).filter(([id]) => id !== 'dra_mone').reduce((acc,[,arr]) => acc + (Array.isArray(arr) ? arr.filter(c => c.column !== 'done' && !c.sharedOriginId && c.dueDate && (() => { const d = new Date(c.dueDate+'T23:59:59'); return d <= new Date(); })()).length : 0), 0);
+          const _b = document.getElementById('pendentes-badge');
+          if (_b) { if (_cnt > 0) { _b.textContent = _cnt; _b.classList.remove('hidden'); } else _b.classList.add('hidden'); }
+        }
+      }
     });
   }
 
@@ -2427,6 +2462,10 @@ async function login(userId) {
   // Botão de recarregar dados visível só para ADMs
   const diagBtn = document.getElementById('diag-btn');
   if (diagBtn) diagBtn.style.display = ADM_USERS.includes(userId) ? 'inline-flex' : 'none';
+  // Aba Pendentes visível apenas para Dra. Mone e Thais
+  const PENDENTES_USERS = ['thais', 'dra_mone'];
+  const pendentesBtn = document.getElementById('tab-pendentes-btn');
+  if (pendentesBtn) pendentesBtn.style.display = PENDENTES_USERS.includes(userId) ? '' : 'none';
   // Aba Gestão visível apenas para Mone, Thais e Jarina
   const GESTAO_USERS = ['thais', 'dra_mone', 'jarina'];
   const gestaoBtn = document.getElementById('tab-gestao-btn');
@@ -2453,6 +2492,8 @@ function logout() {
   document.getElementById('adm-switch-wrap').style.display = 'none';
   document.getElementById('tab-gestao-btn').style.display = 'none';
   document.getElementById('tab-avaliacao-btn').style.display = 'none';
+  const _pb = document.getElementById('tab-pendentes-btn');
+  if (_pb) _pb.style.display = 'none';
   selectedDay = null;
 }
 
@@ -2464,15 +2505,22 @@ function switchTab(tab) {
   document.getElementById('agenda-tab').classList.remove('active');
   document.getElementById('gestao-tab').classList.remove('active');
   document.getElementById('avaliacao-tab').classList.remove('active');
+  document.getElementById('pendentes-tab').classList.remove('active');
   document.getElementById('tab-vello-btn').classList.remove('active');
   document.getElementById('tab-agenda-btn').classList.remove('active');
   document.getElementById('tab-gestao-btn').classList.remove('active');
   document.getElementById('tab-avaliacao-btn').classList.remove('active');
+  const pendBtn = document.getElementById('tab-pendentes-btn');
+  if (pendBtn) pendBtn.classList.remove('active');
 
   if (tab === 'vello') {
     document.getElementById('vello-tab').classList.add('active');
     document.getElementById('tab-vello-btn').classList.add('active');
     renderVello();
+  } else if (tab === 'pendentes') {
+    document.getElementById('pendentes-tab').classList.add('active');
+    if (pendBtn) pendBtn.classList.add('active');
+    renderPendentes();
   } else if (tab === 'gestao') {
     document.getElementById('gestao-tab').classList.add('active');
     document.getElementById('tab-gestao-btn').classList.add('active');
@@ -3530,6 +3578,7 @@ function renderInbox() {
           ${n.type === 'overdue_alert' ? `${escHtml(n.message)}` : ''}
           ${n.type === 'task_done' ? `${escHtml(n.message)}` : ''}
           ${n.type === 'shared_card' ? `${escHtml(n.message)}` : ''}
+          ${n.type === 'cobrar_chat' ? `<span style="cursor:pointer;text-decoration:underline;" onclick="openCobrarChatFromNotif('${n.refId}')">${escHtml(n.message)}</span>` : ''}
           <div style="font-size:0.72rem;color:var(--gray-400);margin-top:4px;">${timeAgo(n.createdAt)}</div>
         </div>
       `).join('');
@@ -3650,59 +3699,6 @@ function checkOverdueAndNotify() {
   });
 
   if (overdueCards.length === 0) return;
-
-  // Auto-compartilha com Dra. Mone os cards em atraso que ainda não foram compartilhados com ela
-  overdueCards.forEach(card => {
-    // Não compartilha cards que já são da Dra. Mone, que já estão compartilhados com ela,
-    // ou que são cópias compartilhadas (sharedOriginId)
-    if (card._ownerId === 'dra_mone') return;
-    if (card.sharedOriginId) return; // é uma cópia, não o original
-    const alreadyShared = Array.isArray(card.sharedWith) && card.sharedWith.includes('dra_mone');
-    if (alreadyShared) return;
-    // Verifica se Dra. Mone já tem cópia deste card
-    const monCards = getCards('dra_mone');
-    const alreadyHasCopy = monCards.some(c => c.sharedOriginId === card.id || c.id === card.id);
-    if (alreadyHasCopy) return;
-
-    // Atualiza sharedWith no card original
-    const ownerCards = getCards(card._ownerId);
-    const origCard = ownerCards.find(c => c.id === card.id);
-    if (!origCard) return;
-    if (!Array.isArray(origCard.sharedWith)) origCard.sharedWith = [];
-    origCard.sharedWith.push('dra_mone');
-    origCard.sharedChatId = origCard.sharedChatId || genId();
-    saveCards(card._ownerId, ownerCards);
-
-    // Cria cópia no perfil da Dra. Mone
-    const ownerUser = getUserById(card._ownerId);
-    monCards.push({
-      id: genId(),
-      title: origCard.title,
-      description: origCard.description,
-      priority: origCard.priority,
-      dueDate: origCard.dueDate,
-      column: 'todo',
-      createdAt: new Date().toISOString(),
-      isShared: true,
-      sharedOriginId: origCard.id,
-      sharedOriginUser: card._ownerId,
-      sharedOriginName: ownerUser ? ownerUser.name : card._ownerId,
-      sharedChatId: origCard.sharedChatId,
-      sharedWith: origCard.sharedWith
-    });
-    saveCards('dra_mone', monCards);
-
-    // Notifica Dra. Mone
-    const monNotifs = getNotifications('dra_mone');
-    monNotifs.push({
-      id: genId(),
-      type: 'overdue_shared',
-      message: `🔴 "${origCard.title}" de ${ownerUser ? ownerUser.name : card._ownerId} está fora do prazo e foi compartilhado com você`,
-      read: false,
-      createdAt: new Date().toISOString()
-    });
-    saveNotifications('dra_mone', monNotifs);
-  });
 
   // Monta mapa: recipientId → Set de cards a notificar
   const targetMap = {}; // { recipientId: Set of cards }
@@ -4069,6 +4065,213 @@ function renderOverdueTeamPanel() {
         </div>
       `).join('')}
     </div>`;
+}
+
+// ============================================================
+// ABA PENDENTES — visão da Dra. Mone de tarefas em aberto/atraso
+// ============================================================
+function renderPendentes() {
+  const wrap = document.getElementById('pendentes-content');
+  if (!wrap) return;
+
+  const allCards = window._cache.cards || {};
+  const now = new Date();
+  const pendList = []; // { card, ownerId, ownerName, ownerColor, overdue }
+
+  Object.entries(allCards).forEach(([ownerId, cardArray]) => {
+    if (!Array.isArray(cardArray)) return;
+    if (ownerId === 'dra_mone') return; // não lista os próprios cards da Mone
+    const owner = getUserById(ownerId);
+    cardArray.forEach(card => {
+      if (card.column === 'done') return;
+      if (card.sharedOriginId) return; // ignora cópias compartilhadas
+      const hasDate = !!card.dueDate;
+      let overdue = false;
+      if (hasDate) {
+        const due = card.dueTime
+          ? new Date(card.dueDate + 'T' + card.dueTime + ':00')
+          : new Date(card.dueDate + 'T23:59:59');
+        overdue = due <= now;
+      }
+      pendList.push({ card, ownerId, ownerName: owner ? owner.name : ownerId, ownerColor: owner?.color || '#888', overdue });
+    });
+  });
+
+  // Atualiza badge
+  const overdueCnt = pendList.filter(p => p.overdue).length;
+  const badge = document.getElementById('pendentes-badge');
+  if (badge) {
+    if (overdueCnt > 0) { badge.textContent = overdueCnt; badge.classList.remove('hidden'); }
+    else badge.classList.add('hidden');
+  }
+
+  if (pendList.length === 0) {
+    wrap.innerHTML = `<div class="pendentes-empty">✅ Nenhuma tarefa pendente na equipe.</div>`;
+    return;
+  }
+
+  // Ordena: primeiro atrasados, depois por nome do dono
+  pendList.sort((a, b) => {
+    if (a.overdue !== b.overdue) return a.overdue ? -1 : 1;
+    return a.ownerName.localeCompare(b.ownerName);
+  });
+
+  // Agrupa por dono
+  const byOwner = new Map();
+  pendList.forEach(p => {
+    if (!byOwner.has(p.ownerId)) byOwner.set(p.ownerId, { name: p.ownerName, color: p.ownerColor, items: [] });
+    byOwner.get(p.ownerId).items.push(p);
+  });
+
+  const totalPend = pendList.length;
+  let html = `<div class="pendentes-header">⚠️ Tarefas Pendentes da Equipe <span class="count">${totalPend} tarefa${totalPend !== 1 ? 's' : ''}</span></div>`;
+
+  byOwner.forEach(({ name, color, items }) => {
+    const overdueItems = items.filter(i => i.overdue);
+    html += `
+      <div class="pendentes-person">
+        <div class="pendentes-person-header">
+          <div class="pendentes-person-dot" style="background:${color}"></div>
+          <span class="pendentes-person-name">${escHtml(name)}</span>
+          <span class="pendentes-person-count">${items.length} tarefa${items.length !== 1 ? 's' : ''}${overdueItems.length > 0 ? ` · <span style="color:#ef4444;font-weight:700;">${overdueItems.length} em atraso</span>` : ''}</span>
+        </div>
+        ${items.map(({ card, ownerId, overdue }) => {
+          const chatId = 'cobrar_' + ownerId + '_' + card.id;
+          const chats = window._cache.chats || {};
+          const hasChat = !!(chats[chatId] && chats[chatId].length > 0);
+          const unread = window._cache.chatUnread?.[chatId]?.[currentUser?.id];
+          const btnClass = 'pendentes-cobrar-btn' + (hasChat ? ' has-chat' : '');
+          const btnLabel = unread ? `💬 Chat (${unread})` : hasChat ? '💬 Ver chat' : '💬 Cobrar';
+          return `
+            <div class="pendentes-card-row">
+              <div class="pendentes-card-info">
+                <div class="pendentes-card-title">${escHtml(card.title)}</div>
+                <div class="pendentes-card-meta">
+                  ${overdue ? `🔴 Em atraso` : '🟡 Pendente'}
+                  ${card.dueDate ? ` · 📅 ${formatDate(card.dueDate)}` : ' · Sem prazo'}
+                  ${card.priority ? ` · ${card.priority === 'high' ? '🔥 Alta' : card.priority === 'medium' ? '⚡ Média' : '🔵 Baixa'}` : ''}
+                </div>
+              </div>
+              <button class="${btnClass}" onclick="openCobrarChat('${chatId}','${escHtml(card.title).replace(/'/g,"\\'")}','${ownerId}','${card.id}')">${btnLabel}</button>
+            </div>`;
+        }).join('')}
+      </div>`;
+  });
+
+  wrap.innerHTML = html;
+}
+
+async function openCobrarChat(chatId, cardTitle, ownerId, cardId) {
+  const chats = window._cache.chats || {};
+  const messages = chats[chatId] || [];
+
+  // Marca como lido
+  if (!window._cache.chatUnread) window._cache.chatUnread = {};
+  const unread = { ...(window._cache.chatUnread[chatId] || {}) };
+  if (unread[currentUser.id]) {
+    delete unread[currentUser.id];
+    window._cache.chatUnread[chatId] = unread;
+    if (window.__setDoc) window.__setDoc(window.__doc('ou_chats', chatId), { messages: JSON.stringify(messages), unread: JSON.stringify(unread) }).catch(() => null);
+  }
+
+  const ownerUser = getUserById(ownerId);
+  const ownerName = ownerUser ? ownerUser.name : ownerId;
+
+  const html = `
+    <div class="modal-overlay" id="cobrar-chat-modal" onclick="closeOnOverlay(event,'cobrar-chat-modal')">
+      <div class="modal" role="dialog" style="max-width:480px;">
+        <div class="modal-header">
+          <span class="modal-title">💬 Cobrar: ${escHtml(cardTitle)}</span>
+          <button class="modal-close" onclick="closeModal('cobrar-chat-modal')">✕</button>
+        </div>
+        <div style="padding:8px 18px 0;font-size:0.78rem;color:#6b7280;">Conversa com <strong>${escHtml(ownerName)}</strong> sobre esta tarefa</div>
+        <div class="modal-body">
+          <div id="cobrar-chat-messages" style="max-height:320px;overflow-y:auto;margin-bottom:4px;">
+            ${messages.length === 0
+              ? `<div style="text-align:center;color:var(--gray-400);padding:24px;font-size:0.85rem;">Nenhuma mensagem ainda.</div>`
+              : messages.map(m => `
+                <div class="chat-bubble${m.userId === currentUser.id ? ' mine' : ''}">
+                  <div class="chat-author">${escHtml(m.userName)} · ${timeAgo(m.createdAt)}</div>
+                  <div>${escHtml(m.text)}</div>
+                </div>`).join('')}
+          </div>
+          <div class="chat-input-row">
+            <input type="text" id="cobrar-msg-input" placeholder="Digite sua cobrança..." onkeydown="if(event.key==='Enter')sendCobrarMsg('${chatId}','${ownerId}','${cardId}')"/>
+            <button class="chat-send-btn" onclick="sendCobrarMsg('${chatId}','${ownerId}','${cardId}')">Enviar</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  renderModal(html);
+  setTimeout(() => {
+    const el = document.getElementById('cobrar-chat-messages');
+    if (el) el.scrollTop = el.scrollHeight;
+    document.getElementById('cobrar-msg-input')?.focus();
+  }, 100);
+}
+
+function openCobrarChatFromNotif(chatId) {
+  // chatId formato: cobrar_ownerId_cardId
+  const parts = chatId.split('_');
+  const ownerId = parts[1];
+  const cardId = parts.slice(2).join('_');
+  const allCards = window._cache.cards || {};
+  const ownerCards = allCards[ownerId] || [];
+  const card = ownerCards.find(c => c.id === cardId);
+  const title = card ? card.title : 'Tarefa';
+  openCobrarChat(chatId, title, ownerId, cardId);
+}
+
+async function sendCobrarMsg(chatId, ownerId, cardId) {
+  const input = document.getElementById('cobrar-msg-input');
+  const text = input?.value.trim();
+  if (!text) return;
+  input.value = '';
+
+  if (!window._cache.chats) window._cache.chats = {};
+  if (!window._cache.chats[chatId]) window._cache.chats[chatId] = [];
+  const msg = { id: genId(), userId: currentUser.id, userName: currentUser.name, text, createdAt: new Date().toISOString() };
+  window._cache.chats[chatId].push(msg);
+
+  if (!window._cache.chatUnread) window._cache.chatUnread = {};
+  const unread = { ...(window._cache.chatUnread[chatId] || {}) };
+  // Marca como não lido para o dono do card
+  unread[ownerId] = (unread[ownerId] || 0) + 1;
+  window._cache.chatUnread[chatId] = unread;
+
+  if (window.__setDoc) {
+    await window.__setDoc(window.__doc('ou_chats', chatId), {
+      messages: JSON.stringify(window._cache.chats[chatId]),
+      unread: JSON.stringify(unread)
+    }).catch(() => null);
+  }
+
+  // Notifica o dono do card
+  const ownerNotifs = getNotifications(ownerId);
+  const alreadyHasNotif = ownerNotifs.some(n => n.type === 'cobrar_chat' && n.refId === chatId);
+  if (!alreadyHasNotif) {
+    ownerNotifs.push({
+      id: genId(),
+      type: 'cobrar_chat',
+      refId: chatId,
+      message: `💬 ${escHtml(currentUser.name)} cobrou você sobre uma tarefa pendente`,
+      read: false,
+      createdAt: new Date().toISOString()
+    });
+    saveNotifications(ownerId, ownerNotifs);
+  }
+
+  // Re-renderiza o chat aberto
+  const el = document.getElementById('cobrar-chat-messages');
+  if (el) {
+    el.innerHTML = window._cache.chats[chatId].map(m => `
+      <div class="chat-bubble${m.userId === currentUser.id ? ' mine' : ''}">
+        <div class="chat-author">${escHtml(m.userName)} · ${timeAgo(m.createdAt)}</div>
+        <div>${escHtml(m.text)}</div>
+      </div>`).join('');
+    el.scrollTop = el.scrollHeight;
+  }
+  input?.focus();
 }
 
 function renderCalendar() {
