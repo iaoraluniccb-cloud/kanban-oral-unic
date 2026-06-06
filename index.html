@@ -822,9 +822,12 @@
   .pendentes-person-name { font-size: 1rem; font-weight: 800; color: #111827; letter-spacing: 0.01em; }
   .pendentes-person-count { font-size: 0.78rem; color: #6b7280; margin-left: 4px; }
   .pendentes-card-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 9px 16px; border-bottom: 1px solid #f3f4f6; }
+  .pendentes-card-row.overdue-row { background: #fff1f1; border-left: 4px solid #ef4444; }
+  .pendentes-card-row.overdue-row:last-child { border-bottom: none; }
   .pendentes-card-row:last-child { border-bottom: none; }
   .pendentes-card-info { flex: 1; min-width: 0; }
   .pendentes-card-title { font-size: 0.84rem; color: #1e293b; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pendentes-card-row.overdue-row .pendentes-card-title { color: #b91c1c; font-weight: 700; }
   .pendentes-card-meta { font-size: 0.73rem; color: #ef4444; margin-top: 1px; }
   .pendentes-cobrar-btn { flex-shrink: 0; background: #0ea5e9; color: #fff; border: none; border-radius: 6px; padding: 4px 11px; font-size: 0.76rem; font-weight: 600; cursor: pointer; white-space: nowrap; transition: background 0.15s; }
   .pendentes-cobrar-btn:hover { background: #0284c7; }
@@ -4235,7 +4238,7 @@ function renderPendentes() {
           const btnClass = 'pendentes-cobrar-btn' + (hasChat ? ' has-chat' : '');
           const btnLabel = unread ? `💬 Chat (${unread})` : hasChat ? '💬 Ver chat' : '💬 Cobrar';
           return `
-            <div class="pendentes-card-row">
+            <div class="pendentes-card-row${overdue ? ' overdue-row' : ''}">
               <div class="pendentes-card-info">
                 <div class="pendentes-card-title">${escHtml(card.title)}</div>
                 <div class="pendentes-card-meta">
