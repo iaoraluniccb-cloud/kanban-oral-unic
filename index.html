@@ -2108,12 +2108,12 @@ function getCards(userId) {
   return (window._cache.cards[userId] || []);
 }
 
-async function saveCards(userId, cards) {
+async function saveCards(userId, cards, { forceDelete = false } = {}) {
   // Nunca salva se recebeu algo que não é array
   if (!Array.isArray(cards)) { console.warn('saveCards: dado inválido ignorado', userId); return; }
-  // Proteção: nunca sobrescreve dados existentes com array vazio
+  // Proteção: nunca sobrescreve dados existentes com array vazio (exceto exclusão explícita)
   const existing = window._cache.cards[userId] || [];
-  if (cards.length === 0 && existing.length > 0) {
+  if (cards.length === 0 && existing.length > 0 && !forceDelete) {
     console.warn('saveCards: tentativa de zerar cards ignorada para', userId);
     return;
   }
@@ -3398,7 +3398,7 @@ function deleteCard(cardId) {
 function _confirmDeleteCard(cardId) {
   closeModal('delete-confirm-overlay');
   const cards = getCards(currentUser.id).filter(c => c.id !== cardId);
-  saveCards(currentUser.id, cards);
+  saveCards(currentUser.id, cards, { forceDelete: true });
   closeModal('card-modal-overlay');
   renderKanban();
   showToast('Tarefa excluída.', 'info');
@@ -4155,8 +4155,24 @@ function renderPendentes() {
     cardArray.forEach(card => {
       if (card.column === 'done') return;
       if (card.sharedOriginId) return; // ignora cópias compartilhadas
-      // Ignora cards que foram delegados para outro — a responsabilidade é de quem recebeu
-      if (card.delegatedTo?.length) return;
+      // Se delegado para outro(s), mostra no nome de quem recebeu — não no dono original
+      if (card.delegatedTo?.length) {
+        card.delegatedTo.forEach(delegToId => {
+          if (delegToId === currentUser.id) return;
+          if (!isAdm && allowedOwners && !allowedOwners.includes(delegToId)) return;
+          const delegUser = getUserById(delegToId);
+          const hasDate = !!card.dueDate;
+          let overdue = false;
+          if (hasDate) {
+            const due = card.dueTime
+              ? new Date(card.dueDate + 'T' + card.dueTime + ':00')
+              : new Date(card.dueDate + 'T23:59:59');
+            overdue = due <= now;
+          }
+          pendList.push({ card, ownerId: delegToId, ownerName: delegUser ? delegUser.name : delegToId, ownerColor: delegUser?.color || '#888', overdue, originalOwnerId: ownerId });
+        });
+        return;
+      }
       const hasDate = !!card.dueDate;
       let overdue = false;
       if (hasDate) {
@@ -4210,7 +4226,8 @@ function renderPendentes() {
             <div class="pendentes-person-count">${items.length} tarefa${items.length !== 1 ? 's' : ''}${overdueItems.length > 0 ? ` &nbsp;·&nbsp; <span style="color:#ef4444;font-weight:700;">⚠️ ${overdueItems.length} em atraso</span>` : ''}</div>
           </div>
         </div>
-        ${items.map(({ card, ownerId, overdue }) => {
+        ${items.map(({ card, ownerId, overdue, originalOwnerId }) => {
+          const realOwnerId = originalOwnerId || ownerId;
           const chatId = 'cobrar__' + ownerId + '__' + card.id;
           const chats = window._cache.chats || {};
           const hasChat = !!(chats[chatId] && chats[chatId].length > 0);
@@ -4231,13 +4248,61 @@ function renderPendentes() {
                   ${card.priority ? ` · ${card.priority === 'high' ? '🔥 Alta' : card.priority === 'medium' ? '⚡ Média' : '· Baixa'}` : ''}
                 </div>
               </div>
-              <button class="${btnClass}" onclick="openCobrarChat('${chatId}','${escHtml(card.title).replace(/'/g,"\\'")}','${ownerId}','${card.id}')">${btnLabel}</button>
+              <div style="display:flex;gap:6px;flex-shrink:0;">
+                <button class="pendentes-cobrar-btn" style="background:#f59e0b;" onclick="editPrazoPendente('${realOwnerId}','${card.id}')" title="Editar prazo">📅</button>
+                <button class="${btnClass}" onclick="openCobrarChat('${chatId}','${escHtml(card.title).replace(/'/g,"\\'")}','${ownerId}','${card.id}')">${btnLabel}</button>
+              </div>
             </div>`;
         }).join('')}
       </div>`;
   });
 
   wrap.innerHTML = html;
+}
+
+function editPrazoPendente(ownerId, cardId) {
+  const cards = getCards(ownerId);
+  const card = cards.find(c => c.id === cardId);
+  if (!card) return;
+  const html = `
+    <div class="modal-overlay" id="edit-prazo-overlay" onclick="closeOnOverlay(event,'edit-prazo-overlay')">
+      <div class="modal" role="dialog" style="max-width:340px;">
+        <div class="modal-header">
+          <span class="modal-title">📅 Editar Prazo</span>
+          <button class="modal-close" onclick="closeModal('edit-prazo-overlay')">✕</button>
+        </div>
+        <div class="modal-body">
+          <div style="font-size:0.85rem;font-weight:600;color:#374151;margin-bottom:12px;">${escHtml(card.title)}</div>
+          <div class="form-group">
+            <label class="form-label">Nova data</label>
+            <input type="date" id="edit-prazo-date" class="form-input" value="${card.dueDate || ''}" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Horário (opcional)</label>
+            <input type="time" id="edit-prazo-time" class="form-input" value="${card.dueTime || ''}" />
+          </div>
+          <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;">
+            <button onclick="closeModal('edit-prazo-overlay')" style="padding:8px 18px;border-radius:6px;border:1px solid var(--gray-300);background:#fff;cursor:pointer;font-size:0.88rem;">Cancelar</button>
+            <button onclick="_confirmEditPrazo('${ownerId}','${cardId}')" style="padding:8px 18px;border-radius:6px;border:none;background:#0ea5e9;color:#fff;cursor:pointer;font-size:0.88rem;font-weight:700;">Salvar</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+
+async function _confirmEditPrazo(ownerId, cardId) {
+  const newDate = document.getElementById('edit-prazo-date')?.value || '';
+  const newTime = document.getElementById('edit-prazo-time')?.value || '';
+  closeModal('edit-prazo-overlay');
+  const cards = getCards(ownerId);
+  const card = cards.find(c => c.id === cardId);
+  if (!card) return;
+  card.dueDate = newDate || null;
+  card.dueTime = newTime || null;
+  await saveCards(ownerId, cards);
+  renderPendentes();
+  showToast('Prazo atualizado.', 'success');
 }
 
 async function openCobrarChat(chatId, cardTitle, ownerId, cardId) {
