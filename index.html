@@ -4147,9 +4147,13 @@ function renderPendentes() {
               <div class="pendentes-card-info">
                 <div class="pendentes-card-title">${escHtml(card.title)}</div>
                 <div class="pendentes-card-meta">
-                  ${overdue ? `🔴 Em atraso` : '🟡 Pendente'}
-                  ${card.dueDate ? ` · 📅 ${formatDate(card.dueDate)}` : ' · Sem prazo'}
-                  ${card.priority ? ` · ${card.priority === 'high' ? '🔥 Alta' : card.priority === 'medium' ? '⚡ Média' : '🔵 Baixa'}` : ''}
+                  ${overdue
+                    ? `<span style="color:#ef4444;font-weight:600;">🔴 Em atraso</span>`
+                    : card.dueDate
+                      ? `<span style="color:#ef4444;font-weight:600;">🔴 Pendente</span>`
+                      : `<span style="color:#2563eb;font-weight:600;">🔵 Sem prazo</span>`}
+                  ${card.dueDate ? ` · 📅 ${formatDate(card.dueDate)}` : ''}
+                  ${card.priority ? ` · ${card.priority === 'high' ? '🔥 Alta' : card.priority === 'medium' ? '⚡ Média' : '· Baixa'}` : ''}
                 </div>
               </div>
               <button class="${btnClass}" onclick="openCobrarChat('${chatId}','${escHtml(card.title).replace(/'/g,"\\'")}','${ownerId}','${card.id}')">${btnLabel}</button>
