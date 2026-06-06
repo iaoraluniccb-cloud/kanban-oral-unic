@@ -432,7 +432,7 @@
   .inbox-toggle { transition: transform 0.2s; font-size: 0.8rem; color: var(--gray-400); }
   .inbox-toggle.open { transform: rotate(180deg); }
 
-  .inbox-body { padding: 12px 18px; max-height: 420px; overflow-y: auto; }
+  .inbox-body { padding: 12px 18px; max-height: 60vh; overflow-y: auto; }
 
   .inbox-item {
     background: var(--gray-100);
@@ -816,11 +816,11 @@
   .pendentes-header { font-size: 1rem; font-weight: 700; color: #b91c1c; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
   .pendentes-header span.count { background: #fca5a5; color: #7f1d1d; font-size: 0.75rem; padding: 2px 8px; border-radius: 99px; font-weight: 700; }
   .pendentes-empty { background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 12px; padding: 18px 20px; color: #166534; font-size: 0.87rem; }
-  .pendentes-person { background: #fff; border: 1.5px solid #e5e7eb; border-radius: 12px; margin-bottom: 14px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
-  .pendentes-person-header { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: #f9fafb; border-bottom: 1px solid #e5e7eb; }
-  .pendentes-person-dot { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; }
-  .pendentes-person-name { font-size: 0.88rem; font-weight: 700; color: #111827; }
-  .pendentes-person-count { font-size: 0.75rem; color: #9ca3af; margin-left: 2px; }
+  .pendentes-person { background: #fff; border: 1.5px solid #e5e7eb; border-radius: 12px; margin-bottom: 14px; overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.07); }
+  .pendentes-person-header { display: flex; align-items: center; gap: 12px; padding: 14px 18px; background: #f1f5f9; border-bottom: 2px solid #e5e7eb; }
+  .pendentes-person-avatar { width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; font-weight: 800; color: #fff; }
+  .pendentes-person-name { font-size: 1rem; font-weight: 800; color: #111827; letter-spacing: 0.01em; }
+  .pendentes-person-count { font-size: 0.78rem; color: #6b7280; margin-left: 4px; }
   .pendentes-card-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 9px 16px; border-bottom: 1px solid #f3f4f6; }
   .pendentes-card-row:last-child { border-bottom: none; }
   .pendentes-card-info { flex: 1; min-width: 0; }
@@ -4155,6 +4155,8 @@ function renderPendentes() {
     cardArray.forEach(card => {
       if (card.column === 'done') return;
       if (card.sharedOriginId) return; // ignora cópias compartilhadas
+      // Ignora cards que foram delegados para outro — a responsabilidade é de quem recebeu
+      if (card.delegatedTo?.length) return;
       const hasDate = !!card.dueDate;
       let overdue = false;
       if (hasDate) {
@@ -4196,14 +4198,17 @@ function renderPendentes() {
   const totalPend = pendList.length;
   let html = `<div class="pendentes-header">⚠️ Tarefas Pendentes da Equipe <span class="count">${totalPend} tarefa${totalPend !== 1 ? 's' : ''}</span></div>`;
 
-  byOwner.forEach(({ name, color, items }) => {
+  byOwner.forEach(({ name, color, items }, ownerId) => {
     const overdueItems = items.filter(i => i.overdue);
+    const initial = name.charAt(0).toUpperCase();
     html += `
       <div class="pendentes-person">
-        <div class="pendentes-person-header">
-          <div class="pendentes-person-dot" style="background:${color}"></div>
-          <span class="pendentes-person-name">${escHtml(name)}</span>
-          <span class="pendentes-person-count">${items.length} tarefa${items.length !== 1 ? 's' : ''}${overdueItems.length > 0 ? ` · <span style="color:#ef4444;font-weight:700;">${overdueItems.length} em atraso</span>` : ''}</span>
+        <div class="pendentes-person-header" style="border-left: 4px solid ${color};">
+          <div class="pendentes-person-avatar" style="background:${color};">${initial}</div>
+          <div style="flex:1;min-width:0;">
+            <div class="pendentes-person-name">${escHtml(name)}</div>
+            <div class="pendentes-person-count">${items.length} tarefa${items.length !== 1 ? 's' : ''}${overdueItems.length > 0 ? ` &nbsp;·&nbsp; <span style="color:#ef4444;font-weight:700;">⚠️ ${overdueItems.length} em atraso</span>` : ''}</div>
+          </div>
         </div>
         ${items.map(({ card, ownerId, overdue }) => {
           const chatId = 'cobrar__' + ownerId + '__' + card.id;
