@@ -432,7 +432,7 @@
   .inbox-toggle { transition: transform 0.2s; font-size: 0.8rem; color: var(--gray-400); }
   .inbox-toggle.open { transform: rotate(180deg); }
 
-  .inbox-body { padding: 12px 18px; }
+  .inbox-body { padding: 12px 18px; max-height: 420px; overflow-y: auto; }
 
   .inbox-item {
     background: var(--gray-100);
@@ -3560,6 +3560,14 @@ function renderInbox() {
   const badge = document.getElementById('inbox-badge-count');
   if (total > 0) { badge.classList.remove('hidden'); badge.textContent = total; }
   else { badge.classList.add('hidden'); }
+
+  // Abre a inbox automaticamente se tiver itens e estiver fechada
+  const inboxBody = document.getElementById('inbox-body');
+  const inboxToggle = document.getElementById('inbox-toggle');
+  if (total > 0 && inboxBody && inboxBody.classList.contains('hidden')) {
+    inboxBody.classList.remove('hidden');
+    if (inboxToggle) inboxToggle.classList.add('open');
+  }
 
   // Delegations to accept
   const pendingEl = document.getElementById('pending-delegations');
