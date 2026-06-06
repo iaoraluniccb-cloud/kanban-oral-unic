@@ -3374,7 +3374,25 @@ function openCardModal(cardId, defaultCol) {
               <option value="waiting" ${card.column==='waiting'?'selected':''}>Aguardando</option>
               <option value="done" ${card.column==='done'?'selected':''}>Concluído</option>
             </select>
-          </div>` : ''}
+          </div>
+          ${!card.delegatedFrom ? `
+          <div class="form-group">
+            <label class="form-label">📤 Delegações</label>
+            <div id="deleg-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;">
+              ${(card.delegatedTo || []).length === 0
+                ? `<div style="font-size:0.82rem;color:var(--gray-400);font-style:italic;">Nenhuma delegação ativa</div>`
+                : (card.delegatedTo || []).map(uid => {
+                    const u = getUserById(uid);
+                    const uName = u ? u.name : uid;
+                    return `<div style="display:flex;align-items:center;justify-content:space-between;background:#f1f5f9;border-radius:6px;padding:6px 10px;">
+                      <span style="font-size:0.85rem;font-weight:600;">${escHtml(uName)}</span>
+                      <button onclick="removeDelegacaoCard('${cardId}','${uid}')" style="background:#ef4444;color:#fff;border:none;border-radius:4px;padding:2px 8px;cursor:pointer;font-size:0.8rem;">Remover</button>
+                    </div>`;
+                  }).join('')
+              }
+            </div>
+            <button onclick="closeModal('card-modal-overlay');openDelegate('${cardId}')" style="font-size:0.82rem;background:#0ea5e9;color:#fff;border:none;border-radius:6px;padding:6px 12px;cursor:pointer;font-weight:600;">+ Delegar para mais pessoas</button>
+          </div>` : ''}` : ''}
         </div>
         <div class="modal-footer">
           ${isEdit ? `<button class="btn-danger" onclick="deleteCard('${cardId}')">Excluir</button>` : ''}
@@ -3530,6 +3548,44 @@ function selectDelegateUser(uid) {
   document.querySelectorAll('#delegate-user-picker .user-pick-btn').forEach(b => {
     b.classList.toggle('selected', selectedDelegateUserIds.has(b.dataset.uid));
   });
+}
+
+async function removeDelegacaoCard(cardId, targetUserId) {
+  // Remove card da lista do destinatário
+  const recipientCards = getCards(targetUserId).filter(c => !(c.delegatedFrom === currentUser.id && c.title === getCards(currentUser.id).find(x => x.id === cardId)?.title));
+  await saveCards(targetUserId, recipientCards);
+
+  // Atualiza card original removendo o destinatário
+  const cards = getCards(currentUser.id);
+  const card = cards.find(c => c.id === cardId);
+  if (card) {
+    card.delegatedTo = (card.delegatedTo || []).filter(uid => uid !== targetUserId);
+    if (card.delegationIdMap) delete card.delegationIdMap[targetUserId];
+    await saveCards(currentUser.id, cards);
+  }
+
+  // Atualiza seção de delegações no modal sem fechar
+  const u = getUserById(targetUserId);
+  const uName = u ? u.name : targetUserId;
+  showToast(`Delegação para ${uName} removida.`, 'info');
+  renderKanban();
+
+  // Re-renderiza lista no modal
+  const updatedCard = getCards(currentUser.id).find(c => c.id === cardId);
+  const listEl = document.getElementById('deleg-list');
+  if (listEl && updatedCard) {
+    const remaining = updatedCard.delegatedTo || [];
+    listEl.innerHTML = remaining.length === 0
+      ? `<div style="font-size:0.82rem;color:var(--gray-400);font-style:italic;">Nenhuma delegação ativa</div>`
+      : remaining.map(uid => {
+          const usr = getUserById(uid);
+          const nm = usr ? usr.name : uid;
+          return `<div style="display:flex;align-items:center;justify-content:space-between;background:#f1f5f9;border-radius:6px;padding:6px 10px;">
+            <span style="font-size:0.85rem;font-weight:600;">${escHtml(nm)}</span>
+            <button onclick="removeDelegacaoCard('${cardId}','${uid}')" style="background:#ef4444;color:#fff;border:none;border-radius:4px;padding:2px 8px;cursor:pointer;font-size:0.8rem;">Remover</button>
+          </div>`;
+        }).join('');
+  }
 }
 
 function sendDelegation(cardId) {
