@@ -2751,6 +2751,24 @@ function renderCard(card) {
         })()}
       </div>` : ''}
       ${delegatedToHtml}
+      ${(() => {
+        // Verifica se existe chat de cobrança para este card
+        const chats = window._cache.chats || {};
+        const cobrarChats = Object.keys(chats).filter(cid => cid.startsWith('cobrar__') && cid.endsWith('__' + card.id));
+        if (cobrarChats.length === 0) return '';
+        return cobrarChats.map(cobrarChatId => {
+          const parts = cobrarChatId.split('__');
+          const cobradorId = parts[1];
+          const cobradorUser = getUserById(cobradorId);
+          const cobradorName = cobradorUser ? cobradorUser.name : cobradorId;
+          const unread = (window._cache?.chatUnread?.[cobrarChatId]?.[currentUser.id]) || 0;
+          const msgs = chats[cobrarChatId] || [];
+          if (msgs.length === 0) return '';
+          return `<button onclick="openCobrarChatFromNotif('${cobrarChatId}')" style="width:100%;text-align:left;margin-top:5px;padding:5px 9px;border-radius:6px;border:1.5px solid ${unread ? '#ef4444' : '#0ea5e9'};background:${unread ? '#fef2f2' : '#f0f9ff'};color:${unread ? '#b91c1c' : '#0369a1'};font-size:0.75rem;font-weight:600;cursor:pointer;">
+            💬 ${unread ? `(${unread} nova${unread>1?'s':''}) ` : ''}Cobrança de ${escHtml(cobradorName)}
+          </button>`;
+        }).join('');
+      })()}
       ${isDoneDelegation ? `<div style="font-size:0.75rem;color:#16a34a;font-weight:700;margin-bottom:4px;">✅ Concluído por quem recebeu</div>` : ''}
       <div class="card-footer">
         <div class="card-meta">
@@ -4220,6 +4238,7 @@ async function openCobrarChat(chatId, cardTitle, ownerId, cardId) {
     delete unread[currentUser.id];
     window._cache.chatUnread[chatId] = unread;
     if (window.__setDoc) window.__setDoc(window.__doc('ou_chats', chatId), { messages: JSON.stringify(messages), unread: JSON.stringify(unread) }).catch(() => null);
+    renderKanban(); // atualiza botão no card (remove badge não lido)
   }
 
   const ownerUser = getUserById(ownerId);
@@ -4283,8 +4302,21 @@ async function sendCobrarMsg(chatId, ownerId, cardId) {
 
   if (!window._cache.chatUnread) window._cache.chatUnread = {};
   const unread = { ...(window._cache.chatUnread[chatId] || {}) };
-  // Marca como não lido para o dono do card
-  unread[ownerId] = (unread[ownerId] || 0) + 1;
+
+  // Descobre o destinatário: se sou o dono, notifica o cobrador (parts[1] do chatId é o ownerId)
+  // chatId = cobrar__ownerId__cardId → cobrador NÃO está no chatId, mas é quem não é o ownerId
+  // Participantes: o dono (ownerId) e quem mandou a cobrança (currentUser se for o cobrador, ou outro)
+  const chatParts = chatId.split('__');
+  const cardOwnerId = chatParts[1]; // dono do card original
+  const recipientId = currentUser.id === cardOwnerId
+    ? (() => { // dono respondendo: notifica último cobrador (quem enviou a última msg que não é o dono)
+        const msgs = window._cache.chats[chatId] || [];
+        const lastOther = [...msgs].reverse().find(m => m.userId !== cardOwnerId);
+        return lastOther ? lastOther.userId : null;
+      })()
+    : cardOwnerId; // cobrador enviando: notifica o dono
+
+  if (recipientId) unread[recipientId] = (unread[recipientId] || 0) + 1;
   window._cache.chatUnread[chatId] = unread;
 
   if (window.__setDoc) {
@@ -4294,23 +4326,22 @@ async function sendCobrarMsg(chatId, ownerId, cardId) {
     }).catch(() => null);
   }
 
-  // Notifica o dono do card — sempre que chegar nova mensagem
-  const ownerNotifs = getNotifications(ownerId);
-  const allC = window._cache.cards || {};
-  const ownerC = allC[ownerId] || [];
-  const cardForNotif = ownerC.find(c => c.id === cardId);
-  const cardTitleForNotif = cardForNotif ? cardForNotif.title : 'tarefa pendente';
-  // Remove notificação anterior desse mesmo chat para não acumular
-  const filteredNotifs = ownerNotifs.filter(n => !(n.type === 'cobrar_chat' && n.refId === chatId));
-  filteredNotifs.push({
-    id: genId(),
-    type: 'cobrar_chat',
-    refId: chatId,
-    message: `💬 ${currentUser.name} cobrou você: "${cardTitleForNotif}"`,
-    read: false,
-    createdAt: new Date().toISOString()
-  });
-  saveNotifications(ownerId, filteredNotifs);
+  if (recipientId) {
+    const allC = window._cache.cards || {};
+    const cardForNotif = (allC[cardOwnerId] || []).find(c => c.id === cardId);
+    const cardTitleForNotif = cardForNotif ? cardForNotif.title : 'tarefa pendente';
+    const recipientNotifs = getNotifications(recipientId);
+    const filteredNotifs = recipientNotifs.filter(n => !(n.type === 'cobrar_chat' && n.refId === chatId));
+    filteredNotifs.push({
+      id: genId(),
+      type: 'cobrar_chat',
+      refId: chatId,
+      message: `💬 ${currentUser.name} ${currentUser.id === cardOwnerId ? 'respondeu' : 'cobrou'}: "${cardTitleForNotif}"`,
+      read: false,
+      createdAt: new Date().toISOString()
+    });
+    saveNotifications(recipientId, filteredNotifs);
+  }
 
   // Re-renderiza o chat aberto
   const el = document.getElementById('cobrar-chat-messages');
