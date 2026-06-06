@@ -2435,8 +2435,11 @@ async function login(userId) {
   const AVALIACAO_USERS = ['thais', 'dra_mone', 'dr_aurelio', 'dr_scharles', 'brendha', 'bruna', 'suelen'];
   const avaliacaoBtn = document.getElementById('tab-avaliacao-btn');
   if (avaliacaoBtn) avaliacaoBtn.style.display = AVALIACAO_USERS.includes(userId) ? '' : 'none';
-  // Verifica cards fora do prazo e notifica ADMs
-  setTimeout(checkOverdueAndNotify, 1500);
+  // Verifica cards fora do prazo e notifica ADMs (após carregar alertas dispensados)
+  setTimeout(async () => {
+    await loadDismissedAlerts(userId);
+    checkOverdueAndNotify();
+  }, 1500);
   // Marca app como pronto (libera listeners de chat para re-renderizar)
   setTimeout(() => { window._appReady = true; }, 2000);
 }
@@ -3578,9 +3581,46 @@ function respondDelegation(delegId, response) {
   renderVello();
 }
 
+async function saveDismissedAlerts(userId, refIds) {
+  if (!window.__db) return;
+  const ref = window.__doc('ou_dismissed_alerts', userId);
+  await window.__setDoc(ref, { ids: JSON.stringify([...refIds]), updatedAt: new Date().toISOString() });
+}
+
+function getDismissedAlerts(userId) {
+  return window._cache.dismissedAlerts?.[userId] || new Set();
+}
+
+async function loadDismissedAlerts(userId) {
+  if (!window.__db) return;
+  if (!window._cache.dismissedAlerts) window._cache.dismissedAlerts = {};
+  try {
+    const snap = await window.__getDoc(window.__doc('ou_dismissed_alerts', userId));
+    if (snap.exists()) {
+      const ids = JSON.parse(snap.data().ids || '[]');
+      window._cache.dismissedAlerts[userId] = new Set(ids);
+    } else {
+      window._cache.dismissedAlerts[userId] = new Set();
+    }
+  } catch(e) {
+    window._cache.dismissedAlerts[userId] = new Set();
+  }
+}
+
 function dismissNotif(notifId) {
-  const notifs = getNotifications(currentUser.id).filter(n => n.id !== notifId);
+  const allNotifs = getNotifications(currentUser.id);
+  const dismissed = allNotifs.find(n => n.id === notifId);
+  const notifs = allNotifs.filter(n => n.id !== notifId);
   saveNotifications(currentUser.id, notifs);
+
+  // Se for overdue_alert, registra o refId como permanentemente dispensado
+  if (dismissed && dismissed.type === 'overdue_alert' && dismissed.refId) {
+    if (!window._cache.dismissedAlerts) window._cache.dismissedAlerts = {};
+    if (!window._cache.dismissedAlerts[currentUser.id]) window._cache.dismissedAlerts[currentUser.id] = new Set();
+    window._cache.dismissedAlerts[currentUser.id].add(dismissed.refId);
+    saveDismissedAlerts(currentUser.id, window._cache.dismissedAlerts[currentUser.id]);
+  }
+
   renderInbox();
 }
 
@@ -3691,11 +3731,13 @@ function checkOverdueAndNotify() {
   Object.entries(targetMap).forEach(([recipientId, cardMap]) => {
     const existingNotifs = getNotifications(recipientId);
     const existingIds = new Set(existingNotifs.filter(n => n.type === 'overdue_alert').map(n => n.refId));
+    const dismissedIds = getDismissedAlerts(recipientId);
     const newNotifs = [...existingNotifs];
     let added = 0;
 
     cardMap.forEach(card => {
       if (existingIds.has(card.id)) return;
+      if (dismissedIds.has(card.id)) return; // já foi dispensado pelo usuário
       const ownerUser = getUserById(card._ownerId);
       const ownerName = ownerUser ? ownerUser.name : card._ownerId;
       // Se for o delegador recebendo, mensagem personalizada
