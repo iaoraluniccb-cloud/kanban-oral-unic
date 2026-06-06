@@ -2823,13 +2823,14 @@ function renderCard(card) {
         const cobrarChats = Object.keys(chats).filter(cid => cid.startsWith('cobrar__') && cid.endsWith('__' + card.id));
         if (cobrarChats.length === 0) return '';
         return cobrarChats.map(cobrarChatId => {
-          const parts = cobrarChatId.split('__');
-          const cobradorId = parts[1];
-          const cobradorUser = getUserById(cobradorId);
-          const cobradorName = cobradorUser ? cobradorUser.name : cobradorId;
           const unread = (window._cache?.chatUnread?.[cobrarChatId]?.[currentUser.id]) || 0;
           const msgs = chats[cobrarChatId] || [];
           if (msgs.length === 0) return '';
+          // Pega quem enviou a primeira mensagem (o cobrador real)
+          const firstMsg = msgs[0];
+          const cobradorId = firstMsg?.userId || firstMsg?.senderId || cobrarChatId.split('__')[1];
+          const cobradorUser = getUserById(cobradorId);
+          const cobradorName = cobradorUser ? cobradorUser.name : cobradorId;
           return `<button onclick="openCobrarChatFromNotif('${cobrarChatId}')" style="width:100%;text-align:left;margin-top:5px;padding:5px 9px;border-radius:6px;border:1.5px solid ${unread ? '#ef4444' : '#0ea5e9'};background:${unread ? '#fef2f2' : '#f0f9ff'};color:${unread ? '#b91c1c' : '#0369a1'};font-size:0.75rem;font-weight:600;cursor:pointer;">
             💬 ${unread ? `(${unread} nova${unread>1?'s':''}) ` : ''}Cobrança de ${escHtml(cobradorName)}
           </button>`;
