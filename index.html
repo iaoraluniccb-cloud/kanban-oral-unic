@@ -4243,25 +4243,60 @@ function renderPendentes() {
   const isAdm = ['thais', 'dra_mone'].includes(currentUser.id);
   const allowedOwners = isAdm ? null : (SUPERVISORS[currentUser.id] || []);
 
+  // Pré-computa: para cada (fromUserId, cardTitle) quais userIds receberam delegação ativa
+  // Chave: `${fromUserId}::${cardId}` → Set de delegToIds
+  const delegReceivedMap = new Map();
+  Object.entries(allCards).forEach(([recipientId, cardArray]) => {
+    if (!Array.isArray(cardArray)) return;
+    cardArray.forEach(c => {
+      if (!c.isDelegation || !c.delegatedFrom) return;
+      if (c.column === 'done') return;
+      // Usa delegationId se existir, senão usa título como fallback
+      const key = c.delegationId
+        ? `id::${c.delegationId}`
+        : `title::${c.delegatedFrom}::${c.title}`;
+      if (!delegReceivedMap.has(key)) delegReceivedMap.set(key, new Set());
+      delegReceivedMap.get(key).add(recipientId);
+    });
+  });
+
+  // Função auxiliar: retorna Set de recipientes ativos para um card do dono
+  function getActiveDelegatees(ownerId, card) {
+    const result = new Set([
+      ...(card.delegatedTo || []),
+      ...Object.keys(card.delegationIdMap || {})
+    ]);
+    // Também cruza com os cards reais recebidos (robusto para dados antigos)
+    const keyById = card.id ? delegReceivedMap.get(`id::${card.id}`) : null;
+    const keyByTitle = delegReceivedMap.get(`title::${ownerId}::${card.title}`);
+    if (keyById) keyById.forEach(id => result.add(id));
+    if (keyByTitle) keyByTitle.forEach(id => result.add(id));
+    return result;
+  }
+
+  // Deduplicação final por (ownerId, cardId) para evitar entradas repetidas
+  const pendListKeys = new Set();
+
   Object.entries(allCards).forEach(([ownerId, cardArray]) => {
     if (!Array.isArray(cardArray)) return;
-    if (ownerId === currentUser.id) return; // não lista os próprios cards
-    if (!isAdm && allowedOwners && !allowedOwners.includes(ownerId)) return; // filtra por supervisionados
+    if (ownerId === currentUser.id) return;
+    if (!isAdm && allowedOwners && !allowedOwners.includes(ownerId)) return;
     const owner = getUserById(ownerId);
     cardArray.forEach(card => {
       if (card.column === 'done') return;
-      if (card.sharedOriginId) return; // ignora cópias compartilhadas
-      if (card.isDelegation && card.delegatedFrom) return; // ignora cópia recebida por delegação — já aparece pelo dono original
-      // Coleta todos os delegados: via delegatedTo OU via delegationIdMap
-      const delegatedToIds = new Set([
-        ...(card.delegatedTo || []),
-        ...Object.keys(card.delegationIdMap || {})
-      ]);
-      // Se delegado para outro(s), mostra no nome de quem recebeu — não no dono original
-      if (delegatedToIds.size > 0) {
-        delegatedToIds.forEach(delegToId => {
+      if (card.sharedOriginId) return;
+      if (card.isDelegation && card.delegatedFrom) return; // cópia recebida — tratada pelo dono original
+
+      const delegateesIds = getActiveDelegatees(ownerId, card);
+
+      if (delegateesIds.size > 0) {
+        // Mostra no nome de quem recebeu, não no dono
+        delegateesIds.forEach(delegToId => {
           if (delegToId === currentUser.id) return;
           if (!isAdm && allowedOwners && !allowedOwners.includes(delegToId)) return;
+          const key = `${delegToId}::${card.id || card.title}`;
+          if (pendListKeys.has(key)) return; // deduplicação
+          pendListKeys.add(key);
           const delegUser = getUserById(delegToId);
           const hasDate = !!card.dueDate;
           let overdue = false;
@@ -4273,8 +4308,13 @@ function renderPendentes() {
           }
           pendList.push({ card, ownerId: delegToId, ownerName: delegUser ? delegUser.name : delegToId, ownerColor: delegUser?.color || '#888', overdue, originalOwnerId: ownerId });
         });
-        return;
+        return; // não mostra no dono original
       }
+
+      // Card sem delegação — mostra no dono
+      const key = `${ownerId}::${card.id || card.title}`;
+      if (pendListKeys.has(key)) return;
+      pendListKeys.add(key);
       const hasDate = !!card.dueDate;
       let overdue = false;
       if (hasDate) {
