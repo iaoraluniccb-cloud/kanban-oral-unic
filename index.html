@@ -2479,6 +2479,8 @@ async function login(userId) {
     await loadDismissedAlerts(userId);
     checkOverdueAndNotify();
   }, 1500);
+  // Limpa cópias auto-compartilhadas antigas do perfil da Dra. Mone (migração única)
+  setTimeout(cleanupAutoSharedWithMone, 3000);
   // Marca app como pronto (libera listeners de chat para re-renderizar)
   setTimeout(() => { window._appReady = true; }, 2000);
 }
@@ -4065,6 +4067,43 @@ function renderOverdueTeamPanel() {
         </div>
       `).join('')}
     </div>`;
+}
+
+// ============================================================
+// LIMPEZA DE AUTO-COMPARTILHAMENTOS LEGADOS COM DRA. MONE
+// ============================================================
+async function cleanupAutoSharedWithMone() {
+  // Remove cópias auto-compartilhadas (sharedOriginId) do perfil da Dra. Mone
+  const moneCards = getCards('dra_mone');
+  const toRemoveOriginIds = new Set();
+  const cleanedMone = moneCards.filter(c => {
+    if (c.sharedOriginId) { toRemoveOriginIds.add(c.sharedOriginId); return false; }
+    return true;
+  });
+  if (cleanedMone.length < moneCards.length) {
+    window._cache.cards['dra_mone'] = cleanedMone;
+    await saveCards('dra_mone', cleanedMone);
+    console.log('[cleanup] Removidas', moneCards.length - cleanedMone.length, 'cópias do perfil da Dra. Mone');
+  }
+
+  // Remove 'dra_mone' de sharedWith nos cards originais de outros usuários
+  const allCards = window._cache.cards || {};
+  for (const [ownerId, cardArray] of Object.entries(allCards)) {
+    if (ownerId === 'dra_mone') continue;
+    if (!Array.isArray(cardArray)) continue;
+    let changed = false;
+    const updated = cardArray.map(c => {
+      if (!Array.isArray(c.sharedWith) || !c.sharedWith.includes('dra_mone')) return c;
+      changed = true;
+      const newSharedWith = c.sharedWith.filter(id => id !== 'dra_mone');
+      return { ...c, sharedWith: newSharedWith };
+    });
+    if (changed) {
+      window._cache.cards[ownerId] = updated;
+      await saveCards(ownerId, updated);
+      console.log('[cleanup] Removido sharedWith dra_mone dos cards de', ownerId);
+    }
+  }
 }
 
 // ============================================================
