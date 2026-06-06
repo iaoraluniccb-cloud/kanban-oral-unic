@@ -1787,6 +1787,10 @@
 
   <!-- Aba Pendentes -->
   <div id="pendentes-tab">
+    <div style="display:flex;gap:8px;margin-bottom:16px;align-items:center;">
+      <button id="pend-filter-all" onclick="setPendFilter('all')" style="padding:6px 16px;border-radius:20px;border:1.5px solid #e5e7eb;background:#7c1c3e;color:#fff;font-size:0.82rem;font-weight:700;cursor:pointer;">Todas</button>
+      <button id="pend-filter-overdue" onclick="setPendFilter('overdue')" style="padding:6px 16px;border-radius:20px;border:1.5px solid #e5e7eb;background:#fff;color:#6b7280;font-size:0.82rem;font-weight:600;cursor:pointer;">⚠️ Fora do Prazo</button>
+    </div>
     <div id="pendentes-content"></div>
   </div>
 
@@ -4231,6 +4235,16 @@ async function cleanupAutoSharedWithMone() {
 // ============================================================
 // ABA PENDENTES — visão da Dra. Mone de tarefas em aberto/atraso
 // ============================================================
+let _pendFilter = 'all';
+function setPendFilter(f) {
+  _pendFilter = f;
+  const btnAll = document.getElementById('pend-filter-all');
+  const btnOverdue = document.getElementById('pend-filter-overdue');
+  if (btnAll) { btnAll.style.background = f === 'all' ? '#7c1c3e' : '#fff'; btnAll.style.color = f === 'all' ? '#fff' : '#6b7280'; }
+  if (btnOverdue) { btnOverdue.style.background = f === 'overdue' ? '#ef4444' : '#fff'; btnOverdue.style.color = f === 'overdue' ? '#fff' : '#6b7280'; }
+  renderPendentes();
+}
+
 function renderPendentes() {
   const wrap = document.getElementById('pendentes-content');
   if (!wrap) return;
@@ -4294,9 +4308,10 @@ function renderPendentes() {
         delegateesIds.forEach(delegToId => {
           if (delegToId === currentUser.id) return;
           if (!isAdm && allowedOwners && !allowedOwners.includes(delegToId)) return;
-          // Se o card recebido pelo delegado já está concluído, não mostrar
+          // Só mostra se o delegado realmente tem o card no banco (ativo ou pendente)
           const receivedCard = (allCards[delegToId] || []).find(c => c.delegatedFrom === ownerId && c.title === card.title);
-          if (receivedCard && receivedCard.column === 'done') return;
+          if (!receivedCard) return; // card não existe para esse delegado — ignorar
+          if (receivedCard.column === 'done') return; // já concluído
           const key = `${delegToId}::${card.id || card.title}`;
           if (pendListKeys.has(key)) return; // deduplicação
           pendListKeys.add(key);
@@ -4330,7 +4345,7 @@ function renderPendentes() {
     });
   });
 
-  // Atualiza badge
+  // Atualiza badge (sempre com total real, independente do filtro)
   const overdueCnt = pendList.filter(p => p.overdue).length;
   const badge = document.getElementById('pendentes-badge');
   if (badge) {
@@ -4338,26 +4353,30 @@ function renderPendentes() {
     else badge.classList.add('hidden');
   }
 
-  if (pendList.length === 0) {
-    wrap.innerHTML = `<div class="pendentes-empty">✅ Nenhuma tarefa pendente na equipe.</div>`;
+  // Aplica filtro
+  const filteredList = _pendFilter === 'overdue' ? pendList.filter(p => p.overdue) : pendList;
+
+  if (filteredList.length === 0) {
+    wrap.innerHTML = `<div class="pendentes-empty">${_pendFilter === 'overdue' ? '✅ Nenhuma tarefa fora do prazo.' : '✅ Nenhuma tarefa pendente na equipe.'}</div>`;
     return;
   }
 
-  // Ordena: primeiro atrasados, depois por nome do dono
-  pendList.sort((a, b) => {
+  // Ordena filteredList: primeiro atrasados, depois por nome
+  filteredList.sort((a, b) => {
     if (a.overdue !== b.overdue) return a.overdue ? -1 : 1;
     return a.ownerName.localeCompare(b.ownerName);
   });
 
   // Agrupa por dono
   const byOwner = new Map();
-  pendList.forEach(p => {
+  filteredList.forEach(p => {
     if (!byOwner.has(p.ownerId)) byOwner.set(p.ownerId, { name: p.ownerName, color: p.ownerColor, items: [] });
     byOwner.get(p.ownerId).items.push(p);
   });
 
-  const totalPend = pendList.length;
-  let html = `<div class="pendentes-header">⚠️ Tarefas Pendentes da Equipe <span class="count">${totalPend} tarefa${totalPend !== 1 ? 's' : ''}</span></div>`;
+  const totalPend = filteredList.length;
+  const headerLabel = _pendFilter === 'overdue' ? '⚠️ Fora do Prazo' : '⚠️ Tarefas Pendentes da Equipe';
+  let html = `<div class="pendentes-header">${headerLabel} <span class="count">${totalPend} tarefa${totalPend !== 1 ? 's' : ''}</span></div>`;
 
   byOwner.forEach(({ name, color, items }, ownerId) => {
     const overdueItems = items.filter(i => i.overdue);
