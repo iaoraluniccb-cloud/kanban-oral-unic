@@ -4216,9 +4216,14 @@ function renderPendentes() {
       if (card.column === 'done') return;
       if (card.sharedOriginId) return; // ignora cópias compartilhadas
       if (card.isDelegation && card.delegatedFrom) return; // ignora cópia recebida por delegação — já aparece pelo dono original
+      // Coleta todos os delegados: via delegatedTo OU via delegationIdMap
+      const delegatedToIds = new Set([
+        ...(card.delegatedTo || []),
+        ...Object.keys(card.delegationIdMap || {})
+      ]);
       // Se delegado para outro(s), mostra no nome de quem recebeu — não no dono original
-      if (card.delegatedTo?.length) {
-        card.delegatedTo.forEach(delegToId => {
+      if (delegatedToIds.size > 0) {
+        delegatedToIds.forEach(delegToId => {
           if (delegToId === currentUser.id) return;
           if (!isAdm && allowedOwners && !allowedOwners.includes(delegToId)) return;
           const delegUser = getUserById(delegToId);
