@@ -3742,7 +3742,7 @@ function renderInbox() {
 
   // Notifications
   const notifEl = document.getElementById('notifications-list');
-  const displayNotifs = notifs.filter(n => n.type !== 'incoming_delegation');
+  const displayNotifs = notifs.filter(n => n.type !== 'incoming_delegation' && !n.read);
   if (displayNotifs.length === 0) {
     notifEl.innerHTML = delegations.length === 0 ? `<div style="text-align:center;color:var(--gray-400);padding:20px;font-size:0.85rem;">Nenhuma notificação</div>` : '';
   } else {
