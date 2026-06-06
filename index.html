@@ -2462,8 +2462,8 @@ async function login(userId) {
   // Botão de recarregar dados visível só para ADMs
   const diagBtn = document.getElementById('diag-btn');
   if (diagBtn) diagBtn.style.display = ADM_USERS.includes(userId) ? 'inline-flex' : 'none';
-  // Aba Pendentes visível apenas para Dra. Mone e Thais
-  const PENDENTES_USERS = ['thais', 'dra_mone'];
+  // Aba Pendentes visível para Dra. Mone, Thais e supervisores com subordinados
+  const PENDENTES_USERS = ['thais', 'dra_mone', ...Object.keys(SUPERVISORS)];
   const pendentesBtn = document.getElementById('tab-pendentes-btn');
   if (pendentesBtn) pendentesBtn.style.display = PENDENTES_USERS.includes(userId) ? '' : 'none';
   // Aba Gestão visível apenas para Mone, Thais e Jarina
@@ -4078,9 +4078,14 @@ function renderPendentes() {
   const now = new Date();
   const pendList = []; // { card, ownerId, ownerName, ownerColor, overdue }
 
+  // Supervisores veem apenas seus subordinados; ADMs veem todos
+  const isAdm = ['thais', 'dra_mone'].includes(currentUser.id);
+  const allowedOwners = isAdm ? null : (SUPERVISORS[currentUser.id] || []);
+
   Object.entries(allCards).forEach(([ownerId, cardArray]) => {
     if (!Array.isArray(cardArray)) return;
-    if (ownerId === 'dra_mone') return; // não lista os próprios cards da Mone
+    if (ownerId === currentUser.id) return; // não lista os próprios cards
+    if (!isAdm && allowedOwners && !allowedOwners.includes(ownerId)) return; // filtra por supervisionados
     const owner = getUserById(ownerId);
     cardArray.forEach(card => {
       if (card.column === 'done') return;
