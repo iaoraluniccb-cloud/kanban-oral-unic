@@ -4249,7 +4249,7 @@ function renderPendentes() {
   Object.entries(allCards).forEach(([recipientId, cardArray]) => {
     if (!Array.isArray(cardArray)) return;
     cardArray.forEach(c => {
-      if (!c.isDelegation || !c.delegatedFrom) return;
+      if (!c.delegatedFrom) return; // qualquer card com delegatedFrom é cópia recebida
       if (c.column === 'done') return;
       // Usa delegationId se existir, senão usa título como fallback
       const key = c.delegationId
@@ -4285,7 +4285,7 @@ function renderPendentes() {
     cardArray.forEach(card => {
       if (card.column === 'done') return;
       if (card.sharedOriginId) return;
-      if (card.isDelegation && card.delegatedFrom) return; // cópia recebida — tratada pelo dono original
+      if (card.delegatedFrom) return; // cópia recebida — tratada pelo dono original
 
       const delegateesIds = getActiveDelegatees(ownerId, card);
 
