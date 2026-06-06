@@ -4294,6 +4294,9 @@ function renderPendentes() {
         delegateesIds.forEach(delegToId => {
           if (delegToId === currentUser.id) return;
           if (!isAdm && allowedOwners && !allowedOwners.includes(delegToId)) return;
+          // Se o card recebido pelo delegado já está concluído, não mostrar
+          const receivedCard = (allCards[delegToId] || []).find(c => c.delegatedFrom === ownerId && c.title === card.title);
+          if (receivedCard && receivedCard.column === 'done') return;
           const key = `${delegToId}::${card.id || card.title}`;
           if (pendListKeys.has(key)) return; // deduplicação
           pendListKeys.add(key);
