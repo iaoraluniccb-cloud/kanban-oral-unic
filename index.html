@@ -434,6 +434,29 @@
 
   .inbox-body { padding: 12px 18px; max-height: 60vh; overflow-y: auto; }
 
+  /* Inbox fullscreen overlay */
+  .inbox-fullscreen-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 1200;
+    display: flex; align-items: flex-start; justify-content: center; padding: 0;
+  }
+  .inbox-fullscreen-panel {
+    background: #fff; width: 100%; height: 100vh; max-width: 100%;
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  .inbox-fullscreen-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 24px; background: var(--wine, #7c1c3e); color: #fff;
+    font-size: 1.05rem; font-weight: 700; flex-shrink: 0;
+  }
+  .inbox-fullscreen-header-left { display: flex; align-items: center; gap: 10px; }
+  .inbox-fullscreen-close {
+    background: rgba(255,255,255,0.2); border: none; color: #fff; border-radius: 8px;
+    width: 36px; height: 36px; font-size: 1.1rem; cursor: pointer; display: flex;
+    align-items: center; justify-content: center; transition: background 0.15s;
+  }
+  .inbox-fullscreen-close:hover { background: rgba(255,255,255,0.35); }
+  .inbox-fullscreen-body { flex: 1; overflow-y: auto; padding: 20px 24px; }
+
   .inbox-item {
     background: var(--gray-100);
     border-radius: var(--radius-sm);
@@ -3548,10 +3571,36 @@ function sendDelegation(cardId) {
 // INBOX
 // ============================================================
 function toggleInbox() {
-  const body = document.getElementById('inbox-body');
-  const toggle = document.getElementById('inbox-toggle');
-  body.classList.toggle('hidden');
-  toggle.classList.toggle('open');
+  openInboxFullscreen();
+}
+
+function openInboxFullscreen() {
+  if (document.getElementById('inbox-fullscreen-overlay')) return;
+  const delegationsHtml = document.getElementById('pending-delegations')?.innerHTML || '';
+  const notifsHtml = document.getElementById('notifications-list')?.innerHTML || '';
+  const html = `
+    <div class="inbox-fullscreen-overlay" id="inbox-fullscreen-overlay">
+      <div class="inbox-fullscreen-panel">
+        <div class="inbox-fullscreen-header">
+          <div class="inbox-fullscreen-header-left">
+            <span>📬</span>
+            <span>Caixa de Entrada</span>
+            <span class="inbox-count" id="inbox-fullscreen-badge" style="background:rgba(255,255,255,0.3);color:#fff;">${document.getElementById('inbox-badge-count')?.textContent || ''}</span>
+          </div>
+          <button class="inbox-fullscreen-close" onclick="closeInboxFullscreen()">✕</button>
+        </div>
+        <div class="inbox-fullscreen-body">
+          <div id="inbox-fullscreen-delegations">${delegationsHtml}</div>
+          <div id="inbox-fullscreen-notifications">${notifsHtml}</div>
+        </div>
+      </div>
+    </div>`;
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+
+function closeInboxFullscreen() {
+  const el = document.getElementById('inbox-fullscreen-overlay');
+  if (el) el.remove();
 }
 
 function renderInbox() {
@@ -3616,6 +3665,14 @@ function renderInbox() {
   }
 
   updateVelloBadge();
+
+  // Sincroniza painel fullscreen se estiver aberto
+  const fsDeleg = document.getElementById('inbox-fullscreen-delegations');
+  const fsNotifs = document.getElementById('inbox-fullscreen-notifications');
+  const fsBadge = document.getElementById('inbox-fullscreen-badge');
+  if (fsDeleg) fsDeleg.innerHTML = pendingEl.innerHTML;
+  if (fsNotifs) fsNotifs.innerHTML = notifEl.innerHTML;
+  if (fsBadge) { fsBadge.textContent = total > 0 ? total : ''; fsBadge.style.display = total > 0 ? '' : 'none'; }
 }
 
 function respondDelegation(delegId, response) {
