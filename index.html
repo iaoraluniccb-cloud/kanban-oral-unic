@@ -4299,38 +4299,37 @@ function renderPendentes() {
     cardArray.forEach(card => {
       if (card.column === 'done') return;
       if (card.sharedOriginId) return;
-      if (card.delegatedFrom) return; // cópia recebida — tratada pelo dono original
 
+      // Regra 1: card delegado do dono para outro — NÃO mostra no dono
+      // só aparece se o destinatário realmente tem o card e ainda não concluiu
       const delegateesIds = getActiveDelegatees(ownerId, card);
-
-      if (delegateesIds.size > 0) {
-        // Mostra no nome de quem recebeu, não no dono
+      if (delegateesIds.size > 0 && !card.delegatedFrom) {
+        // É card do dono que foi delegado → mostra no destinatário
         delegateesIds.forEach(delegToId => {
           if (delegToId === currentUser.id) return;
           if (!isAdm && allowedOwners && !allowedOwners.includes(delegToId)) return;
-          // Só mostra se o delegado realmente tem o card no banco (ativo ou pendente)
           const receivedCard = (allCards[delegToId] || []).find(c => c.delegatedFrom === ownerId && c.title === card.title);
-          if (!receivedCard) return; // card não existe para esse delegado — ignorar
-          if (receivedCard.column === 'done') return; // já concluído
-          const key = `${delegToId}::${card.id || card.title}`;
-          if (pendListKeys.has(key)) return; // deduplicação
+          if (!receivedCard) return;
+          if (receivedCard.column === 'done') return;
+          const key = `${delegToId}::${receivedCard.id}`;
+          if (pendListKeys.has(key)) return;
           pendListKeys.add(key);
           const delegUser = getUserById(delegToId);
-          const hasDate = !!card.dueDate;
+          const hasDate = !!receivedCard.dueDate;
           let overdue = false;
           if (hasDate) {
-            const due = card.dueTime
-              ? new Date(card.dueDate + 'T' + card.dueTime + ':00')
-              : new Date(card.dueDate + 'T23:59:59');
+            const due = receivedCard.dueTime
+              ? new Date(receivedCard.dueDate + 'T' + receivedCard.dueTime + ':00')
+              : new Date(receivedCard.dueDate + 'T23:59:59');
             overdue = due <= now;
           }
-          pendList.push({ card, ownerId: delegToId, ownerName: delegUser ? delegUser.name : delegToId, ownerColor: delegUser?.color || '#888', overdue, originalOwnerId: ownerId });
+          pendList.push({ card: receivedCard, ownerId: delegToId, ownerName: delegUser ? delegUser.name : delegToId, ownerColor: delegUser?.color || '#888', overdue, originalOwnerId: ownerId });
         });
-        return; // não mostra no dono original
+        return;
       }
 
-      // Card sem delegação — mostra no dono
-      const key = `${ownerId}::${card.id || card.title}`;
+      // Regra 2: card recebido por delegação OU card próprio sem delegação → mostra no responsável (ownerId)
+      const key = `${ownerId}::${card.id}`;
       if (pendListKeys.has(key)) return;
       pendListKeys.add(key);
       const hasDate = !!card.dueDate;
