@@ -620,7 +620,9 @@
   }
 
   /* Card */
+  .kanban-card:active { transform: scale(0.99); }
   .kanban-card {
+    cursor: pointer;
     background: white;
     border: 1px solid var(--gray-200);
     border-radius: var(--radius-sm);
@@ -2688,6 +2690,40 @@ function sortedColCards(cards, col) {
   return autoSortCards(colCards);
 }
 
+function openCardView(cardId, event) {
+  // Não abre se clicou em botão ou elemento interativo
+  if (event && event.target.closest('button, a, input, select, textarea')) return;
+  const card = getCards(currentUser.id).find(c => c.id === cardId);
+  if (!card) return;
+  const priorityLabel = card.priority === 'high' ? '🔥 Alta' : card.priority === 'medium' ? '⚡ Média' : '· Baixa';
+  const priorityColor = card.priority === 'high' ? '#ef4444' : card.priority === 'medium' ? '#f59e0b' : '#6b7280';
+  const html = `
+    <div class="modal-overlay" id="card-view-overlay" onclick="closeOnOverlay(event,'card-view-overlay')">
+      <div class="modal" role="dialog" style="max-width:520px;">
+        <div class="modal-header">
+          <span class="modal-title" style="font-size:1rem;line-height:1.4;">${escHtml(card.title)}</span>
+          <button class="modal-close" onclick="closeModal('card-view-overlay')">✕</button>
+        </div>
+        <div class="modal-body" style="padding:20px 24px;">
+          <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;font-size:0.82rem;color:#6b7280;">
+            <span style="color:${priorityColor};font-weight:700;">${priorityLabel}</span>
+            ${card.dueDate ? `<span>📅 ${formatDate(card.dueDate)}${card.dueTime ? ' · ' + card.dueTime : ''}</span>` : ''}
+            ${card.delegatedFromName ? `<span>👤 De: <strong>${escHtml(card.delegatedFromName)}</strong></span>` : ''}
+            ${card.delegatedTo?.length ? `<span>📤 Para: <strong>${card.delegatedTo.map(uid => { const u = getUserById(uid); return u ? u.name : uid; }).join(', ')}</strong></span>` : ''}
+          </div>
+          ${card.description
+            ? `<div style="font-size:0.92rem;color:#1e293b;line-height:1.65;white-space:pre-wrap;background:#f8fafc;border-radius:8px;padding:14px 16px;border:1px solid #e2e8f0;">${escHtml(card.description)}</div>`
+            : `<div style="color:#94a3b8;font-size:0.88rem;text-align:center;padding:20px;">Sem descrição</div>`}
+          <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:20px;">
+            <button onclick="closeModal('card-view-overlay')" style="padding:8px 18px;border-radius:6px;border:1px solid var(--gray-300);background:#fff;cursor:pointer;font-size:0.88rem;">Fechar</button>
+            <button onclick="closeModal('card-view-overlay');openEditCard('${cardId}')" style="padding:8px 18px;border-radius:6px;border:none;background:var(--wine,#7c1c3e);color:#fff;cursor:pointer;font-size:0.88rem;font-weight:700;">✏️ Editar</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+
 function renderKanban() {
   const cards = getCards(currentUser.id);
   const cols = ['todo','progress','waiting','done'];
@@ -2761,7 +2797,7 @@ function renderCard(card) {
   }
 
   return `
-    <div class="kanban-card${isPending ? ' pending-delegation' : ''}${isOverdue && !isPending ? ' overdue-card' : ''}${isDoneDelegation ? ' done-delegation-card' : ''}${card.sharedWith?.length ? ' shared-card' : ''}" id="card-${card.id}" draggable="${!isPending}">
+    <div class="kanban-card${isPending ? ' pending-delegation' : ''}${isOverdue && !isPending ? ' overdue-card' : ''}${isDoneDelegation ? ' done-delegation-card' : ''}${card.sharedWith?.length ? ' shared-card' : ''}" id="card-${card.id}" draggable="${!isPending}" onclick="openCardView('${card.id}',event)">
       <div class="card-top">
         <div class="card-title">${escHtml(card.title)}</div>
         <span class="priority-badge priority-${card.priority}">${cap(card.priority)}</span>
