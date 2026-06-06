@@ -4412,7 +4412,7 @@ function renderPendentes() {
                 </div>
               </div>
               <div style="display:flex;gap:6px;flex-shrink:0;">
-                <button class="pendentes-cobrar-btn" style="background:#f59e0b;" onclick="editPrazoPendente('${realOwnerId}','${card.id}')" title="Editar prazo">📅</button>
+                <button class="pendentes-cobrar-btn" style="background:#f59e0b;" onclick="editPrazoPendente('${ownerId}','${card.id}')" title="Editar prazo">📅</button>
                 <button class="${btnClass}" onclick="openCobrarChat('${chatId}','${escHtml(card.title).replace(/'/g,"\\'")}','${ownerId}','${card.id}')">${btnLabel}</button>
               </div>
             </div>`;
