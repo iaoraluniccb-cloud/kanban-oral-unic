@@ -1993,8 +1993,11 @@ function renderTabela(consultas, issues) {
         issues.duplicado.some(i=>i.c.id===c.id)          ? '<span class="flag flag-red" title="Duplicado"></span>':'',
         issues.consultaInicial.some(i=>i.c.id===c.id)    ? '<span class="flag flag-yellow" title="Verificar consulta inicial"></span>':'',
       ].join('');
+      const exameIssue = issues.exame.find(i=>i.c.id===c.id);
       const rxHtml = tc?.rx==='panoramico' ? '<span class="rx-tag-pan">PAN</span>'
         : tc?.rx==='tomografia' ? '<span class="rx-tag-tomo">TOMO</span>'
+        : exameIssue?.tipo==='tomografia' ? '<span class="rx-tag-tomo">TOMO</span>'
+        : exameIssue?.tipo==='panoramico' ? '<span class="rx-tag-pan">PAN</span>'
         : isConsultaInicial ? '<span style="font-size:10px;color:var(--warning);">?</span>' : '—';
       const stCls  = comIssue ? 'status-warn' : 'status-ok';
       const stLbl  = comIssue ? '⚠ Verificar' : '✓ OK';
