@@ -1386,7 +1386,7 @@ function processarAgenda() {
   const listaPend = document.getElementById('financeiroInput').value.trim().split('\n').map(l=>l.trim()).filter(Boolean);
   const nomeDia = document.getElementById('diaSemana').options[document.getElementById('diaSemana').selectedIndex].text;
 
-  const issues = { tempoErrado:[], exame:[], financeiro:[], duplicado:[], consultaInicial:[] };
+  const issues = { tempoErrado:[], exame:[], financeiro:[], duplicado:[], consultaInicial:[], pontoFino:[] };
 
   // ── DUPLICADOS — apenas mesma ficha (nº real, ≠ 0) ──
   const fichasVistas = {};
@@ -1414,7 +1414,7 @@ function processarAgenda() {
       issues.consultaInicial.push({ c });
     }
 
-    // Tempo e Exame — pular para consulta inicial
+    // Tempo e Exame — pular tempo para consulta inicial, mas checar exame nas obs
     if (!ehConsultaInicial) {
       const tc = buscarTC(c.procedimento, c.dentista);
       if (tc && tc !== 'consulta_inicial') {
@@ -1424,6 +1424,13 @@ function processarAgenda() {
       }
       const ex = detectarExame(c.procedimento, c.obs);
       if (ex) issues.exame.push({ c, tipo: ex.tipo, quando: ex.quando });
+    } else {
+      // Consulta inicial: checar obs por pré-op mesmo assim
+      const obsNorm = normalizar(c.obs);
+      const temPreNaObs = KEYWORDS_TOMO.some(k => obsNorm.includes(normalizar(k)));
+      if (temPreNaObs && !obsNorm.includes('tomo')) {
+        issues.exame.push({ c, tipo: 'tomografia', quando: 'antes' });
+      }
     }
 
 
@@ -1433,6 +1440,14 @@ function processarAgenda() {
     const nomeNaLista = listaPend.some(lp=>normalizar(c.paciente).includes(normalizar(lp))||normalizar(lp).includes(normalizar(c.paciente)));
     if (nomeNaLista || temPgtoNaObs)
       issues.financeiro.push({ c, motivo: temPgtoNaObs ? 'Observação sinaliza pendência' : 'Listado como devedor' });
+
+    // Ponto fino — procedimentos de protocolo (exceto fase protética e pós-op simples)
+    const procN = normalizar(c.procedimento);
+    const ehProtocolo = procN.includes('protocolo') || procN.includes('fase cirurgica') || procN.includes('zigomatico');
+    const ehSoProtese = procN.includes('protetic') || procN.includes('acrilica') || procN.includes('provisorio');
+    if (ehProtocolo && !ehSoProtese) {
+      issues.pontoFino.push({ c });
+    }
 
   });
 
@@ -1609,6 +1624,21 @@ function renderOcorrencias(issues) {
       </div>
     </div>`);
 
+
+  html += bloco('🔍 Atenção — Ponto Fino de Protocolo', issues.pontoFino, ({c}) => `
+    <div class="issue-item issue-warning">
+      <div class="issue-icon">🔍</div>
+      <div class="issue-body">
+        <div class="issue-title">${c.paciente} — Verificar ponto fino</div>
+        <div class="issue-detail">
+          <span class="issue-tag">${c.horario}</span>
+          <span class="issue-tag">${c.procedimento}</span>
+          <span class="issue-tag">${c.dentista}</span>
+          Procedimento de protocolo — confirmar <strong>ponto fino</strong> antes da consulta.
+          ${c.obs ? `<br><em style="font-size:10px;">"${c.obs}"</em>` : ''}
+        </div>
+      </div>
+    </div>`);
 
   if (!temAlgo) html += `
     <div class="empty-state">
