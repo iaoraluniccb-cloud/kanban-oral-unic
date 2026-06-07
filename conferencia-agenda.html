@@ -2000,7 +2000,7 @@ function renderTabela(consultas, issues) {
         : exameIssue?.tipo==='panoramico' ? '<span class="rx-tag-pan">PAN</span>'
         : isConsultaInicial ? '<span style="font-size:10px;color:var(--warning);">?</span>' : '—';
       const stCls  = comIssue ? 'status-warn' : 'status-ok';
-      const stLbl  = comIssue ? '⚠ Verificar' : '✓ OK';
+      const stLbl  = comIssue ? '✗ Não Apto' : '✓ Correto';
       const horFim = c.horarioFim ? `<span style="color:var(--text-muted);font-size:11px;"> → ${c.horarioFim}</span>` : '';
       // Tempo agendado com cor se diferente do padrão
       let taHtml = `<span style="font-family:'Cormorant SC',serif;font-size:13px;">${ta}min</span>`;
