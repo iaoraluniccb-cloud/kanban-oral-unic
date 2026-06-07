@@ -1299,8 +1299,8 @@ function detectarExame(proc, obs) {
   ];
   if (semExame.some(k => p.includes(k))) return null;
 
-  // ── TOMOGRAFIA ANTES: apenas pré-operatório explícito e zigomático/sedação
-  if (KEYWORDS_TOMO.some(k => p.includes(normalizar(k)))) {
+  // ── TOMOGRAFIA ANTES: pré-operatório explícito no procedimento OU nas observações
+  if (KEYWORDS_TOMO.some(k => p.includes(normalizar(k))) || KEYWORDS_TOMO.some(k => o.includes(normalizar(k)))) {
     return jaTemTomo ? null : { tipo: 'tomografia', quando: 'antes' };
   }
 
