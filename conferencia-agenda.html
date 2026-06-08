@@ -1438,11 +1438,23 @@ function processarAgenda() {
     const obsN = normalizar(c.obs);
     const temPgtoNaObs = obsN.match(/necessario pgto|necessar.*pag|pag.*brendha|cobranca|cobranc|r\$\s*\d+/);
     const matchPend = listaPend.find(lp => {
-      const lpN = normalizar(lp);
-      // Aceita nº de ficha
-      if (/^\d+$/.test(lp.trim()) && c.ficha === lp.trim()) return true;
-      // Aceita nome parcial (ao menos 3 chars)
-      if (lp.trim().length >= 3 && (normalizar(c.paciente).includes(lpN) || lpN.includes(normalizar(c.paciente)))) return true;
+      const lpT = lp.trim();
+      // Separa tokens: palavras e números (ex: "Cesar 2489" → ["Cesar", "2489"])
+      const tokens = lpT.split(/\s+/);
+      const fichaToken = tokens.find(t => /^\d+$/.test(t));
+      const nomeToken  = tokens.filter(t => !/^\d+$/.test(t)).join(' ');
+      // Match por ficha
+      if (fichaToken && c.ficha === fichaToken) return true;
+      // Match por nome parcial (≥3 chars)
+      if (nomeToken.length >= 3) {
+        const nN = normalizar(nomeToken);
+        if (normalizar(c.paciente).includes(nN) || nN.includes(normalizar(c.paciente))) return true;
+      }
+      // Match linha inteira como nome
+      if (lpT.length >= 3 && !/^\d+$/.test(lpT)) {
+        const lpN = normalizar(lpT);
+        if (normalizar(c.paciente).includes(lpN) || lpN.includes(normalizar(c.paciente))) return true;
+      }
       return false;
     });
     if (matchPend || temPgtoNaObs)
@@ -1546,8 +1558,11 @@ function renderOcorrencias(issues) {
   };
 
 
-  html += bloco('🔁 Pacientes Duplicados', issues.duplicado, ({c, anterior, motivo}) => `
-    <div class="issue-item issue-danger">
+  if (issues.duplicado.length) {
+    temAlgo = true;
+    html += `<div class="section-title">🔁 Pacientes Duplicados <span class="badge-count">${issues.duplicado.length}</span></div>`;
+    html += issues.duplicado.map(({c, anterior, motivo}, idx) => `
+    <div class="issue-item issue-danger" id="dup-item-${idx}">
       <div class="issue-icon">⚠️</div>
       <div class="issue-body">
         <div class="issue-title">${anterior.paciente} — aparece mais de uma vez</div>
@@ -1560,7 +1575,12 @@ function renderOcorrencias(issues) {
           ${c.ficha && c.ficha !== anterior.ficha ? `<br><em style="font-size:10px;color:var(--danger);">⚠ Fichas diferentes: ${anterior.ficha||'—'} e ${c.ficha}</em>` : ''}
         </div>
       </div>
-    </div>`);
+      <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;margin-left:10px;">
+        <button onclick="dupManter(${idx})" style="padding:4px 10px;border:1px solid #16a34a;background:#f0fdf4;color:#16a34a;border-radius:5px;cursor:pointer;font-size:0.78rem;font-weight:700;">✓ Manter</button>
+        <button onclick="dupExcluir(${idx})" style="padding:4px 10px;border:1px solid #ef4444;background:#fef2f2;color:#ef4444;border-radius:5px;cursor:pointer;font-size:0.78rem;font-weight:700;">✗ Excluir</button>
+      </div>
+    </div>`).join('');
+  }
 
   html += bloco('💸 Pendência Financeira / Cobrança', issues.financeiro, ({c, motivo}) => `
     <div class="issue-item issue-warning">
@@ -1872,6 +1892,25 @@ function renderRX(exames, diaLabel, dentPresentes) {
     ${antesIdx.length ? `<div class="section-title">📸 Antes da Consulta <span class="badge-count">${antesIdx.length}</span></div>${tabelaHTML(antesIdx)}` : ''}
     ${aposIdx.length  ? `<div class="section-title" style="margin-top:20px;">📸 Após a Consulta <span class="badge-count ok">${aposIdx.length}</span></div>${tabelaHTML(aposIdx)}` : ''}
   `;
+}
+
+function dupManter(idx) {
+  const el = document.getElementById('dup-item-' + idx);
+  if (!el) return;
+  el.style.opacity = '0.45';
+  el.style.pointerEvents = 'none';
+  el.querySelectorAll('button').forEach(b => b.style.display = 'none');
+  const badge = document.createElement('span');
+  badge.textContent = '✓ Mantido';
+  badge.style.cssText = 'font-size:0.75rem;font-weight:700;color:#16a34a;margin-left:10px;';
+  el.appendChild(badge);
+}
+
+function dupExcluir(idx) {
+  if (!window._lastIssues) return;
+  window._lastIssues.issues.duplicado.splice(idx, 1);
+  const tab = document.getElementById('tab-ocorrencias');
+  if (tab) tab.innerHTML = renderOcorrencias(window._lastIssues.issues);
 }
 
 function tempoManter(idx) {
