@@ -1699,6 +1699,21 @@
         <button class="add-card-btn" onclick="openAddCard('todo')">+ Adicionar</button>
       </div>
 
+      <div class="kanban-col col-waiting" id="col-waiting" ondragover="onDragOver(event,'waiting')" ondrop="onDrop(event,'waiting')" ondragleave="onDragLeave(event)">
+        <div class="col-header">
+          <div class="col-header-left">
+            <div class="col-dot"></div>
+            <span class="col-title" id="col-title-waiting" contenteditable="true" spellcheck="false" onblur="saveColTitle('waiting',this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}">Compartilhado</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:4px;">
+            <button onclick="sortColAuto('waiting')" title="Ordenar por prioridade e prazo" style="background:none;border:none;cursor:pointer;font-size:0.85rem;padding:2px 4px;border-radius:4px;color:var(--gray-400);" onmouseover="this.style.background='var(--gray-100)'" onmouseout="this.style.background='none'">⇅</button>
+            <span class="col-count" id="count-waiting">0</span>
+          </div>
+        </div>
+        <div class="col-cards" id="cards-waiting"></div>
+        <button class="add-card-btn" onclick="openAddCard('waiting')">+ Adicionar</button>
+      </div>
+
       <div class="kanban-col col-progress" id="col-progress" ondragover="onDragOver(event,'progress')" ondrop="onDrop(event,'progress')" ondragleave="onDragLeave(event)">
         <div class="col-header">
           <div class="col-header-left">
@@ -1712,21 +1727,6 @@
         </div>
         <div class="col-cards" id="cards-progress"></div>
         <button class="add-card-btn" onclick="openAddCard('progress')">+ Adicionar</button>
-      </div>
-
-      <div class="kanban-col col-waiting" id="col-waiting" ondragover="onDragOver(event,'waiting')" ondrop="onDrop(event,'waiting')" ondragleave="onDragLeave(event)">
-        <div class="col-header">
-          <div class="col-header-left">
-            <div class="col-dot"></div>
-            <span class="col-title" id="col-title-waiting" contenteditable="true" spellcheck="false" onblur="saveColTitle('waiting',this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}">Aguardando</span>
-          </div>
-          <div style="display:flex;align-items:center;gap:4px;">
-            <button onclick="sortColAuto('waiting')" title="Ordenar por prioridade e prazo" style="background:none;border:none;cursor:pointer;font-size:0.85rem;padding:2px 4px;border-radius:4px;color:var(--gray-400);" onmouseover="this.style.background='var(--gray-100)'" onmouseout="this.style.background='none'">⇅</button>
-            <span class="col-count" id="count-waiting">0</span>
-          </div>
-        </div>
-        <div class="col-cards" id="cards-waiting"></div>
-        <button class="add-card-btn" onclick="openAddCard('waiting')">+ Adicionar</button>
       </div>
 
       <div class="kanban-col col-done" id="col-done" ondragover="onDragOver(event,'done')" ondrop="onDrop(event,'done')" ondragleave="onDragLeave(event)">
@@ -2643,7 +2643,7 @@ function loadColTitles() {
 }
 
 function getDefaultColTitle(col) {
-  return { todo: 'A Fazer', progress: 'Em Progresso', waiting: 'Aguardando', done: 'Concluído' }[col] || col;
+  return { todo: 'A Fazer', progress: 'Em Progresso', waiting: 'Compartilhado', done: 'Concluído' }[col] || col;
 }
 
 function getCardOrder(col) {
@@ -2730,7 +2730,7 @@ function openCardView(cardId, event) {
 
 function renderKanban() {
   const cards = getCards(currentUser.id);
-  const cols = ['todo','progress','waiting','done'];
+  const cols = ['todo','waiting','progress','done'];
   cols.forEach(col => {
     const colCards = sortedColCards(cards, col);
     document.getElementById('count-' + col).textContent = colCards.length;
@@ -3371,8 +3371,8 @@ function openCardModal(cardId, defaultCol) {
             <label class="form-label">Coluna</label>
             <select class="form-control" id="card-col">
               <option value="todo" ${card.column==='todo'?'selected':''}>A Fazer</option>
+              <option value="waiting" ${card.column==='waiting'?'selected':''}>Compartilhado</option>
               <option value="progress" ${card.column==='progress'?'selected':''}>Em Progresso</option>
-              <option value="waiting" ${card.column==='waiting'?'selected':''}>Aguardando</option>
               <option value="done" ${card.column==='done'?'selected':''}>Concluído</option>
             </select>
           </div>
