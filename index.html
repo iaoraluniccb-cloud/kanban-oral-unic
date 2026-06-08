@@ -2796,8 +2796,16 @@ function renderCard(card) {
   // Mostra para quem foi delegado (no card do dono)
   let delegatedToHtml = '';
   if (card.delegatedTo?.length) {
-    const names = card.delegatedTo.map(uid => { const u = getUserById(uid); return u ? u.name : uid; }).join(', ');
-    delegatedToHtml = `<div style="font-size:0.72rem;color:var(--gray-500);margin-top:4px;">📤 Delegado para: <strong>${escHtml(names)}</strong></div>`;
+    const mainId = card.delegatedMainId;
+    const mainUser = mainId ? getUserById(mainId) : null;
+    const mainName = mainUser ? mainUser.name : (mainId || null);
+    const copias = (card.delegatedTo || []).filter(uid => uid !== mainId).map(uid => { const u = getUserById(uid); return u ? u.name : uid; });
+    if (mainName) {
+      delegatedToHtml = `<div style="font-size:0.72rem;color:var(--gray-500);margin-top:4px;">👤 <strong>Responsável: ${escHtml(mainName)}</strong>${copias.length ? ` · Cópia: ${escHtml(copias.join(', '))}` : ''}</div>`;
+    } else {
+      const names = card.delegatedTo.map(uid => { const u = getUserById(uid); return u ? u.name : uid; }).join(', ');
+      delegatedToHtml = `<div style="font-size:0.72rem;color:var(--gray-500);margin-top:4px;">📤 Delegado para: <strong>${escHtml(names)}</strong></div>`;
+    }
   }
 
   return `
@@ -3498,6 +3506,7 @@ function openDelegate(cardId) {
   if (!card) return;
 
   selectedDelegateUserIds = new Set();
+  delegateOrderedIds = [];
   const otherUsers = USERS.filter(u => u.id !== currentUser.id);
 
   const html = `
@@ -3513,15 +3522,17 @@ function openDelegate(cardId) {
             <div style="background:var(--gray-100);padding:10px;border-radius:6px;font-size:0.88rem;font-weight:600;">${escHtml(card.title)}</div>
           </div>
           <div class="form-group">
-            <label class="form-label">Delegar para * <span style="font-size:0.75rem;color:var(--gray-400);font-weight:400;">(pode selecionar vários)</span></label>
+            <label class="form-label">Delegar para * <span style="font-size:0.75rem;color:var(--gray-400);font-weight:400;">(1º selecionado = responsável principal)</span></label>
             <div class="user-picker" id="delegate-user-picker">
               ${otherUsers.map(u => `
                 <button class="user-pick-btn" data-uid="${u.id}" onclick="selectDelegateUser('${u.id}')">
                   ${avatarHtml(u.id, u.name, u.color, 'avatar-sm')}
                   <span>${u.name}</span>
+                  <span class="deleg-order-badge" id="deleg-badge-${u.id}" style="display:none;font-size:0.7rem;font-weight:700;background:#6366f1;color:#fff;border-radius:99px;padding:1px 6px;margin-left:2px;"></span>
                 </button>
               `).join('')}
             </div>
+            <div id="deleg-preview" style="font-size:0.8rem;color:var(--gray-500);margin-top:6px;min-height:18px;"></div>
           </div>
           <div class="form-group">
             <label class="form-label">Mensagem (opcional)</label>
@@ -3539,16 +3550,41 @@ function openDelegate(cardId) {
 }
 
 let selectedDelegateUserIds = new Set();
+let delegateOrderedIds = []; // mantém ordem de seleção
 
 function selectDelegateUser(uid) {
   if (selectedDelegateUserIds.has(uid)) {
     selectedDelegateUserIds.delete(uid);
+    delegateOrderedIds = delegateOrderedIds.filter(id => id !== uid);
   } else {
     selectedDelegateUserIds.add(uid);
+    delegateOrderedIds.push(uid);
   }
-  document.querySelectorAll('#delegate-user-picker .user-pick-btn').forEach(b => {
-    b.classList.toggle('selected', selectedDelegateUserIds.has(b.dataset.uid));
+  // Atualiza visual dos botões com badges de ordem
+  delegateOrderedIds.forEach((id, i) => {
+    const badge = document.getElementById('deleg-badge-' + id);
+    if (badge) {
+      badge.style.display = '';
+      badge.textContent = i === 0 ? '★' : (i + 1) + 'º';
+      badge.style.background = i === 0 ? '#6366f1' : '#9ca3af';
+    }
   });
+  document.querySelectorAll('#delegate-user-picker .user-pick-btn').forEach(b => {
+    const selected = selectedDelegateUserIds.has(b.dataset.uid);
+    b.classList.toggle('selected', selected);
+    const badge = document.getElementById('deleg-badge-' + b.dataset.uid);
+    if (badge && !selected) { badge.style.display = 'none'; badge.textContent = ''; }
+  });
+  // Preview
+  const preview = document.getElementById('deleg-preview');
+  if (preview && delegateOrderedIds.length > 0) {
+    const principal = getUserById(delegateOrderedIds[0]);
+    const copias = delegateOrderedIds.slice(1).map(id => { const u = getUserById(id); return u ? u.name : id; });
+    preview.innerHTML = `👤 <strong>Responsável:</strong> ${principal ? principal.name : delegateOrderedIds[0]}` +
+      (copias.length ? ` · <span style="color:var(--gray-500);">Cópia: ${copias.join(', ')}</span>` : '');
+  } else if (preview) {
+    preview.innerHTML = '';
+  }
 }
 
 async function removeDelegacaoCard(cardId, targetUserId) {
@@ -3650,10 +3686,12 @@ function sendDelegation(cardId) {
     saveNotifications(toUserId, notifs);
   });
 
-  // Salva no card original quem foi delegado
-  const delegatedToIds = [...selectedDelegateUserIds];
+  // Salva no card original quem foi delegado (na ordem de seleção)
+  const delegatedToIds = delegateOrderedIds.length > 0 ? [...delegateOrderedIds] : [...selectedDelegateUserIds];
   card.delegatedTo = [...new Set([...(card.delegatedTo || []), ...delegatedToIds])];
   card.delegationIdMap = Object.assign({}, card.delegationIdMap || {}, newDelegationMap);
+  // Primeiro da lista = responsável principal
+  if (delegatedToIds.length > 0) card.delegatedMainId = delegatedToIds[0];
   saveCards(currentUser.id, cards);
 
   saveDelegations(delegations);
