@@ -2635,6 +2635,8 @@ function saveColTitle(col, el) {
 function loadColTitles() {
   const key = 'ou_col_titles_' + currentUser.id;
   const titles = JSON.parse(localStorage.getItem(key) || '{}');
+  // Migração: renomear "Aguardando" → "Compartilhado"
+  if (titles['waiting'] === 'Aguardando') { titles['waiting'] = 'Compartilhado'; localStorage.setItem(key, JSON.stringify(titles)); }
   ['todo','progress','waiting','done'].forEach(col => {
     const el = document.getElementById('col-title-' + col);
     if (el && titles[col]) el.textContent = titles[col];
