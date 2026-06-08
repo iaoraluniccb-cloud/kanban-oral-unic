@@ -607,8 +607,8 @@
       <textarea id="agendaInput" placeholder="08:00 | 08:45 | João Silva | Restaurações | Dra Ana&#10;08:45 | 09:30 | Maria Santos | Profilaxia | Dr Scharles" rows="7"></textarea>
 
       <hr class="divider">
-      <label>Pendências financeiras (um por linha)</label>
-      <textarea id="financeiroInput" placeholder="João Silva&#10;Carlos Pereira" rows="3"></textarea>
+      <label>Pendências financeiras (um por linha — pode ser só o primeiro nome ou nº da ficha)</label>
+      <textarea id="financeiroInput" placeholder="João Silva&#10;2670&#10;Carlos" rows="3"></textarea>
 
       <button class="btn btn-primary" onclick="processarAgenda()" style="margin-top:4px;">
         🔍 Analisar Agenda
@@ -1437,9 +1437,16 @@ function processarAgenda() {
     // Financeiro — lista manual + detecção automática por obs
     const obsN = normalizar(c.obs);
     const temPgtoNaObs = obsN.match(/necessario pgto|necessar.*pag|pag.*brendha|cobranca|cobranc|r\$\s*\d+/);
-    const nomeNaLista = listaPend.some(lp=>normalizar(c.paciente).includes(normalizar(lp))||normalizar(lp).includes(normalizar(c.paciente)));
-    if (nomeNaLista || temPgtoNaObs)
-      issues.financeiro.push({ c, motivo: temPgtoNaObs ? 'Observação sinaliza pendência' : 'Listado como devedor' });
+    const matchPend = listaPend.find(lp => {
+      const lpN = normalizar(lp);
+      // Aceita nº de ficha
+      if (/^\d+$/.test(lp.trim()) && c.ficha === lp.trim()) return true;
+      // Aceita nome parcial (ao menos 3 chars)
+      if (lp.trim().length >= 3 && (normalizar(c.paciente).includes(lpN) || lpN.includes(normalizar(c.paciente)))) return true;
+      return false;
+    });
+    if (matchPend || temPgtoNaObs)
+      issues.financeiro.push({ c, motivo: temPgtoNaObs ? 'Observação sinaliza pendência' : `Pendência financeira — ${c.paciente}` });
 
     // Ponto fino — procedimentos de protocolo (exceto fase protética e pós-op simples)
     const procN = normalizar(c.procedimento);
@@ -1849,7 +1856,9 @@ function renderRX(exames, diaLabel, dentPresentes) {
     </table></div>`;
 
   return `
-    <div style="display:flex;justify-content:flex-end;margin-bottom:14px;">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+      <input id="rx-busca" type="text" placeholder="🔍 Buscar paciente na agenda..." style="flex:1;min-width:180px;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:0.85rem;" oninput="rxFiltrar(this.value)">
+      <button class="btn btn-ghost btn-sm" onclick="rxAdicionarManual()">➕ Adicionar manualmente</button>
       <button class="btn btn-ghost btn-sm" onclick="exportarRX()">📄 Exportar RX PDF</button>
     </div>
     ${antesIdx.length ? `<div class="section-title">📸 Antes da Consulta <span class="badge-count">${antesIdx.length}</span></div>${tabelaHTML(antesIdx)}` : ''}
@@ -1885,6 +1894,74 @@ function _reRenderRX() {
       t.onclick = () => switchTab('rx', t);
     }
   });
+}
+
+function rxFiltrar(q) {
+  const rows = document.querySelectorAll('#tab-rx tbody tr[id^="rxrow-"]');
+  const qN = normalizar(q);
+  rows.forEach(tr => {
+    const txt = normalizar(tr.textContent);
+    tr.style.display = !qN || txt.includes(qN) ? '' : 'none';
+  });
+}
+
+function rxAdicionarManual() {
+  if (!window._lastIssues) { alert('Analise a agenda antes de adicionar.'); return; }
+  const { issues, consultas } = window._lastIssues;
+
+  // Monta lista de pacientes da agenda para autocomplete
+  const opcoes = consultas.map(c => `${c.horario} — ${c.paciente}${c.ficha&&c.ficha!=='0'?' (Ficha '+c.ficha+')':''}`);
+  const html = `
+    <div class="modal-overlay" id="rx-manual-overlay" onclick="if(event.target===this)this.remove()" style="position:fixed;inset:0;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;z-index:9999;">
+      <div style="background:#fff;border-radius:12px;padding:24px;max-width:420px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.18);">
+        <div style="font-family:'Cormorant SC',serif;font-size:16px;color:var(--vinho);margin-bottom:16px;">➕ Adicionar RX Manual</div>
+        <label style="font-size:0.8rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);">Paciente</label>
+        <input id="rx-man-busca" list="rx-pac-list" placeholder="Digite o nome ou selecione..." style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:0.88rem;margin-bottom:10px;box-sizing:border-box;">
+        <datalist id="rx-pac-list">${opcoes.map(o=>`<option value="${o}">`).join('')}</datalist>
+        <label style="font-size:0.8rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);">Tipo de Exame</label>
+        <select id="rx-man-tipo" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-bottom:10px;">
+          <option value="panoramico">🦷 Panorâmico</option>
+          <option value="tomografia">🔬 Tomografia</option>
+        </select>
+        <label style="font-size:0.8rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);">Quando</label>
+        <select id="rx-man-quando" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-bottom:16px;">
+          <option value="antes">📸 Antes da consulta</option>
+          <option value="apos">📸 Após a consulta</option>
+        </select>
+        <div style="display:flex;gap:8px;justify-content:flex-end;">
+          <button onclick="document.getElementById('rx-manual-overlay').remove()" style="padding:8px 16px;border:1px solid var(--border);background:#fff;border-radius:6px;cursor:pointer;font-size:0.85rem;">Cancelar</button>
+          <button onclick="rxConfirmarManual()" style="padding:8px 16px;background:var(--vinho);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:0.85rem;font-weight:700;">Adicionar</button>
+        </div>
+      </div>
+    </div>`;
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+
+function rxConfirmarManual() {
+  const busca = document.getElementById('rx-man-busca').value.trim();
+  const tipo = document.getElementById('rx-man-tipo').value;
+  const quando = document.getElementById('rx-man-quando').value;
+  if (!busca) { alert('Informe o paciente.'); return; }
+
+  // Tenta achar consulta correspondente
+  const { issues, consultas } = window._lastIssues;
+  const qN = normalizar(busca);
+  const found = consultas.find(c => normalizar(c.paciente).includes(qN) || normalizar(`${c.horario} — ${c.paciente}`).includes(qN));
+
+  const cFake = found || {
+    id: 'manual-' + Date.now(),
+    horario: '—',
+    horarioFim: '',
+    paciente: busca,
+    ficha: '',
+    procedimento: 'Manual',
+    dentista: '—',
+    obs: ''
+  };
+
+  issues.exame.push({ c: cFake, tipo, quando });
+  document.getElementById('rx-manual-overlay').remove();
+  _reRenderRX();
 }
 
 // ── EXPORTAR RX PDF ───────────────────────────────────
