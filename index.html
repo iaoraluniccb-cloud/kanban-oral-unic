@@ -78,6 +78,7 @@
     --col-todo: #8B2D42;       /* Vinho */
     --col-progress: #C4955A;   /* Cobre */
     --col-waiting: #7A5C8A;    /* Roxo suave */
+    --col-delegated: #C47B2B;  /* Laranja delegado */
     --col-done: #5A7A4A;       /* Verde */
 
     --shadow-sm: 0 1px 3px rgba(139,45,66,0.08);
@@ -608,6 +609,7 @@
   .col-todo .col-header { background: var(--col-todo); }
   .col-progress .col-header { background: var(--col-progress); }
   .col-waiting .col-header { background: var(--col-waiting); }
+  .col-delegated .col-header { background: var(--col-delegated); }
   .col-done .col-header { background: var(--col-done); }
 
   .col-cards {
@@ -1699,19 +1701,19 @@
         <button class="add-card-btn" onclick="openAddCard('todo')">+ Adicionar</button>
       </div>
 
-      <div class="kanban-col col-waiting" id="col-waiting" ondragover="onDragOver(event,'waiting')" ondrop="onDrop(event,'waiting')" ondragleave="onDragLeave(event)">
+      <div class="kanban-col col-delegated" id="col-delegated" ondragover="onDragOver(event,'delegated')" ondrop="onDrop(event,'delegated')" ondragleave="onDragLeave(event)">
         <div class="col-header">
           <div class="col-header-left">
             <div class="col-dot"></div>
-            <span class="col-title" id="col-title-waiting" contenteditable="true" spellcheck="false" onblur="saveColTitle('waiting',this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}">Compartilhado</span>
+            <span class="col-title" id="col-title-delegated" contenteditable="true" spellcheck="false" onblur="saveColTitle('delegated',this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}">Delegado</span>
           </div>
           <div style="display:flex;align-items:center;gap:4px;">
-            <button onclick="sortColAuto('waiting')" title="Ordenar por prioridade e prazo" style="background:none;border:none;cursor:pointer;font-size:0.85rem;padding:2px 4px;border-radius:4px;color:var(--gray-400);" onmouseover="this.style.background='var(--gray-100)'" onmouseout="this.style.background='none'">⇅</button>
-            <span class="col-count" id="count-waiting">0</span>
+            <button onclick="sortColAuto('delegated')" title="Ordenar por prioridade e prazo" style="background:none;border:none;cursor:pointer;font-size:0.85rem;padding:2px 4px;border-radius:4px;color:var(--gray-400);" onmouseover="this.style.background='var(--gray-100)'" onmouseout="this.style.background='none'">⇅</button>
+            <span class="col-count" id="count-delegated">0</span>
           </div>
         </div>
-        <div class="col-cards" id="cards-waiting"></div>
-        <button class="add-card-btn" onclick="openAddCard('waiting')">+ Adicionar</button>
+        <div class="col-cards" id="cards-delegated"></div>
+        <button class="add-card-btn" onclick="openAddCard('delegated')">+ Adicionar</button>
       </div>
 
       <div class="kanban-col col-progress" id="col-progress" ondragover="onDragOver(event,'progress')" ondrop="onDrop(event,'progress')" ondragleave="onDragLeave(event)">
@@ -2635,9 +2637,7 @@ function saveColTitle(col, el) {
 function loadColTitles() {
   const key = 'ou_col_titles_' + currentUser.id;
   const titles = JSON.parse(localStorage.getItem(key) || '{}');
-  // Migração: renomear "Aguardando" → "Compartilhado"
-  if (titles['waiting'] === 'Aguardando') { titles['waiting'] = 'Compartilhado'; localStorage.setItem(key, JSON.stringify(titles)); }
-  ['todo','progress','waiting','done'].forEach(col => {
+  ['todo','delegated','progress','done'].forEach(col => {
     const el = document.getElementById('col-title-' + col);
     if (el && titles[col]) el.textContent = titles[col];
     else if (el) el.textContent = getDefaultColTitle(col);
@@ -2645,7 +2645,7 @@ function loadColTitles() {
 }
 
 function getDefaultColTitle(col) {
-  return { todo: 'A Fazer', progress: 'Em Progresso', waiting: 'Compartilhado', done: 'Concluído' }[col] || col;
+  return { todo: 'A Fazer', delegated: 'Delegado', progress: 'Em Progresso', done: 'Concluído' }[col] || col;
 }
 
 function getCardOrder(col) {
@@ -2731,8 +2731,12 @@ function openCardView(cardId, event) {
 }
 
 function renderKanban() {
-  const cards = getCards(currentUser.id);
-  const cols = ['todo','waiting','progress','done'];
+  let cards = getCards(currentUser.id);
+  // Migração: cards em 'waiting' vão para 'delegated'
+  let migrated = false;
+  cards.forEach(c => { if (c.column === 'waiting') { c.column = 'delegated'; migrated = true; } });
+  if (migrated) saveCards(currentUser.id, cards);
+  const cols = ['todo','delegated','progress','done'];
   cols.forEach(col => {
     const colCards = sortedColCards(cards, col);
     document.getElementById('count-' + col).textContent = colCards.length;
@@ -2810,11 +2814,22 @@ function renderCard(card) {
     }
   }
 
+  // Label de status do card
+  const colLabel = (() => {
+    if (card.column === 'done') return { text: 'Concluído', color: '#16a34a', bg: '#dcfce7' };
+    if (card.column === 'progress') return { text: 'Em Processo', color: '#d97706', bg: '#fef3c7' };
+    if (card.column === 'delegated' || card.isDelegation) return { text: 'Delegado', color: '#C47B2B', bg: '#fef9f0' };
+    return { text: 'A Fazer', color: '#6366f1', bg: '#eef2ff' };
+  })();
+
   return `
-    <div class="kanban-card${isPending ? ' pending-delegation' : ''}${isOverdue && !isPending ? ' overdue-card' : ''}${isDoneDelegation ? ' done-delegation-card' : ''}${card.sharedWith?.length ? ' shared-card' : ''}" id="card-${card.id}" draggable="${!isPending}" onclick="openCardView('${card.id}',event)">
+    <div class="kanban-card${isPending ? ' pending-delegation' : ''}${isOverdue && !isPending ? ' overdue-card' : ''}${isDoneDelegation ? ' done-delegation-card' : ''}" id="card-${card.id}" draggable="${!isPending}" onclick="openCardView('${card.id}',event)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <span style="font-size:0.68rem;font-weight:700;color:${colLabel.color};background:${colLabel.bg};padding:2px 8px;border-radius:10px;letter-spacing:0.03em;">${colLabel.text}</span>
+        <span class="priority-badge priority-${card.priority}">${cap(card.priority)}</span>
+      </div>
       <div class="card-top">
         <div class="card-title">${escHtml(card.title)}</div>
-        <span class="priority-badge priority-${card.priority}">${cap(card.priority)}</span>
       </div>
       ${card.description ? `<div class="card-desc">${escHtml(card.description)}</div>` : ''}
       ${(card.sharedWith?.length || card.sharedOriginId) ? `<div style="display:flex;align-items:center;gap:4px;margin-bottom:4px;flex-wrap:wrap;">
@@ -2855,7 +2870,7 @@ function renderCard(card) {
         <div class="card-actions">
           <button class="card-action-btn btn-edit-card" onclick="openEditCard('${card.id}')" title="Editar">✏️</button>
           ${card.delegationStatus !== 'pending' ? `<button class="card-action-btn btn-delegate-card" onclick="openDelegate('${card.id}')" title="Delegar">📤</button>` : ''}
-          <button class="card-action-btn btn-share-card" onclick="openShare('${card.id}')" title="Compartilhar">🤝</button>
+          <button class="card-action-btn" onclick="openSharedChat('${card.id}')" title="Chat" style="font-size:1rem;font-weight:700;color:#0ea5e9;">+</button>
           <button class="card-action-btn btn-delete-card" onclick="deleteCard('${card.id}')" title="Excluir">🗑️</button>
         </div>
       </div>
@@ -3046,6 +3061,9 @@ async function sendChatMsg(chatId, cardId) {
       if (c.sharedOriginUser) participantSet.add(c.sharedOriginUser);
       const sw = Array.isArray(c.sharedWith) ? c.sharedWith : (c.sharedWith ? String(c.sharedWith).split(',').map(s=>s.trim()).filter(Boolean) : []);
       sw.forEach(id => participantSet.add(id));
+      // Inclui delegador e delegados como participantes do chat
+      if (c.delegatedFrom) participantSet.add(c.delegatedFrom);
+      if (Array.isArray(c.delegatedTo)) c.delegatedTo.forEach(id => participantSet.add(id));
     }
   }
   // Garante que o dono original (sharedOriginUser) sempre recebe notificação
@@ -3381,7 +3399,7 @@ function openCardModal(cardId, defaultCol) {
             <label class="form-label">Coluna</label>
             <select class="form-control" id="card-col">
               <option value="todo" ${card.column==='todo'?'selected':''}>A Fazer</option>
-              <option value="waiting" ${card.column==='waiting'?'selected':''}>Compartilhado</option>
+              <option value="delegated" ${card.column==='delegated'||card.column==='waiting'?'selected':''}>Delegado</option>
               <option value="progress" ${card.column==='progress'?'selected':''}>Em Progresso</option>
               <option value="done" ${card.column==='done'?'selected':''}>Concluído</option>
             </select>
@@ -3663,12 +3681,12 @@ function sendDelegation(cardId) {
       description: card.description,
       priority: card.priority,
       dueDate: card.dueDate,
-      column: 'todo',
+      column: 'delegated',
       createdAt: new Date().toISOString(),
       delegatedFrom: currentUser.id,
       delegatedFromName: currentUser.name,
       isDelegation: true,
-      delegationStatus: 'pending',
+      delegationStatus: 'accepted',
       delegationId: delegation.id
     });
     saveCards(toUserId, recipientCards);
