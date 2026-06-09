@@ -2831,6 +2831,16 @@ function renderKanban() {
     // Cards do dono com delegatedTo[] que ainda não estão em delegated
     if (c.delegatedTo?.length && !c.isDelegation && c.column !== 'done' && c.column !== 'delegated') { c.column = 'delegated'; migrated = true; }
   });
+  // Remove cards compartilhados (sharedOriginId) que não têm chat com mensagens
+  const chats = window._cache?.chats || {};
+  const antes = cards.length;
+  cards = cards.filter(c => {
+    if (!c.sharedOriginId) return true; // não é cópia compartilhada, mantém
+    const chatId = c.sharedChatId || c.id;
+    const temChat = (chats[chatId]?.length || 0) > 0;
+    return temChat; // mantém só se tem chat
+  });
+  if (cards.length !== antes) { migrated = true; }
   if (migrated) saveCards(currentUser.id, cards);
   const cols = ['todo','delegated','progress','done'];
   cols.forEach(col => {
@@ -2928,15 +2938,15 @@ function renderCard(card) {
         <div class="card-title">${escHtml(card.title)}</div>
       </div>
       ${card.description ? `<div class="card-desc">${escHtml(card.description)}</div>` : ''}
-      ${(card.sharedWith?.length || card.sharedOriginId) ? `<div style="display:flex;align-items:center;gap:4px;margin-bottom:4px;flex-wrap:wrap;">
-        <span class="shared-badge">🤝 ${card.sharedOriginId ? 'De: ' + escHtml(card.sharedOriginName||'') : 'Compartilhado'}</span>
-        ${(card.sharedWith||[]).map(uid => { const u=getUserById(uid); return u ? `<span style="font-size:0.7rem;background:${u.color}20;color:${u.color};padding:1px 6px;border-radius:4px;font-weight:600;">${u.name}</span>` : ''; }).join('')}
-        ${(() => {
-          const chatId = card.sharedChatId || card.id;
-          const unreadCount = (window._cache?.chatUnread?.[chatId]?.[currentUser.id]) || 0;
-          return `<button onclick="openSharedChat('${card.id}')" class="${unreadCount ? 'chat-btn-unread' : ''}" style="font-size:0.7rem;background:${unreadCount ? '#ef4444' : '#0ea5e9'};color:#fff;border:none;border-radius:4px;padding:2px 7px;cursor:pointer;margin-left:2px;">💬 Chat${unreadCount ? ` (${unreadCount})` : ''}</button>`;
-        })()}
-      </div>` : ''}
+      ${(() => {
+        // Mostra chat herdado de compartilhamento apenas se já existem mensagens
+        if (!card.sharedChatId && !card.sharedOriginId) return '';
+        const chatId = card.sharedChatId || card.id;
+        const msgs = (window._cache?.chats?.[chatId] || []);
+        const unreadCount = (window._cache?.chatUnread?.[chatId]?.[currentUser.id]) || 0;
+        if (msgs.length === 0 && unreadCount === 0) return ''; // sem chat, some
+        return `<div style="margin-bottom:4px;"><button onclick="openSharedChat('${card.id}')" class="${unreadCount ? 'chat-btn-unread' : ''}" style="font-size:0.7rem;background:${unreadCount ? '#ef4444' : '#0ea5e9'};color:#fff;border:none;border-radius:4px;padding:2px 7px;cursor:pointer;">💬 Chat${unreadCount ? ' (' + unreadCount + ')' : ''}</button></div>`;
+      })()}
       ${delegatedToHtml}
       ${(() => {
         // Verifica se existe chat de cobrança para este card
