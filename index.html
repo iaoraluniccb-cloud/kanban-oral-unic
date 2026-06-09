@@ -5158,13 +5158,18 @@ function saveEvent(eventId, isAdminStr) {
     // Gera ocorrências repetidas
     if (repeat !== 'none' && repeatUntil) {
       const intervalDays = repeat === 'weekly' ? 7 : 14;
-      const limitDate = new Date(repeatUntil + 'T00:00:00');
-      let cur = new Date(date + 'T00:00:00');
+      const [ly, lm, ld] = repeatUntil.split('-').map(Number);
+      const limitDate = new Date(ly, lm - 1, ld);
+      const [sy, sm, sd] = date.split('-').map(Number);
+      let curYear = sy, curMonth = sm - 1, curDay = sd;
       let count = 0;
-      while (count < 104) { // máx 2 anos de segurança
-        cur.setDate(cur.getDate() + intervalDays);
-        if (cur > limitDate) break;
-        const d = cur.toISOString().slice(0, 10);
+      while (count < 104) {
+        curDay += intervalDays;
+        // Normaliza dia acumulado para mês/ano correto
+        const tmp = new Date(curYear, curMonth, curDay);
+        curYear = tmp.getFullYear(); curMonth = tmp.getMonth(); curDay = tmp.getDate();
+        if (tmp > limitDate) break;
+        const d = curYear + '-' + String(curMonth + 1).padStart(2,'0') + '-' + String(curDay).padStart(2,'0');
         events.push({ ...baseEvent, id: genId(), date: d, createdAt: new Date().toISOString() });
         count++;
       }
