@@ -5035,6 +5035,19 @@ function openEventModal(eventId, prefillDate, prefillStart, prefillEnd) {
             </div>
           </div>
           <div class="form-group">
+            <label class="form-label">Repetição</label>
+            <select class="form-control" id="ev-repeat">
+              <option value="none" ${isEdit && (ev.repeat||'none')==='none'?'selected':''}>Não repetir</option>
+              <option value="weekly" ${isEdit && ev.repeat==='weekly'?'selected':''}>Semanal (toda semana)</option>
+              <option value="biweekly" ${isEdit && ev.repeat==='biweekly'?'selected':''}>Quinzenal (a cada 2 semanas)</option>
+            </select>
+            <div id="repeat-until-row" style="margin-top:8px;${(isEdit ? ev.repeat : 'none')==='none' ? 'display:none' : ''}">
+              <label class="form-label" style="font-size:0.78rem;">Repetir até</label>
+              <input class="form-control" type="date" id="ev-repeat-until" value="${isEdit ? ev.repeatUntil||'' : ''}">
+            </div>
+          </div>
+          <script>document.getElementById('ev-repeat')?.addEventListener('change',function(){document.getElementById('repeat-until-row').style.display=this.value==='none'?'none':''});</script>
+          <div class="form-group">
             <label class="form-label">Participantes</label>
             ${canAssignAll ? `
               <label class="all-toggle" onclick="toggleAllUsers()" id="all-toggle-label">
@@ -5095,6 +5108,8 @@ function saveEvent(eventId, isAdminStr) {
   const type = document.getElementById('ev-type').value;
   const start = document.getElementById('ev-start').value;
   const end = document.getElementById('ev-end').value;
+  const repeat = document.getElementById('ev-repeat')?.value || 'none';
+  const repeatUntil = document.getElementById('ev-repeat-until')?.value || '';
 
   let assignedTo;
   if (isAdmin && window._eventAssignAll) {
@@ -5116,10 +5131,13 @@ function saveEvent(eventId, isAdminStr) {
       ev.startTime = start;
       ev.endTime = end;
       ev.assignedTo = assignedTo;
+      ev.repeat = repeat;
+      ev.repeatUntil = repeatUntil;
     }
     showToast('Evento atualizado!', 'success');
   } else {
-    events.push({
+    const seriesId = (repeat !== 'none') ? genId() : undefined;
+    const baseEvent = {
       id: genId(),
       title,
       description: desc,
@@ -5128,11 +5146,31 @@ function saveEvent(eventId, isAdminStr) {
       endTime: end,
       type,
       assignedTo,
+      repeat,
+      repeatUntil,
+      seriesId,
       createdBy: currentUser.id,
       createdByName: currentUser.name,
       createdAt: new Date().toISOString()
-    });
-    showToast('Evento adicionado!', 'success');
+    };
+    events.push(baseEvent);
+
+    // Gera ocorrências repetidas
+    if (repeat !== 'none' && repeatUntil) {
+      const intervalDays = repeat === 'weekly' ? 7 : 14;
+      const limitDate = new Date(repeatUntil + 'T00:00:00');
+      let cur = new Date(date + 'T00:00:00');
+      let count = 0;
+      while (count < 104) { // máx 2 anos de segurança
+        cur.setDate(cur.getDate() + intervalDays);
+        if (cur > limitDate) break;
+        const d = cur.toISOString().slice(0, 10);
+        events.push({ ...baseEvent, id: genId(), date: d, createdAt: new Date().toISOString() });
+        count++;
+      }
+    }
+    const label = repeat === 'weekly' ? ' (semanal)' : repeat === 'biweekly' ? ' (quinzenal)' : '';
+    showToast('Evento adicionado' + label + '!', 'success');
   }
   saveAgenda(events);
   closeModal('event-modal-overlay');
