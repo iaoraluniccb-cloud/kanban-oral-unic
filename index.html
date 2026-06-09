@@ -1684,6 +1684,15 @@
       </div>
     </div>
 
+    <!-- Frase do dia -->
+    <div id="frase-do-dia" style="margin:12px 16px 0;padding:14px 20px;background:linear-gradient(135deg,#7c3aed15,#db277715);border-left:4px solid #7c3aed;border-radius:10px;display:flex;align-items:center;gap:12px;">
+      <span style="font-size:1.4rem;">✨</span>
+      <div>
+        <div style="font-size:0.7rem;font-weight:700;color:#7c3aed;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:3px;">Frase do Dia</div>
+        <div id="frase-texto" style="font-size:0.92rem;font-weight:600;color:#3b1a6e;line-height:1.4;"></div>
+      </div>
+    </div>
+
     <!-- Kanban board -->
     <div class="kanban-board">
       <div class="kanban-col col-todo" id="col-todo" ondragover="onDragOver(event,'todo')" ondrop="onDrop(event,'todo')" ondragleave="onDragLeave(event)">
@@ -2617,11 +2626,94 @@ function switchGestao(sub) {
 // ============================================================
 // VELLO / KANBAN
 // ============================================================
+// ---- Frase do dia ----
+const FRASES_DIA = [
+  "Cada tarefa concluída hoje é um passo a menos para o caos de amanhã.",
+  "Organização não é perfeição — é clareza sobre o que importa agora.",
+  "O time que se comunica bem entrega bem. Comece a conversa.",
+  "Uma prioridade bem definida vale mais que dez tarefas mal distribuídas.",
+  "Quem controla o processo, controla o resultado.",
+  "Delegar com clareza é o maior presente que você pode dar à sua equipe.",
+  "Pequenas entregas constantes constroem grandes resultados.",
+  "Foco total por algumas horas vale mais do que presença distraída o dia todo.",
+  "O que pode ser registrado, pode ser acompanhado. O que pode ser acompanhado, pode melhorar.",
+  "Começar é a metade de qualquer tarefa. Dê o primeiro passo agora.",
+  "Produtividade real começa quando paramos de apagar incêndios e começamos a preveni-los.",
+  "Um time alinhado move montanhas. Comece pela reunião de hoje.",
+  "Clareza de objetivo é o combustível da execução.",
+  "Boas rotinas eliminam decisões desnecessárias e liberam energia para o que importa.",
+  "O prazo de hoje é a qualidade de amanhã. Respeite os dois.",
+  "Cada tarefa tem um dono. Sem dono, ninguém entrega.",
+  "Feito hoje com cuidado evita retrabalho amanhã.",
+  "A disciplina no processo é o que separa resultados consistentes de resultados acidentais.",
+  "Uma equipe que acompanha suas metas todos os dias nunca se perde nos detalhes.",
+  "Problemas resolvidos cedo custam menos do que problemas resolvidos tarde.",
+  "O que não é medido, não é gerenciado. Acompanhe seus números hoje.",
+  "Trabalho bem distribuído é trabalho bem feito.",
+  "Cada 'concluído' no kanban é uma vitória real. Celebre cada uma.",
+  "Clareza nas responsabilidades elimina 80% dos conflitos de equipe.",
+  "Quem planeja bem no início, chega tranquilo no fim do dia.",
+  "Excelência não é um ato isolado — é o resultado de hábitos consistentes.",
+  "Toda grande clínica começa com uma equipe que se preocupa com os detalhes.",
+  "O paciente percebe quando a equipe está alinhada. Isso também é cuidado.",
+  "Informação centralizada significa menos ruído e mais foco no que importa.",
+  "O maior erro do dia é não começar. Abra a primeira tarefa agora.",
+  "Resultados de longo prazo são construídos com ações de curto prazo bem executadas.",
+  "Equipe motivada é equipe que sabe o que está fazendo e por quê.",
+  "Organize antes de executar. Pense antes de delegar.",
+  "Excelência no atendimento começa no backstage. Cuide do processo.",
+  "Velocidade sem direção é desperdício. Foco traz resultado.",
+  "Cada tarefa que entra precisa de um responsável, um prazo e um objetivo. Sem exceção.",
+  "Bom dia começa com clareza. Antes de agir, revise suas prioridades.",
+  "O segredo de uma clínica de referência: cuidado com as pessoas, rigor com os processos.",
+  "Não existe entrega sem comprometimento. Hoje é dia de comprometer.",
+  "O que não está organizado hoje vai gerar urgência amanhã.",
+  "Uma meta compartilhada move o time inteiro na mesma direção.",
+  "Quem documenta seu processo, constrói o caminho para crescer.",
+  "Menos improviso, mais protocolo — e muito mais qualidade.",
+  "Cada detalhe bem cuidado é um sorriso a mais no rosto do paciente.",
+  "A produtividade da equipe depende da qualidade da liderança. Lidere com clareza hoje.",
+  "Confie no processo que você mesmo construiu. Ele está funcionando.",
+  "Priorize o importante antes que o urgente tome conta do dia.",
+  "Fazer bem feito uma vez é mais eficiente do que refazer três vezes.",
+  "Equipe que celebra pequenas vitórias sustenta grandes conquistas.",
+  "O presente bem organizado é o futuro bem vivido.",
+  "Comunicação clara é a vacina contra retrabalho e mal-entendido.",
+  "Cuidar do processo é cuidar dos resultados. E dos pacientes.",
+  "Hoje é a oportunidade de fazer algo que amanhã você vai agradecer.",
+  "O time certo, na tarefa certa, no momento certo — isso é gestão.",
+  "Cada tarefa que você conclui hoje libera espaço mental para criar amanhã.",
+  "Foco é a habilidade mais rara e mais valiosa de qualquer profissional.",
+  "Uma equipe que sabe suas prioridades nunca perde tempo com o que não importa.",
+  "A excelência não se improvisa — se constrói, dia após dia.",
+  "Fechar o dia com a lista organizada é começar amanhã com energia.",
+  "O maior investimento que você pode fazer hoje é na clareza do seu time.",
+  "Quem acompanha os resultados diariamente nunca é surpreendido no fim do mês.",
+  "Produtividade é uma escolha. Faça essa escolha agora.",
+  "Cada 'não' para o que não é prioridade é um 'sim' para o que realmente importa.",
+  "O detalhe que parece pequeno hoje pode ser o diferencial que o paciente nota amanhã.",
+  "Processos bem desenhados são a base de uma equipe que escala.",
+  "Equipe alinhada é clínica que cresce. Comece pelo alinhamento de hoje.",
+  "Disciplina hoje é liberdade amanhã.",
+  "Não espere o momento perfeito. Organize, delegue e execute agora.",
+];
+
+function renderFraseDia() {
+  const el = document.getElementById('frase-texto');
+  if (!el) return;
+  // Usa a data atual (meia-noite) como semente para selecionar a frase do dia
+  const hoje = new Date();
+  const seed = hoje.getFullYear() * 10000 + (hoje.getMonth() + 1) * 100 + hoje.getDate();
+  const idx = seed % FRASES_DIA.length;
+  el.textContent = FRASES_DIA[idx];
+}
+
 function renderVello() {
   renderInbox();
   renderKanban();
   loadColTitles();
   updateVelloBadge();
+  renderFraseDia();
 }
 
 // ---- Títulos editáveis das colunas ----
