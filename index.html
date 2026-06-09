@@ -2736,8 +2736,8 @@ function renderKanban() {
   let migrated = false;
   cards.forEach(c => {
     if (c.column === 'waiting') { c.column = 'delegated'; migrated = true; }
-    // Cards com delegatedTo[] que ainda estão em todo/progress movem para delegated
-    if (c.delegatedTo?.length && c.column !== 'done' && c.column !== 'delegated') { c.column = 'delegated'; migrated = true; }
+    // Cards do dono com delegatedTo[] que ainda não estão em delegated
+    if (c.delegatedTo?.length && !c.isDelegation && c.column !== 'done' && c.column !== 'delegated') { c.column = 'delegated'; migrated = true; }
   });
   if (migrated) saveCards(currentUser.id, cards);
   const cols = ['todo','delegated','progress','done'];
@@ -3685,7 +3685,7 @@ function sendDelegation(cardId) {
       description: card.description,
       priority: card.priority,
       dueDate: card.dueDate,
-      column: 'delegated',
+      column: 'todo',
       createdAt: new Date().toISOString(),
       delegatedFrom: currentUser.id,
       delegatedFromName: currentUser.name,
