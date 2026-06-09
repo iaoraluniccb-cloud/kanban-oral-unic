@@ -5042,7 +5042,7 @@ function openEventModal(eventId, prefillDate, prefillStart, prefillEnd) {
               <option value="biweekly" ${isEdit && ev.repeat==='biweekly'?'selected':''}>Quinzenal (a cada 2 semanas)</option>
             </select>
             <div id="repeat-until-row" style="margin-top:8px;${(isEdit ? ev.repeat : 'none')==='none' ? 'display:none' : ''}">
-              <label class="form-label" style="font-size:0.78rem;">Repetir até</label>
+              <label class="form-label" style="font-size:0.78rem;">Repetir até *</label>
               <input class="form-control" type="date" id="ev-repeat-until" value="${isEdit ? ev.repeatUntil||'' : ''}">
             </div>
           </div>
@@ -5109,6 +5109,7 @@ function saveEvent(eventId, isAdminStr) {
   const end = document.getElementById('ev-end').value;
   const repeat = document.getElementById('ev-repeat')?.value || 'none';
   const repeatUntil = document.getElementById('ev-repeat-until')?.value || '';
+  if (repeat !== 'none' && !repeatUntil) { showToast('Informe a data final da repetição.', 'error'); return; }
 
   let assignedTo;
   if (isAdmin && window._eventAssignAll) {
