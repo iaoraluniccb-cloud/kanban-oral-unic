@@ -1651,6 +1651,7 @@
       <button class="tab-btn" id="tab-agenda-btn" onclick="switchTab('agenda')">Agenda</button>
       <button class="tab-btn" id="tab-gestao-btn" onclick="switchTab('gestao')" style="display:none">Gestão</button>
       <button class="tab-btn" id="tab-avaliacao-btn" onclick="switchTab('avaliacao')" style="display:none">Avaliação</button>
+      <button class="tab-btn" id="tab-protocolo-btn" onclick="switchTab('protocolo')" style="display:none">Comanda Protocolo</button>
     </nav>
     <div class="header-right">
       <div class="current-user-info">
@@ -1813,6 +1814,13 @@
     </div>
     <div class="gestao-iframe-wrap" id="gestao-iframe-wrap">
       <iframe id="gestao-iframe" src="" allowfullscreen></iframe>
+    </div>
+  </div>
+
+  <!-- Aba Comanda Protocolo -->
+  <div id="protocolo-tab" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
+    <div class="gestao-iframe-wrap" style="flex:1;display:flex;">
+      <iframe id="protocolo-iframe" src="" style="width:100%;height:100%;border:none;flex:1;" allowfullscreen></iframe>
     </div>
   </div>
 
@@ -2517,6 +2525,9 @@ async function login(userId) {
   const AVALIACAO_USERS = ['thais', 'dra_mone', 'dr_aurelio', 'dr_scharles', 'brendha', 'bruna', 'suelen'];
   const avaliacaoBtn = document.getElementById('tab-avaliacao-btn');
   if (avaliacaoBtn) avaliacaoBtn.style.display = AVALIACAO_USERS.includes(userId) ? '' : 'none';
+  // Aba Comanda Protocolo visível para todos
+  const protocoloBtn = document.getElementById('tab-protocolo-btn');
+  if (protocoloBtn) protocoloBtn.style.display = '';
   // Verifica cards fora do prazo e notifica ADMs (após carregar alertas dispensados)
   setTimeout(async () => {
     await loadDismissedAlerts(userId);
@@ -2551,12 +2562,16 @@ function switchTab(tab) {
   document.getElementById('gestao-tab').classList.remove('active');
   document.getElementById('avaliacao-tab').classList.remove('active');
   document.getElementById('pendentes-tab').classList.remove('active');
+  const protTab = document.getElementById('protocolo-tab');
+  if (protTab) { protTab.style.display = 'none'; }
   document.getElementById('tab-vello-btn').classList.remove('active');
   document.getElementById('tab-agenda-btn').classList.remove('active');
   document.getElementById('tab-gestao-btn').classList.remove('active');
   document.getElementById('tab-avaliacao-btn').classList.remove('active');
   const pendBtn = document.getElementById('tab-pendentes-btn');
   if (pendBtn) pendBtn.classList.remove('active');
+  const protBtn = document.getElementById('tab-protocolo-btn');
+  if (protBtn) protBtn.classList.remove('active');
 
   if (tab === 'vello') {
     document.getElementById('vello-tab').classList.add('active');
@@ -2576,6 +2591,15 @@ function switchTab(tab) {
     document.getElementById('tab-avaliacao-btn').classList.add('active');
     const iframe = document.getElementById('avaliacao-iframe');
     if (!iframe.src || iframe.src === window.location.href) switchAvaliacao('avaliacao');
+  } else if (tab === 'protocolo') {
+    const protTab = document.getElementById('protocolo-tab');
+    const protBtn = document.getElementById('tab-protocolo-btn');
+    if (protTab) protTab.style.display = 'flex';
+    if (protBtn) protBtn.classList.add('active');
+    const iframe = document.getElementById('protocolo-iframe');
+    if (iframe && (!iframe.src || iframe.src === 'about:blank' || iframe.src === window.location.href)) {
+      iframe.src = 'projects/simulador-agendamentos/index.html';
+    }
   } else {
     document.getElementById('agenda-tab').classList.add('active');
     document.getElementById('tab-agenda-btn').classList.add('active');
