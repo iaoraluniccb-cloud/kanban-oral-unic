@@ -788,36 +788,15 @@
         desc: 'Final do dia — aprovação final',
         highlight: false,
       },
-      ...(entregaOpcoes ? [
-        {
-          etapa: 'Entrega da Prótese — Opção A',
-          icon: '🎉',
-          data: entregaOpcoes.sexta,
-          duracao: duracoes.entrega,
-          desc: 'Sexta-feira · após 16h30 — entrega e orientações',
-          highlight: true,
-          opcao: true,
-        },
-        {
-          etapa: 'Entrega da Prótese — Opção B',
-          icon: '🎉',
-          data: entregaOpcoes.sabado,
-          duracao: duracoes.entrega,
-          desc: 'Sábado · até 12h00 — entrega e orientações',
-          highlight: true,
-          opcao: true,
-          horarioCustom: '08h00 – 12h00',
-        },
-      ] : [
-        {
-          etapa: 'Entrega da Prótese',
-          icon: '🎉',
-          data: entrega,
-          duracao: duracoes.entrega,
-          desc: 'Final do dia — entrega e orientações',
-          highlight: true,
-        },
-      ]),
+      {
+        etapa: 'Entrega da Prótese',
+        icon: '🎉',
+        data: entregaOpcoes ? entregaOpcoes.sexta : entrega,
+        duracao: duracoes.entrega,
+        desc: 'Final do dia — entrega e orientações',
+        highlight: true,
+        entregaOpcoes: entregaOpcoes || null,
+      },
     ];
   }
 
@@ -880,16 +859,35 @@
       const item = document.createElement('div');
       item.className = 'timeline-item' + (ag.highlight ? ' highlight' : '') + (ag.bloqueio ? ' bloqueio' : '');
       const badgeBloqueio = ag.bloqueio ? '<span class="bloqueio-badge">⚠ BLOQUEIO DE AGENDA</span>' : '';
-      const horarioStr = ag.horarioCustom ? ag.horarioCustom : `Aproximadamente ${formatarHora(ag.data)}`;
-      const opcaoBadge = ag.opcao ? `<span style="font-size:0.72rem;background:#C4955A20;color:#8B4A00;border:1px solid #C4955A;border-radius:4px;padding:1px 7px;margin-left:6px;font-weight:700;">${ag.etapa.includes('A') ? 'OPÇÃO A' : 'OPÇÃO B'}</span>` : '';
-      const etapaLabel = ag.opcao ? ag.etapa.replace(' — Opção A','').replace(' — Opção B','') : ag.etapa;
+      let conteudoEntrega = '';
+      if (ag.entregaOpcoes) {
+        const op = ag.entregaOpcoes;
+        conteudoEntrega = `
+          <div class="timeline-step">${ag.icon} Entrega da Prótese${badgeBloqueio}</div>
+          <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px;">
+            <div style="background:#FDF9F4;border:1.5px solid #C4955A;border-radius:8px;padding:10px 14px;">
+              <div style="font-size:0.72rem;font-weight:700;color:#8B4A00;letter-spacing:0.05em;margin-bottom:4px;">OPÇÃO A</div>
+              <div style="font-weight:700;font-size:0.95rem;color:#3D2A20;">${formatarData(op.sexta)}</div>
+              <div style="font-size:0.82rem;color:#6B4F44;margin-top:2px;">⏰ Após 16h30 · Sexta-feira</div>
+            </div>
+            <div style="background:#FDF9F4;border:1.5px solid #C4955A;border-radius:8px;padding:10px 14px;">
+              <div style="font-size:0.72rem;font-weight:700;color:#8B4A00;letter-spacing:0.05em;margin-bottom:4px;">OPÇÃO B</div>
+              <div style="font-weight:700;font-size:0.95rem;color:#3D2A20;">${formatarData(op.sabado)}</div>
+              <div style="font-size:0.82rem;color:#6B4F44;margin-top:2px;">⏰ 08h00 – 12h00 · Sábado</div>
+            </div>
+          </div>
+          <div style="font-size:0.78rem;color:#9A7B6E;margin-top:8px;">⏱ Duração: ${formatarDuracao(ag.duracao)} · Entrega e orientações</div>`;
+      } else {
+        conteudoEntrega = `
+          <div class="timeline-step">${ag.icon} ${ag.etapa}${badgeBloqueio}</div>
+          <div class="timeline-date">${formatarData(ag.data)}</div>
+          <div class="timeline-time">⏰ Aproximadamente ${formatarHora(ag.data)}</div>
+          <div class="timeline-duration">⏱ Duração: ${formatarDuracao(ag.duracao)} · ${ag.desc}</div>`;
+      }
       item.innerHTML = `
         <div class="timeline-dot"></div>
         <div class="timeline-content">
-          <div class="timeline-step">${ag.icon} ${etapaLabel}${opcaoBadge}${badgeBloqueio}</div>
-          <div class="timeline-date">${formatarData(ag.data)}</div>
-          <div class="timeline-time">⏰ ${horarioStr}</div>
-          <div class="timeline-duration">⏱ Duração: ${formatarDuracao(ag.duracao)} · ${ag.desc}</div>
+          ${conteudoEntrega}
         </div>
       `;
       timeline.appendChild(item);
