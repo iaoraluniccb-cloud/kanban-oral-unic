@@ -3,31 +3,33 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Athena — Simulador de Agendamentos</title>
+  <title>Comanda Protocolo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --brand: #7c3aed;
-      --brand-light: #f3e8ff;
-      --brand-dark: #5b21b6;
-      --accent: #9333ea;
-      --gold: #c8a84b;
-      --gold-light: #fdf6e3;
-      --green: #16a34a;
+      --brand: #8B2D42;
+      --brand-light: #F5EDE2;
+      --brand-dark: #6A1F30;
+      --accent: #C4955A;
+      --gold: #C4955A;
+      --gold-light: #FDF9F4;
+      --green: #5A7A4A;
       --green-light: #f0fdf4;
-      --text: #1e293b;
-      --text-muted: #6b7280;
-      --border: #e0d6f7;
-      --bg: #faf5ff;
+      --text: #3D2A20;
+      --text-muted: #9A7B6E;
+      --border: #E0C9B8;
+      --bg: #FDF9F4;
       --white: #ffffff;
-      --radius: 12px;
-      --shadow: 0 2px 12px rgba(0,0,0,0.08);
-      --shadow-hover: 0 6px 24px rgba(124,58,237,0.15);
+      --radius: 10px;
+      --shadow: 0 2px 12px rgba(139,45,66,0.08);
+      --shadow-hover: 0 6px 24px rgba(139,45,66,0.15);
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      font-family: 'Josefin Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
       background: var(--bg);
       color: var(--text);
       min-height: 100vh;
@@ -35,13 +37,13 @@
 
     /* HEADER */
     header {
-      background: linear-gradient(135deg, #4c1d95 0%, var(--brand-dark) 50%, var(--brand) 100%);
+      background: linear-gradient(135deg, #4A1020 0%, var(--brand-dark) 50%, var(--brand) 100%);
       color: white;
       padding: 24px 32px;
       display: flex;
       align-items: center;
       gap: 16px;
-      box-shadow: 0 4px 20px rgba(124,58,237,0.3);
+      box-shadow: 0 4px 20px rgba(139,45,66,0.3);
     }
     header .logo {
       width: 48px; height: 48px;
@@ -146,7 +148,7 @@
     .protocol-card.selected {
       border-color: var(--brand);
       background: var(--brand-light);
-      box-shadow: 0 0 0 3px rgba(26,107,138,0.12);
+      box-shadow: 0 0 0 3px rgba(139,45,66,0.12);
     }
     .protocol-card .emoji { font-size: 28px; margin-bottom: 8px; }
     .protocol-card .name { font-size: 0.9rem; font-weight: 700; color: var(--brand-dark); }
@@ -168,11 +170,11 @@
     .btn-primary {
       background: linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 100%);
       color: white;
-      box-shadow: 0 4px 14px rgba(124,58,237,0.3);
+      box-shadow: 0 4px 14px rgba(139,45,66,0.3);
     }
     .btn-primary:hover {
       transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(124,58,237,0.4);
+      box-shadow: 0 6px 20px rgba(139,45,66,0.4);
     }
     .btn-secondary {
       background: var(--bg);
