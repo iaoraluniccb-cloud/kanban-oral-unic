@@ -4548,8 +4548,8 @@ function renderPendentes() {
   const now = new Date();
   const pendList = []; // { card, ownerId, ownerName, ownerColor, overdue }
 
-  // Supervisores veem apenas seus subordinados; ADMs veem todos
-  const isAdm = ['thais', 'dra_mone'].includes(currentUser.id);
+  // ADMs e Jarina veem todos; outros supervisores veem só seus subordinados
+  const isAdm = ['thais', 'dra_mone', 'jarina'].includes(currentUser.id);
   const allowedOwners = isAdm ? null : (SUPERVISORS[currentUser.id] || []);
 
   // Pré-computa: para cada (fromUserId, cardTitle) quais userIds receberam delegação ativa
