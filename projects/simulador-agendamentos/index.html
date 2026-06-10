@@ -698,14 +698,20 @@
       : { rodete: 60, provaDentes: 30, barra: 30, barraDentes: 30, entrega: 45 };
 
     // Base: a contagem de dias úteis começa a partir do dia da cirurgia
-    // 1. Rodete: +2 dias úteis — sem horário fixo
+    // 1. Rodete: +2 dias úteis
+    //    cirurgia manhã → qualquer horário (sem horário fixo)
+    //    cirurgia tarde → após 15h30
     let rodete = addDiasUteis(dataCirurgia, 2);
+    const rodeteComHorario = turnoCirurgia === 'tarde';
+    if (rodeteComHorario) rodete.setHours(15, 30, 0, 0);
 
-    // 2. Prova de dentes: +2 dias úteis — sem horário fixo
+    // 2. Prova de dentes: +2 dias úteis — sempre turno manhã (08h00)
     let provaDentes = addDiasUteis(rodete, 2);
+    provaDentes = forcarManha(provaDentes);
 
-    // 3. Prova adicional: +1 dia útil — sem horário fixo
+    // 3. Prova adicional: +1 dia útil — sempre turno manhã (08h00)
     let provaAdicional = addDiasUteis(provaDentes, 1);
+    provaAdicional = forcarManha(provaAdicional);
 
     // 4. Prova da barra: +2 dias úteis após prova adicional → 10:30
     let barra = addDiasUteis(provaAdicional, 2);
@@ -749,28 +755,28 @@
         icon: '🦷',
         data: rodete,
         duracao: duracoes.rodete,
-        desc: 'Primeira consulta pós-cirurgia',
+        desc: turnoCirurgia === 'tarde' ? 'Turno da tarde — após 15h30' : 'Primeira consulta pós-cirurgia',
         highlight: false,
-        semHorario: true,
+        semHorario: !rodeteComHorario,
       },
       {
         etapa: 'Prova de Dentes',
         icon: '😁',
         data: provaDentes,
         duracao: duracoes.provaDentes,
-        desc: 'Aprovação estética',
+        desc: 'Turno da manhã — aprovação estética',
         highlight: false,
-        semHorario: true,
+        semHorario: false,
       },
       {
         etapa: 'Prova Adicional',
         icon: '🔒',
         data: provaAdicional,
         duracao: duracoes.provaDentes,
-        desc: 'Reservar este horário na agenda',
+        desc: 'Turno da manhã — reservar este horário',
         highlight: false,
         bloqueio: true,
-        semHorario: true,
+        semHorario: false,
       },
       {
         etapa: 'Prova da Barra',
