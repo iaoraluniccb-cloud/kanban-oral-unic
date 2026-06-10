@@ -3454,7 +3454,31 @@ async function _syncDoneToOriginAsync(card) {
 // ============================================================
 // CARD MODALS
 // ============================================================
+let _newCardDelegateIds = []; // ordem de seleção
+
+function toggleNewCardDelegate(uid, btn) {
+  const idx = _newCardDelegateIds.indexOf(uid);
+  if (idx === -1) {
+    _newCardDelegateIds.push(uid);
+    btn.style.borderColor = '#7c3aed';
+    btn.style.background = '#ede9fe';
+  } else {
+    _newCardDelegateIds.splice(idx, 1);
+    btn.style.borderColor = '#e2e8f0';
+    btn.style.background = '#fff';
+  }
+  // Atualiza preview
+  const prev = document.getElementById('new-card-delegate-preview');
+  if (!prev) return;
+  if (_newCardDelegateIds.length === 0) { prev.textContent = ''; return; }
+  const [mainId, ...copias] = _newCardDelegateIds;
+  const mainName = getUserById(mainId)?.name || mainId;
+  const copiaNames = copias.map(id => getUserById(id)?.name || id);
+  prev.textContent = '👤 Responsável: ' + mainName + (copiaNames.length ? ' · Cópia: ' + copiaNames.join(', ') : '');
+}
+
 function openAddCard(col) {
+  _newCardDelegateIds = [];
   openCardModal(null, col);
 }
 
@@ -3500,6 +3524,17 @@ function openCardModal(cardId, defaultCol) {
               </div>
             </div>
           </div>
+          ${!isEdit ? `
+          <div class="form-group">
+            <label class="form-label">📤 Delegar para <span style="font-size:0.75rem;color:var(--gray-400);font-weight:400;">(opcional — 1ª pessoa = responsável)</span></label>
+            <div class="multi-user-picker" id="new-card-delegate-picker" style="flex-wrap:wrap;gap:6px;">
+              ${USERS.filter(u => u.id !== currentUser.id).map(u => `
+                <button type="button" class="multi-user-pick-btn" data-uid="${u.id}" onclick="toggleNewCardDelegate('${u.id}',this)" style="display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:6px;border:2px solid #e2e8f0;background:#fff;cursor:pointer;font-size:0.78rem;font-weight:600;">
+                  ${avatarHtml(u.id, u.name, u.color, 'avatar-xs')} ${escHtml(u.name)}
+                </button>`).join('')}
+            </div>
+            <div id="new-card-delegate-preview" style="font-size:0.75rem;color:#7c3aed;margin-top:4px;min-height:16px;"></div>
+          </div>` : ''}
           ${isEdit ? `
           <div class="form-group">
             <label class="form-label">Coluna</label>
@@ -3587,11 +3622,48 @@ function saveCard(cardId, defaultCol) {
     const order = getCardOrder(col) || cards.filter(c => c.column === col).map(c => c.id).filter(id => id !== newId);
     order.unshift(newId);
     saveCardOrder(col, order);
+
+    // Se selecionou delegados, delega imediatamente
+    if (_newCardDelegateIds.length > 0) {
+      saveCards(currentUser.id, cards);
+      closeModal('card-modal-overlay');
+      _autoDelegate(newId, [..._newCardDelegateIds]);
+      _newCardDelegateIds = [];
+      return;
+    }
     showToast('Tarefa adicionada!', 'success');
   }
   saveCards(currentUser.id, cards);
   closeModal('card-modal-overlay');
   renderKanban();
+}
+
+function _autoDelegate(cardId, delegateIds) {
+  const cards = getCards(currentUser.id);
+  const card = cards.find(c => c.id === cardId);
+  if (!card) return;
+  const delegations = getDelegations();
+  const newDelegationMap = {};
+  delegateIds.forEach(toUserId => {
+    const delegation = { id: genId(), fromUserId: currentUser.id, fromUserName: currentUser.name, toUserId, cardId, cardTitle: card.title, cardDescription: card.description, cardPriority: card.priority, cardDueDate: card.dueDate, message: '', status: 'pending', createdAt: new Date().toISOString() };
+    delegations.push(delegation);
+    newDelegationMap[toUserId] = delegation.id;
+    const recipientCards = getCards(toUserId);
+    recipientCards.push({ id: genId(), title: card.title, description: card.description, priority: card.priority, dueDate: card.dueDate, column: 'todo', createdAt: new Date().toISOString(), delegatedFrom: currentUser.id, delegatedFromName: currentUser.name, isDelegation: true, delegationStatus: 'accepted', delegationId: delegation.id });
+    saveCards(toUserId, recipientCards);
+    const notifs = getNotifications(toUserId);
+    notifs.push({ id: genId(), type: 'incoming_delegation', delegationId: delegation.id, fromName: currentUser.name, cardTitle: card.title, message: '', read: false, createdAt: new Date().toISOString() });
+    saveNotifications(toUserId, notifs);
+  });
+  card.delegatedTo = [...delegateIds];
+  card.delegationIdMap = newDelegationMap;
+  card.delegatedMainId = delegateIds[0];
+  card.column = 'delegated';
+  saveCards(currentUser.id, cards);
+  saveDelegations(delegations);
+  const mainName = getUserById(delegateIds[0])?.name || delegateIds[0];
+  showToast('Tarefa criada e delegada para ' + mainName + '!', 'success');
+  renderVello();
 }
 
 function deleteCard(cardId) {
