@@ -718,11 +718,23 @@
     let barraDentes = addDiasUteis(barra, 1);
     barraDentes = forcarFimDia(barraDentes);
 
-    // 5. Entrega: 15 dias corridos após a cirurgia → após 16h30
-    let entrega = new Date(dataCirurgia.getTime());
-    entrega.setDate(entrega.getDate() + 15);
-    // Se cair em fim de semana ou feriado, avança para o próximo dia útil
-    while (!isUtil(entrega)) { entrega.setDate(entrega.getDate() + 1); }
+    // 5. Entrega: MÁXIMO 15 dias corridos após cirurgia, às 16h30
+    // Preferência: sexta após 16h30 ou sábado — dentro do limite de 15 dias
+    // Nunca ultrapassar o dia +15 (recuar se necessário para sexta ou sábado anterior)
+    let limiteEntrega = new Date(dataCirurgia.getTime());
+    limiteEntrega.setDate(limiteEntrega.getDate() + 15);
+    let entrega = new Date(limiteEntrega.getTime());
+    // Se o dia +15 for domingo, recua para sábado
+    if (entrega.getDay() === 0) entrega.setDate(entrega.getDate() - 1);
+    // Se o dia resultante for útil mas não sexta nem sábado, tenta recuar para a sexta anterior
+    // Regra: preferir a última sexta ou sábado dentro do limite de 15 dias
+    // Recua até encontrar sexta ou sábado (dentro do limite)
+    let tentativa = new Date(entrega.getTime());
+    for (let i = 0; i < 7; i++) {
+      const dow = tentativa.getDay();
+      if (dow === 5 || dow === 6) { entrega = new Date(tentativa.getTime()); break; }
+      tentativa.setDate(tentativa.getDate() - 1);
+    }
     entrega = forcarFimDia(entrega);
 
     return [
