@@ -5397,6 +5397,11 @@ function init() {
   // Migra fotos locais para Firestore imediatamente (sem aguardar login)
   if (window.__db) migrateLocalPhotosToFirestore();
 
+  // Auto-login via parâmetro de URL (enviado pelo athena-unified)
+  const _urlUser = new URLSearchParams(window.location.search).get('uid');
+  if (_urlUser && getUserById(_urlUser)) {
+    setCurrentUserId(_urlUser);
+  }
   const savedUser = getCurrentUserId();
   if (savedUser && getUserById(savedUser)) {
     login(savedUser);
