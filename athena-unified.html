@@ -1,0 +1,3002 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Athena — Sistema Corporativo · Oral Unic</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%238B2D42'/><text x='50' y='72' font-family='Georgia,serif' font-size='72' font-weight='bold' fill='%23FDF9F4' text-anchor='middle'>A</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+SC:wght@300;400;500&family=Cormorant:ital,wght@1,300&family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// Supabase — cliente global
+var _supa = supabase.createClient(
+  'https://eeqpvuaigqzclpompxao.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVlcXB2dWFpZ3F6Y2xwb21weGFvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1NzE1NzcsImV4cCI6MjA5NDE0NzU3N30.kDyXLrZi9ItX4Rq1hAw3iGGYxM7FtZ2gMNYhsJSSw9Q'
+);
+</script>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+
+:root {
+  --vinho:       #8B2D42;
+  --vinho-deep:  #6A1F30;
+  --vinho-light: #B85C72;
+  --marfim:      #FDF9F4;
+  --creme:       #F5EDE2;
+  --blush:       #EDDDD4;
+  --warm:        #E0C9B8;
+  --moka:        #3D2A20;
+  --tinta:       #1A0F0A;
+  --success:     #4a7c5e;
+  --warning:     #a87828;
+  --danger:      #943040;
+  --info:        #3a6a8a;
+  --bg:          #F7F2EC;
+  --card-bg:     #FFFFFF;
+  --border:      #E4D8CC;
+  --text:        #1A0F0A;
+  --muted:       #7a5a50;
+  --sidebar-w:   240px;
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: 'Barlow', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  display: flex;
+  font-weight: 400;
+}
+
+/* ══════════════════════════════════════════════
+   SIDEBAR
+══════════════════════════════════════════════ */
+.sidebar {
+  width: var(--sidebar-w);
+  background: var(--vinho-deep);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  transition: width .25s ease;
+  position: relative;
+  z-index: 100;
+}
+
+.sidebar.collapsed { width: 58px; }
+.sidebar.collapsed .logo-text,
+.sidebar.collapsed .sidebar-section-label,
+.sidebar.collapsed .nav-label,
+.sidebar.collapsed .nav-badge,
+.sidebar.collapsed .avatar-info { display: none; }
+.sidebar.collapsed .nav-item { justify-content: center; padding: 9px 0; }
+.sidebar.collapsed .icon { font-size: 18px; }
+.sidebar.collapsed .sidebar-logo { padding: 20px 0; justify-content: center; }
+.sidebar.collapsed .sidebar-footer { justify-content: center; padding: 16px 0; }
+
+.sidebar-logo {
+  padding: 24px 20px 18px;
+  border-bottom: 1px solid rgba(253,249,244,0.1);
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  flex-shrink: 0;
+}
+.logo-icon { width: 44px; height: 44px; flex-shrink: 0; }
+.logo-text h2 {
+  font-family: 'Cormorant SC', serif;
+  font-size: 20px;
+  font-weight: 400;
+  letter-spacing: 0.18em;
+  color: var(--marfim);
+  line-height: 1;
+}
+.logo-text span {
+  font-family: 'Barlow', sans-serif;
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  color: var(--blush);
+  text-transform: uppercase;
+  display: block;
+  margin-top: 3px;
+}
+
+.sidebar-section-label {
+  padding: 10px 16px 10px 20px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(253,249,244,0.45);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  user-select: none;
+  border-radius: 6px;
+  margin: 2px 8px 0;
+  transition: background .15s, color .15s;
+}
+.sidebar-section-label:hover {
+  background: rgba(253,249,244,0.07);
+  color: rgba(253,249,244,0.85);
+}
+.sidebar-section-label .section-arrow {
+  font-size: 10px;
+  transition: transform .25s ease;
+  color: var(--blush, #d4a57e);
+  opacity: 0.8;
+}
+.sidebar-section-label.collapsed-section .section-arrow {
+  transform: rotate(-90deg);
+}
+.nav-group {
+  display: none;
+  animation: slideDown .18s ease;
+}
+.nav-group.open {
+  display: block;
+}
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 9px 20px;
+  color: rgba(253,249,244,0.75);
+  font-family: 'Barlow', sans-serif;
+  font-size: 13.5px;
+  font-weight: 400;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all .15s;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  border-right: 2px solid transparent;
+}
+.nav-item:hover {
+  color: var(--marfim);
+  background: rgba(253,249,244,0.08);
+}
+.nav-item.active {
+  color: var(--marfim);
+  background: rgba(139,45,66,0.28);
+  border-right-color: var(--vinho-light);
+  font-weight: 500;
+}
+.nav-item .icon { font-size: 16px; width: 22px; text-align: center; flex-shrink: 0; }
+.nav-badge {
+  margin-left: auto;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 99px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(253,249,244,0.15);
+  color: var(--marfim);
+}
+.nav-badge.badge-red { background: var(--danger); }
+
+.sidebar-footer {
+  margin-top: auto;
+  padding: 16px 20px;
+  border-top: 1px solid rgba(253,249,244,0.08);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.avatar-sm {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  background: var(--vinho);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 13px; font-weight: 700;
+  color: var(--marfim);
+  flex-shrink: 0;
+}
+.avatar-info .name  { color: var(--marfim); font-size: 12px; font-weight: 500; }
+.avatar-info .role  { color: rgba(253,249,244,0.45); font-size: 10px; text-transform: uppercase; letter-spacing: .08em; }
+
+/* Collapse toggle */
+.sidebar-toggle {
+  position: absolute;
+  right: -12px;
+  top: 28px;
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  background: var(--vinho);
+  border: 2px solid var(--marfim);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; color: var(--marfim);
+  z-index: 200;
+  transition: transform .25s;
+}
+.sidebar.collapsed .sidebar-toggle { transform: rotate(180deg); right: -12px; }
+
+/* ══════════════════════════════════════════════
+   MAIN SHELL
+══════════════════════════════════════════════ */
+.shell {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+
+/* ── TOPBAR ── */
+.topbar {
+  background: var(--card-bg);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 50;
+}
+.topbar-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.topbar-breadcrumb .section-name {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  font-size: 10px;
+}
+.topbar-breadcrumb .page-name {
+  font-family: 'Cormorant SC', serif;
+  font-size: 17px;
+  font-weight: 500;
+  letter-spacing: .08em;
+  color: var(--tinta);
+}
+.topbar-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.topbar-date {
+  font-size: 11px;
+  color: var(--muted);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-family: 'Barlow Condensed', sans-serif;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.topbar-btn {
+  width: 34px; height: 34px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: var(--card-bg);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px;
+  cursor: pointer;
+  color: var(--muted);
+  position: relative;
+  transition: background .15s;
+}
+.topbar-btn:hover { background: var(--bg); }
+.notif-dot {
+  position: absolute; top: 7px; right: 7px;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--vinho);
+  border: 1.5px solid #fff;
+}
+
+/* ── CONTENT AREA ── */
+.content-area {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Each page panel */
+.page-panel {
+  position: absolute;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+}
+.page-panel.active { display: flex; }
+
+/* Iframe pages */
+.page-iframe {
+  border: none;
+  width: 100%;
+  height: 100%;
+  flex: 1;
+}
+
+/* Inline pages (início, placeholders) */
+.page-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 22px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.page-scroll::-webkit-scrollbar { width: 4px; }
+.page-scroll::-webkit-scrollbar-thumb { background: var(--warm); border-radius: 10px; }
+
+/* ══════════════════════════════════════════════
+   INÍCIO PAGE (inline)
+══════════════════════════════════════════════ */
+.resumo-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+.resumo-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  position: relative;
+  overflow: hidden;
+}
+.resumo-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 3px;
+}
+.resumo-card.rc1::after { background: var(--vinho); }
+.resumo-card.rc2::after { background: var(--success); }
+.resumo-card.rc3::after { background: var(--warning); }
+.resumo-card.rc4::after { background: var(--info); }
+.resumo-icon {
+  width: 42px; height: 42px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; flex-shrink: 0;
+}
+.ri1 { background: rgba(139,45,66,0.08); }
+.ri2 { background: rgba(74,124,94,0.10); }
+.ri3 { background: rgba(168,120,40,0.10); }
+.ri4 { background: rgba(58,106,138,0.10); }
+.resumo-val { font-size: 26px; font-weight: 700; line-height: 1; color: var(--tinta); }
+.resumo-lbl { font-size: 12px; color: var(--muted); margin-top: 3px; }
+
+.main-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr;
+  gap: 16px;
+}
+.bottom-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  flex: 1;
+  min-height: 0;
+}
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.card-header {
+  padding: 14px 18px 12px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.card-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 13px; font-weight: 700;
+  letter-spacing: .08em; text-transform: uppercase;
+  color: var(--tinta);
+  display: flex; align-items: center; gap: 8px;
+}
+.dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+.card-action { font-size: 11px; font-weight: 500; color: var(--vinho); cursor: pointer; }
+.agenda-list {
+  padding: 12px 18px;
+  display: flex; flex-direction: column; gap: 9px;
+  overflow-y: auto; flex: 1;
+}
+.agenda-list::-webkit-scrollbar { width: 3px; }
+.agenda-list::-webkit-scrollbar-thumb { background: var(--warm); border-radius: 10px; }
+.agenda-item {
+  display: flex; gap: 12px; align-items: center;
+  padding: 10px 12px; border-radius: 8px;
+  border: 1px solid var(--border); background: var(--bg);
+  transition: all .15s;
+}
+.agenda-item:hover { border-color: var(--vinho-light); background: var(--creme); }
+.agenda-time { text-align: center; flex-shrink: 0; width: 44px; }
+.agenda-time .hour { font-size: 14px; font-weight: 700; color: var(--vinho); }
+.agenda-time .dur  { font-size: 10px; color: var(--muted); }
+.agenda-bar { width: 3px; height: 38px; border-radius: 2px; flex-shrink: 0; }
+.ab1{background:var(--vinho);} .ab2{background:var(--success);}
+.ab3{background:var(--vinho-light);} .ab4{background:var(--warning);}
+.ab5{background:var(--moka);} .ab6{background:var(--border);}
+.agenda-info { flex: 1; min-width: 0; }
+.agenda-patient { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.agenda-proc { font-size: 11px; color: var(--muted); margin-top: 1px; }
+.agenda-chip {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 10px; font-weight: 700;
+  letter-spacing: .05em; text-transform: uppercase;
+  padding: 3px 9px; border-radius: 4px; white-space: nowrap; flex-shrink: 0;
+}
+.chip-ok   { color: var(--success); background: rgba(74,124,94,.1); }
+.chip-wait { color: var(--warning); background: rgba(168,120,40,.1); }
+.chip-free { color: var(--muted);   background: rgba(122,90,80,.08); }
+.chip-now  { color: var(--vinho);   background: rgba(139,45,66,.1); }
+.col-center { display: flex; flex-direction: column; gap: 16px; }
+.bday-list  { padding: 12px 16px; display: flex; flex-direction: column; gap: 10px; flex: 1; overflow-y: auto; }
+.bday-list::-webkit-scrollbar { width: 3px; }
+.bday-list::-webkit-scrollbar-thumb { background: var(--warm); border-radius: 10px; }
+.bday-item  { display: flex; gap: 10px; align-items: center; }
+.bday-av {
+  width: 38px; height: 38px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 13px; font-weight: 700; color: var(--marfim); flex-shrink: 0;
+}
+.bday-info { flex: 1; }
+.bday-name { font-size: 13px; font-weight: 600; }
+.bday-sub  { font-family: 'Barlow Condensed', sans-serif; font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+.meta-body { padding: 14px 18px; display: flex; flex-direction: column; gap: 12px; }
+.meta-top  { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+.meta-label { font-size: 12px; font-weight: 500; color: var(--tinta); }
+.meta-values { font-size: 11px; color: var(--muted); }
+.meta-values strong { font-weight: 700; color: var(--vinho); }
+.meta-bar-track { height: 7px; background: var(--blush); border-radius: 4px; overflow: hidden; }
+.meta-bar-fill  { height: 100%; border-radius: 4px; }
+.alerta-list { padding: 12px 16px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+.alerta-item {
+  display: flex; gap: 10px; align-items: flex-start;
+  padding: 9px 12px; border-radius: 7px; border-left: 3px solid; background: var(--bg);
+}
+.al-danger { border-color: var(--danger); background: rgba(148,48,64,.05); }
+.al-warn   { border-color: var(--warning); background: rgba(168,120,40,.05); }
+.al-info   { border-color: var(--info); background: rgba(58,106,138,.05); }
+.alerta-icon  { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+.alerta-title { font-size: 12px; font-weight: 600; color: var(--tinta); }
+.alerta-sub   { font-size: 11px; color: var(--muted); margin-top: 1px; }
+.col-right { display: flex; flex-direction: column; gap: 16px; }
+.colab-inner { padding: 14px; flex: 1; }
+.colab-card {
+  background: linear-gradient(155deg, var(--vinho-deep), var(--vinho));
+  border-radius: 10px; padding: 18px 14px 16px;
+  display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center;
+  position: relative; overflow: hidden; color: var(--marfim);
+}
+.colab-card::before {
+  content: ''; position: absolute; top: -30px; right: -30px;
+  width: 100px; height: 100px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(253,249,244,.08), transparent);
+}
+.colab-badge {
+  font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 600;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--blush);
+  background: rgba(253,249,244,.1); border: 1px solid rgba(253,249,244,.2);
+  padding: 3px 12px; border-radius: 20px; z-index: 1;
+}
+.colab-photo {
+  width: 82px; height: 82px; border-radius: 50%;
+  border: 2px solid rgba(253,249,244,.3);
+  overflow: hidden; box-shadow: 0 4px 18px rgba(0,0,0,.3); z-index: 1;
+}
+.colab-name { font-family: 'Cormorant SC', serif; font-size: 16px; font-weight: 500; letter-spacing: .1em; z-index: 1; }
+.colab-role { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: rgba(253,249,244,.65); z-index: 1; margin-top: -6px; }
+.colab-divider { width: 100%; height: 1px; background: rgba(253,249,244,.15); z-index: 1; }
+.colab-stats { display: flex; gap: 7px; width: 100%; z-index: 1; }
+.colab-stat { flex: 1; background: rgba(253,249,244,.08); border: 1px solid rgba(253,249,244,.12); border-radius: 6px; padding: 7px 4px; text-align: center; }
+.colab-stat-val { font-size: 17px; font-weight: 700; color: var(--blush); }
+.colab-stat-lbl { font-family: 'Barlow Condensed', sans-serif; font-size: 9px; font-weight: 500; text-transform: uppercase; letter-spacing: .05em; color: rgba(253,249,244,.5); margin-top: 2px; }
+.colab-msg { font-size: 12px; font-style: italic; color: rgba(253,249,244,.55); z-index: 1; line-height: 1.5; }
+.frase-body { padding: 16px 18px; flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 8px; }
+.frase-texto { font-family: 'Cormorant SC', serif; font-size: 15px; color: var(--tinta); line-height: 1.5; letter-spacing: .03em; }
+.frase-autor { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+.frase-autor::before { content: '— '; }
+
+/* ══════════════════════════════════════════════
+   PLACEHOLDER PAGE
+══════════════════════════════════════════════ */
+.placeholder-page {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 40px;
+  text-align: center;
+}
+.placeholder-icon {
+  font-size: 52px;
+  opacity: .6;
+  filter: grayscale(.2);
+}
+.placeholder-title {
+  font-family: 'Cormorant SC', serif;
+  font-size: 22px;
+  font-weight: 400;
+  letter-spacing: .12em;
+  color: var(--tinta);
+}
+.placeholder-sub {
+  font-size: 13px;
+  color: var(--muted);
+  max-width: 360px;
+  line-height: 1.6;
+}
+.placeholder-badge {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--warning);
+  background: rgba(168,120,40,.1);
+  border: 1px solid rgba(168,120,40,.2);
+  padding: 4px 14px;
+  border-radius: 20px;
+}
+
+/* ══════════════════════════════════════════════
+   CHAT FLUTUANTE
+══════════════════════════════════════════════ */
+#chat-widget {
+  position: fixed; bottom: 20px; right: 20px;
+  width: 340px; height: 480px;
+  background: #fff; border-radius: 16px;
+  box-shadow: 0 8px 40px rgba(26,15,10,.22);
+  display: none; flex-direction: column;
+  z-index: 8000; overflow: hidden;
+  border: 1px solid var(--border);
+}
+#chat-widget.open { display: flex; }
+.chat-hdr {
+  background: var(--vinho-deep); color: #fff;
+  padding: 12px 14px; display: flex; align-items: center; gap: 10px;
+  flex-shrink: 0;
+}
+.chat-hdr-title { font-family: 'Cormorant SC', serif; font-size: 14px; letter-spacing: .1em; flex: 1; }
+.chat-hdr-back { background: none; border: none; color: rgba(255,255,255,.7); font-size: 18px; cursor: pointer; padding: 0 4px; line-height: 1; }
+.chat-hdr-close { background: none; border: none; color: rgba(255,255,255,.7); font-size: 18px; cursor: pointer; padding: 0 4px; line-height: 1; }
+.chat-user-list { flex: 1; overflow-y: auto; padding: 8px 0; }
+.chat-user-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; cursor: pointer; transition: background .15s;
+}
+.chat-user-item:hover { background: var(--bg); }
+.chat-u-av {
+  width: 36px; height: 36px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 13px; color: #fff; flex-shrink: 0;
+}
+.chat-u-name { font-size: 13px; font-weight: 500; color: var(--tinta); }
+.chat-u-role { font-size: 11px; color: var(--muted); }
+.chat-u-badge {
+  margin-left: auto; background: var(--vinho); color: #fff;
+  border-radius: 10px; padding: 1px 7px; font-size: 11px; font-weight: 700;
+}
+.chat-msgs { flex: 1; overflow-y: auto; padding: 12px 12px 8px; display: flex; flex-direction: column; gap: 8px; }
+.chat-bubble {
+  max-width: 80%; padding: 8px 12px; border-radius: 12px;
+  font-size: 12.5px; line-height: 1.45; word-break: break-word;
+}
+.chat-bubble.them { background: var(--bg); color: var(--tinta); border-bottom-left-radius: 4px; align-self: flex-start; }
+.chat-bubble.me   { background: var(--vinho); color: #fff; border-bottom-right-radius: 4px; align-self: flex-end; }
+.chat-bubble .cb-author { font-size: 10px; font-weight: 700; margin-bottom: 3px; opacity: .7; }
+.chat-bubble .cb-time   { font-size: 9px; opacity: .55; margin-top: 3px; text-align: right; }
+.chat-input-bar {
+  display: flex; gap: 6px; padding: 10px 12px;
+  border-top: 1px solid var(--border); flex-shrink: 0;
+}
+.chat-input-bar input {
+  flex: 1; border: 1px solid var(--border); border-radius: 20px;
+  padding: 7px 14px; font-size: 13px; font-family: inherit; outline: none;
+  background: var(--bg); color: var(--tinta);
+}
+.chat-input-bar input:focus { border-color: var(--vinho); }
+.chat-send-btn {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: var(--vinho); color: #fff; border: none;
+  font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: background .15s; flex-shrink: 0;
+}
+.chat-send-btn:hover { background: var(--vinho-deep); }
+
+/* ══════════════════════════════════════════════
+   LOGIN SCREEN — PROFILE SELECTOR
+══════════════════════════════════════════════ */
+#login-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: var(--vinho-deep);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow-y: auto;
+  padding: 40px 24px 60px;
+}
+#login-screen.hidden { display: none; }
+
+.login-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 40px;
+}
+.login-logo {
+  width: 72px;
+  height: 72px;
+  opacity: 0.92;
+}
+.login-title {
+  font-family: 'Cormorant SC', serif;
+  font-size: 26px;
+  font-weight: 400;
+  letter-spacing: 0.22em;
+  color: var(--marfim);
+}
+.login-subtitle {
+  font-family: 'Barlow', sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.16em;
+  color: rgba(253,249,244,0.55);
+  text-transform: uppercase;
+}
+
+.profile-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 160px);
+  gap: 20px;
+  justify-content: center;
+  max-width: 740px;
+  width: 100%;
+}
+
+.profile-card {
+  background: rgba(253,249,244,0.07);
+  border: 1px solid rgba(253,249,244,0.12);
+  border-radius: 16px;
+  padding: 24px 16px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: all .2s ease;
+  user-select: none;
+}
+.profile-card:hover {
+  background: rgba(253,249,244,0.14);
+  border-color: rgba(253,249,244,0.28);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 28px rgba(0,0,0,0.35);
+}
+.profile-card:active {
+  transform: translateY(0);
+  background: rgba(253,249,244,0.18);
+}
+.profile-photo-wrap {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  overflow: hidden;
+}
+.profile-photo-wrap img,
+.profile-photo-wrap .profile-initials {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: center top;
+  display: block;
+}
+.profile-change-btn {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #8B2D42;
+  border: 2px solid #1A0F0A;
+  color: #fff;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  opacity: 0;
+  transition: opacity .18s;
+}
+.profile-card:hover .profile-change-btn { opacity: 1; }
+
+.profile-photo {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(253,249,244,0.2);
+}
+.profile-initials {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  border: 2px solid rgba(253,249,244,0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Cormorant SC', serif;
+  font-size: 22px;
+  font-weight: 400;
+  color: #fff;
+}
+.profile-name {
+  font-family: 'Barlow', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--marfim);
+  text-align: center;
+  line-height: 1.3;
+}
+.profile-role {
+  font-family: 'Barlow', sans-serif;
+  font-size: 10.5px;
+  font-weight: 400;
+  color: rgba(253,249,244,0.5);
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+@media (max-width: 740px) {
+  .profile-grid { grid-template-columns: repeat(3, 140px); }
+}
+@media (max-width: 500px) {
+  .profile-grid { grid-template-columns: repeat(2, 140px); }
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════
+     LOGIN SCREEN — PROFILE SELECTOR
+══════════════════════════════════════════════ -->
+<div id="login-screen">
+  <div class="login-header">
+    <svg class="login-logo" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="60" cy="60" r="60" fill="#6A1F30"/>
+      <circle cx="60" cy="60" r="57" fill="none" stroke="#FDF9F4" stroke-width="1" opacity="0.7"/>
+      <circle cx="60" cy="60" r="48" fill="none" stroke="#FDF9F4" stroke-width="0.8" opacity="0.5"/>
+      <path d="M16 82 Q13 66 15 50 Q18 36 25 26" fill="none" stroke="#FDF9F4" stroke-width="1.1"/>
+      <ellipse cx="15" cy="77" rx="5.5" ry="2.5" transform="rotate(-42 15 77)" fill="none" stroke="#FDF9F4" stroke-width="0.9"/>
+      <ellipse cx="14" cy="70" rx="5.5" ry="2.5" transform="rotate(-30 14 70)" fill="none" stroke="#FDF9F4" stroke-width="0.9"/>
+      <ellipse cx="14" cy="63" rx="5.5" ry="2.5" transform="rotate(-18 14 63)" fill="none" stroke="#FDF9F4" stroke-width="0.9"/>
+      <ellipse cx="16" cy="49" rx="5.5" ry="2.5" transform="rotate(10 16 49)" fill="none" stroke="#FDF9F4" stroke-width="0.9"/>
+      <ellipse cx="20" cy="37" rx="5.5" ry="2.5" transform="rotate(30 20 37)" fill="none" stroke="#FDF9F4" stroke-width="0.9"/>
+      <path d="M104 82 Q107 66 105 50 Q102 36 95 26" fill="none" stroke="#FDF9F4" stroke-width="1.1"/>
+      <ellipse cx="105" cy="77" rx="5.5" ry="2.5" transform="rotate(42 105 77)" fill="none" stroke="#FDF9F4" stroke-width="0.9"/>
+      <ellipse cx="106" cy="70" rx="5.5" ry="2.5" transform="rotate(30 106 70)" fill="none" stroke="#FDF9F4" stroke-width="0.9"/>
+      <ellipse cx="106" cy="63" rx="5.5" ry="2.5" transform="rotate(18 106 63)" fill="none" stroke="#FDF9F4" stroke-width="0.9"/>
+      <ellipse cx="104" cy="49" rx="5.5" ry="2.5" transform="rotate(-10 104 49)" fill="none" stroke="#FDF9F4" stroke-width="0.9"/>
+      <ellipse cx="100" cy="37" rx="5.5" ry="2.5" transform="rotate(-30 100 37)" fill="none" stroke="#FDF9F4" stroke-width="0.9"/>
+      <path d="M38 96 Q28 90 22 82" fill="none" stroke="#FDF9F4" stroke-width="1.1"/>
+      <path d="M82 96 Q92 90 98 82" fill="none" stroke="#FDF9F4" stroke-width="1.1"/>
+      <text x="60" y="72" text-anchor="middle" font-family="Cormorant SC, serif" font-size="28" fill="#FDF9F4" letter-spacing="2">OU</text>
+    </svg>
+    <div class="login-title">ATHENA</div>
+    <div class="login-subtitle">Oral Unic · Carlos Barbosa · Selecione seu perfil</div>
+  </div>
+
+  <div class="profile-grid" id="profile-grid">
+    <!-- cards rendered by JS -->
+  </div>
+
+  <div id="login-frase" style="margin-top:28px;max-width:480px;text-align:center;padding:0 20px;">
+    <span style="font-family:'Cormorant SC',serif;font-size:15px;color:rgba(253,249,244,0.75);line-height:1.6;font-style:italic;" id="login-frase-texto">Disciplina hoje e liberdade amanha.</span>
+    <div style="font-family:'Barlow Condensed',sans-serif;font-size:10px;letter-spacing:.14em;color:rgba(253,249,244,0.4);margin-top:6px;text-transform:uppercase;">Oral Unic · Athena</div>
+  </div>
+
+  <script>
+  (function(){
+    var FR=[
+      "Cada tarefa concluida hoje e um passo a menos para o caos de amanha.",
+      "Organizacao nao e perfeicao: e clareza sobre o que importa agora.",
+      "O time que se comunica bem entrega bem. Comece a conversa.",
+      "Uma prioridade bem definida vale mais que dez tarefas mal distribuidas.",
+      "Quem controla o processo, controla o resultado.",
+      "Delegar com clareza e o maior presente que voce pode dar a sua equipe.",
+      "Pequenas entregas constantes constroem grandes resultados.",
+      "Foco total por algumas horas vale mais do que presenca distraida o dia todo.",
+      "Comecar e a metade de qualquer tarefa. De o primeiro passo agora.",
+      "Um time alinhado move montanhas. Comece pela reuniao de hoje.",
+      "Clareza de objetivo e o combustivel da execucao.",
+      "O prazo de hoje e a qualidade de amanha. Respeite os dois.",
+      "Cada tarefa tem um dono. Sem dono, ninguem entrega.",
+      "Feito hoje com cuidado evita retrabalho amanha.",
+      "O que nao e medido, nao e gerenciado. Acompanhe seus numeros hoje.",
+      "Clareza nas responsabilidades elimina 80% dos conflitos de equipe.",
+      "Excelencia nao e um ato isolado: e o resultado de habitos consistentes.",
+      "O paciente percebe quando a equipe esta alinhada. Isso tambem e cuidado.",
+      "Equipe motivada e equipe que sabe o que esta fazendo e por que.",
+      "Menos improviso, mais protocolo: e muito mais qualidade.",
+      "Cada detalhe bem cuidado e um sorriso a mais no rosto do paciente.",
+      "Comunicacao clara e a vacina contra retrabalho e mal-entendido.",
+      "Hoje e a oportunidade de fazer algo que amanha voce vai agradecer.",
+      "A excelencia nao se improvisa: se constroi, dia apos dia.",
+      "Disciplina hoje e liberdade amanha."
+    ];
+    var d = new Date();
+    var seed = d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+    var frase = FR[seed % FR.length];
+    var el = document.getElementById('login-frase-texto');
+    if (el) { el.textContent = frase; }
+  })();
+  </script>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SIDEBAR
+══════════════════════════════════════════════ -->
+<nav class="sidebar" id="sidebar">
+
+  <button class="sidebar-toggle" onclick="toggleSidebar()" title="Recolher menu">‹</button>
+
+  <div class="sidebar-logo">
+    <svg class="logo-icon" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="60" cy="60" r="60" fill="#6A1F30"/>
+      <circle cx="60" cy="60" r="57" fill="none" stroke="#FDF9F4" stroke-width="1" opacity="0.7"/>
+      <circle cx="60" cy="60" r="48" fill="none" stroke="#FDF9F4" stroke-width="0.8" opacity="0.5"/>
+      <path d="M16 82 Q13 66 15 50 Q18 36 25 26" fill="none" stroke="#FDF9F4" stroke-width="1.1"/>
+      <ellipse cx="15" cy="77" rx="5.5" ry="2.5" transform="rotate(-42 15 77)" fill="none" stroke="#FDF9F4" stroke-width="0.9"/>
+      <ellipse cx="14" cy="70" rx="5.5" ry="2.5" transform="rotate(-30 14 70)" fill="none" stroke="#FDF9F4" stroke-width="0.9"/>
+      <ellipse cx="14" cy="63" rx="5.5" ry="2.5" transform="rotate(-18 14 63)" fill="none" stroke="#FDF9F4" stroke-width="0.9"/>
+      <ellipse cx="16" cy="49" rx="5.5" ry="2.5" transform="rotate(10 16 49)" fill="none" stroke="#FDF9F4" stroke-width="0.9"/>
+      <ellipse cx="19" cy="42" rx="5.5" ry="2.5" transform="rotate(25 19 42)" fill="none" stroke="#FDF9F4" stroke-width="0.9"/>
+      <ellipse cx="24" cy="34" rx="5.5" ry="2.5" transform="rotate(40 24 34)" fill="none" stroke="#FDF9F4" stroke-width="0.9"/>
+      <path d="M104 82 Q107 66 105 50 Q102 36 95 26" fill="none" stroke="#FDF9F4" stroke-width="1.1"/>
+      <ellipse cx="105" cy="77" rx="5.5" ry="2.5" transform="rotate(42 105 77)" fill="none" stroke="#FDF9F4" stroke-width="0.9"/>
+      <ellipse cx="106" cy="70" rx="5.5" ry="2.5" transform="rotate(30 106 70)" fill="none" stroke="#FDF9F4" stroke-width="0.9"/>
+      <ellipse cx="106" cy="63" rx="5.5" ry="2.5" transform="rotate(18 106 63)" fill="none" stroke="#FDF9F4" stroke-width="0.9"/>
+      <ellipse cx="104" cy="49" rx="5.5" ry="2.5" transform="rotate(-10 104 49)" fill="none" stroke="#FDF9F4" stroke-width="0.9"/>
+      <ellipse cx="101" cy="42" rx="5.5" ry="2.5" transform="rotate(-25 101 42)" fill="none" stroke="#FDF9F4" stroke-width="0.9"/>
+      <ellipse cx="96" cy="34" rx="5.5" ry="2.5" transform="rotate(-40 96 34)" fill="none" stroke="#FDF9F4" stroke-width="0.9"/>
+      <path d="M40 92 Q60 97 80 92" fill="none" stroke="#FDF9F4" stroke-width="1"/>
+      <path d="M40 92 L34 99 M80 92 L86 99" fill="none" stroke="#FDF9F4" stroke-width="0.8"/>
+      <path d="M38 38 Q40 22 60 20 Q80 22 82 38" fill="none" stroke="#FDF9F4" stroke-width="1.8"/>
+      <path d="M42 24 Q44 29 47 27 Q48 24 51 26" fill="none" stroke="#FDF9F4" stroke-width="1.1"/>
+      <path d="M52 21 Q54 26 57 24 Q59 21 62 23" fill="none" stroke="#FDF9F4" stroke-width="1.1"/>
+      <path d="M63 23 Q66 28 69 26 Q70 23 73 25" fill="none" stroke="#FDF9F4" stroke-width="1.1"/>
+      <path d="M38 38 Q35 46 36 56 Q36 64 38 70" fill="none" stroke="#FDF9F4" stroke-width="1.4"/>
+      <path d="M82 38 Q85 46 84 56 Q84 64 82 70" fill="none" stroke="#FDF9F4" stroke-width="1.4"/>
+      <ellipse cx="60" cy="44" rx="16" ry="19" fill="none" stroke="#FDF9F4" stroke-width="1.6"/>
+      <path d="M50 37 Q54 35 58 37" fill="none" stroke="#FDF9F4" stroke-width="1.1"/>
+      <path d="M62 37 Q66 35 70 37" fill="none" stroke="#FDF9F4" stroke-width="1.1"/>
+      <ellipse cx="54" cy="41" rx="3.5" ry="2.5" fill="none" stroke="#FDF9F4" stroke-width="1.1"/>
+      <ellipse cx="66" cy="41" rx="3.5" ry="2.5" fill="none" stroke="#FDF9F4" stroke-width="1.1"/>
+      <circle cx="54" cy="41" r="1.2" fill="#FDF9F4"/>
+      <circle cx="66" cy="41" r="1.2" fill="#FDF9F4"/>
+      <path d="M60 43 L58 49 Q60 51 62 49" fill="none" stroke="#FDF9F4" stroke-width="1"/>
+      <path d="M55 54 Q60 58 65 54" fill="none" stroke="#FDF9F4" stroke-width="1.2"/>
+      <path d="M56 63 L56 70 M64 63 L64 70" stroke="#FDF9F4" stroke-width="1.3"/>
+      <path d="M42 72 Q60 77 78 72" fill="none" stroke="#FDF9F4" stroke-width="1.3"/>
+      <path d="M51 64 Q48 59 49 54 Q50 51 54 52 Q57 50 60 50 Q63 50 66 52 Q70 51 71 54 Q72 59 69 64 Z" fill="none" stroke="#FDF9F4" stroke-width="1.6"/>
+      <path d="M60 50 L60 64" fill="none" stroke="#FDF9F4" stroke-width="0.9"/>
+      <path d="M54 64 Q53 70 52 76 Q52 80 55 80" fill="none" stroke="#FDF9F4" stroke-width="1.3"/>
+      <path d="M66 64 Q67 70 68 76 Q68 80 65 80" fill="none" stroke="#FDF9F4" stroke-width="1.3"/>
+    </svg>
+    <div class="logo-text">
+      <h2>Athena</h2>
+      <span>Sistema Corporativo</span>
+    </div>
+  </div>
+
+  <div class="sidebar-section-label">Principal</div>
+  <button class="nav-item active" data-page="inicio" data-section="Principal" data-label="Início" onclick="nav(this)">
+    <span class="icon">🏠</span><span class="nav-label">Início</span>
+  </button>
+  <button class="nav-item" data-page="vello" data-section="Principal" data-label="Vello" onclick="nav(this)">
+    <span class="icon">💜</span><span class="nav-label">Vello</span>
+  </button>
+
+  <button class="nav-item" data-page="agenda" data-section="Principal" data-label="Agenda" onclick="nav(this)">
+    <span class="icon">📅</span><span class="nav-label">Agenda</span>
+  </button>
+
+  <div class="sidebar-section-label" onclick="toggleSection('clinica')"><span>🦷 Clínica</span><span class="section-arrow" id="arrow-clinica">▼</span></div>
+  <div class="nav-group" id="group-clinica">
+  <button class="nav-item" data-page="prontuarios" data-section="Clínica" data-label="Prontuários" onclick="nav(this)">
+    <span class="icon">📋</span><span class="nav-label">Prontuários</span>
+  </button>
+  <button class="nav-item" data-page="avaliador" data-section="Clínica" data-label="Avaliador Pré-Cirúrgico" onclick="nav(this)">
+    <span class="icon">🔬</span><span class="nav-label">Avaliador Pré-Cirúrgico</span>
+  </button>
+  <button class="nav-item" data-page="laboratorios" data-section="Clínica" data-label="Laboratórios" onclick="nav(this)">
+    <span class="icon">🧪</span><span class="nav-label">Laboratórios</span>
+  </button>
+  <button class="nav-item" data-page="cirurgias" data-section="Clínica" data-label="Cirurgias" onclick="nav(this)">
+    <span class="icon">🏥</span><span class="nav-label">Cirurgias</span>
+  </button>
+  <button class="nav-item" data-page="estoque" data-section="Clínica" data-label="Estoque" onclick="nav(this)">
+    <span class="icon">📦</span><span class="nav-label">Estoque</span>
+  </button>
+  </div>
+
+  <div class="sidebar-section-label" onclick="toggleSection('recepcao')"><span>🗓️ Recepção</span><span class="section-arrow" id="arrow-recepcao">▼</span></div>
+  <div class="nav-group" id="group-recepcao">
+  <button class="nav-item" data-page="conferencia" data-section="Recepção" data-label="Conferência de Agenda" onclick="nav(this)">
+    <span class="icon">✅</span><span class="nav-label">Conferência de Agenda</span>
+  </button>
+  <button class="nav-item" data-page="agendamentos-protocolo" data-section="Recepção" data-label="Agendamentos Protocolo" onclick="nav(this)">
+    <span class="icon">📆</span><span class="nav-label">Agendamentos Protocolo</span>
+  </button>
+  <button class="nav-item" data-page="totem" data-section="Recepção" data-label="Totem" onclick="nav(this)">
+    <span class="icon">🖥️</span><span class="nav-label">Totem</span>
+  </button>
+  </div>
+
+  <div class="sidebar-section-label" onclick="toggleSection('avaliacao')"><span>🔍 Avaliação</span><span class="section-arrow" id="arrow-avaliacao">▼</span></div>
+  <div class="nav-group" id="group-avaliacao">
+  <button class="nav-item" data-page="perfil-paciente" data-section="Avaliação" data-label="Perfil de Paciente" onclick="nav(this)">
+    <span class="icon">👤</span><span class="nav-label">Perfil de Paciente</span>
+  </button>
+  <button class="nav-item" data-page="antes-depois" data-section="Avaliação" data-label="Antes e Depois" onclick="nav(this)">
+    <span class="icon">🖼️</span><span class="nav-label">Antes e Depois</span>
+  </button>
+  <button class="nav-item" data-page="planejamentos" data-section="Avaliação" data-label="Planejamentos" onclick="nav(this)">
+    <span class="icon">📐</span><span class="nav-label">Planejamentos</span>
+  </button>
+  <button class="nav-item" data-page="dio" data-section="Avaliação" data-label="DIO" onclick="nav(this)">
+    <span class="icon">🦷</span><span class="nav-label">DIO</span>
+  </button>
+  </div>
+
+  <div class="sidebar-section-label" onclick="toggleSection('comercial')"><span>💼 Comercial</span><span class="section-arrow" id="arrow-comercial">▼</span></div>
+  <div class="nav-group" id="group-comercial">
+  <button class="nav-item" data-page="resgates" data-section="Comercial" data-label="Resgates" onclick="nav(this)">
+    <span class="icon">🎁</span><span class="nav-label">Resgates</span>
+  </button>
+  <button class="nav-item" data-page="cobranca" data-section="Comercial" data-label="Cobrança" onclick="nav(this)">
+    <span class="icon">💸</span><span class="nav-label">Cobrança</span>
+  </button>
+  <button class="nav-item" data-page="gerador-proposta" data-section="Comercial" data-label="Gerador de Proposta" onclick="nav(this)">
+    <span class="icon">📝</span><span class="nav-label">Gerador de Proposta</span>
+  </button>
+  </div>
+
+  <div class="sidebar-section-label" onclick="toggleSection('gestao')"><span>📊 Gestão</span><span class="section-arrow" id="arrow-gestao">▼</span></div>
+  <div class="nav-group" id="group-gestao">
+  <button class="nav-item" data-page="financeiro-completo" data-section="Gestão" data-label="Financeiro" onclick="nav(this)">
+    <span class="icon">📊</span><span class="nav-label">Financeiro</span>
+  </button>
+  <button class="nav-item" data-page="calculadora" data-section="Gestão" data-label="Calculadora de Precificação" onclick="nav(this)">
+    <span class="icon">🧮</span><span class="nav-label">Calculadora de Precificação</span>
+  </button>
+  <button class="nav-item" data-page="direcao" data-section="Gestão" data-label="Direção" onclick="nav(this)">
+    <span class="icon">🎯</span><span class="nav-label">Direção</span>
+  </button>
+  <button class="nav-item" data-page="rh" data-section="Gestão" data-label="RH" onclick="nav(this)">
+    <span class="icon">👥</span><span class="nav-label">RH</span>
+  </button>
+  </div>
+
+  <div class="sidebar-section-label" onclick="toggleSection('marketing')"><span>📣 Marketing</span><span class="section-arrow" id="arrow-marketing">▼</span></div>
+  <div class="nav-group" id="group-marketing">
+  <button class="nav-item" data-page="banco-conteudo" data-section="Marketing" data-label="Banco de Conteúdo" onclick="nav(this)">
+    <span class="icon">🗂️</span><span class="nav-label">Banco de Conteúdo</span>
+  </button>
+  <button class="nav-item" data-page="gerador-post" data-section="Marketing" data-label="Gerador de Post" onclick="nav(this)">
+    <span class="icon">✨</span><span class="nav-label">Gerador de Post</span>
+  </button>
+  </div>
+
+  <div class="sidebar-section-label" onclick="toggleSection('documentos')"><span>📁 Documentos</span><span class="section-arrow" id="arrow-documentos">▼</span></div>
+  <div class="nav-group" id="group-documentos">
+  <button class="nav-item" data-page="protocolos" data-section="Documentos" data-label="Protocolos Clínicos" onclick="nav(this)">
+    <span class="icon">📋</span><span class="nav-label">Protocolos Clínicos</span>
+  </button>
+  <button class="nav-item" data-page="docs-operacao" data-section="Documentos" data-label="Documentos Operação" onclick="nav(this)">
+    <span class="icon">📁</span><span class="nav-label">Documentos Operação</span>
+  </button>
+  <button class="nav-item" data-page="atas" data-section="Documentos" data-label="Atas de Reuniões" onclick="nav(this)">
+    <span class="icon">📝</span><span class="nav-label">Atas de Reuniões</span>
+  </button>
+  </div>
+
+  <div class="sidebar-section-label" onclick="toggleSection('estudo')"><span>📚 Estudo</span><span class="section-arrow" id="arrow-estudo">▼</span></div>
+  <div class="nav-group" id="group-estudo">
+  <button class="nav-item" data-page="biblioteca" data-section="Estudo" data-label="Biblioteca" onclick="nav(this)">
+    <span class="icon">📚</span><span class="nav-label">Biblioteca</span>
+  </button>
+  <button class="nav-item" data-page="odontohub" data-section="Estudo" data-label="OdontoHub" onclick="nav(this)">
+    <span class="icon">🦷</span><span class="nav-label">OdontoHub</span>
+  </button>
+  </div>
+
+  <!-- Configurações — só Thais e Mone (injetado via aplicarPermissoes) -->
+  <button class="nav-item" id="nav-configuracoes" data-page="configuracoes" data-section="Sistema" data-label="Configurações" onclick="nav(this)" style="display:none;margin:4px 10px 8px;border-radius:10px;background:rgba(240,201,110,0.1);border:1px solid rgba(240,201,110,0.25);color:#f0c96e;">
+    <span class="icon">⚙️</span><span class="nav-label">Configurações</span>
+  </button>
+
+  <div class="sidebar-footer" style="position:relative;">
+    <div id="sidebar-user-avatar" style="width:34px;height:34px;border-radius:50%;background:var(--vinho);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:var(--marfim);flex-shrink:0;overflow:hidden;cursor:pointer;" onclick="toggleLogoutMenu()" title="Opções"></div>
+    <div class="avatar-info" style="cursor:pointer;" onclick="toggleLogoutMenu()">
+      <div class="name" id="sidebar-user-name">—</div>
+      <div class="role" id="sidebar-user-role">—</div>
+    </div>
+    <span id="sidebar-logout-arrow" style="color:rgba(253,249,244,0.35);font-size:13px;cursor:pointer;margin-left:auto;" onclick="toggleLogoutMenu()" title="Opções">⌄</span>
+    <!-- Popup de logout -->
+    <div id="sidebar-logout-menu" style="display:none;position:absolute;bottom:62px;left:12px;right:12px;background:#2a0f1a;border:1px solid rgba(253,249,244,0.12);border-radius:10px;padding:8px;z-index:999;box-shadow:0 8px 24px rgba(0,0,0,0.4);">
+      <button onclick="fazerLogoutAthena()" style="width:100%;padding:10px 14px;background:transparent;border:none;color:rgba(253,249,244,0.7);font-family:'Barlow',sans-serif;font-size:12px;text-align:left;cursor:pointer;border-radius:7px;display:flex;align-items:center;gap:8px;" onmouseover="this.style.background='rgba(192,57,43,0.18)'" onmouseout="this.style.background='transparent'">
+        <span style="font-size:14px;">🚪</span> Trocar usuário
+      </button>
+    </div>
+  </div>
+
+  <div style="padding:10px 16px 16px;">
+    <button onclick="fazerBackupCompleto()" style="width:100%;padding:9px 12px;background:rgba(240,201,110,0.15);border:1px solid rgba(240,201,110,0.35);border-radius:10px;color:#f0c96e;font-size:0.75rem;font-weight:700;letter-spacing:0.08em;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:all 0.2s;font-family:'Barlow',sans-serif;" onmouseover="this.style.background='rgba(240,201,110,0.28)'" onmouseout="this.style.background='rgba(240,201,110,0.15)'">
+      💾 Backup Completo
+    </button>
+  </div>
+</nav>
+
+<!-- ══════════════════════════════════════════════
+     SHELL
+══════════════════════════════════════════════ -->
+<div class="shell">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-breadcrumb">
+      <span class="section-name" id="tb-section">Principal</span>
+      <span style="color:var(--border)">›</span>
+      <span class="page-name" id="tb-page">Início</span>
+    </div>
+    <div class="topbar-right">
+      <div class="topbar-date" id="topbar-date"></div>
+      <button class="topbar-btn" title="Notificações">🔔<span class="notif-dot"></span></button>
+      <button class="topbar-btn" id="chat-open-btn" title="Mensagens" onclick="chatToggle()" style="position:relative;">✉<span id="chat-unread-badge" style="display:none;position:absolute;top:5px;right:5px;width:8px;height:8px;background:#c0392b;border-radius:50%;border:1.5px solid #fff;"></span></button>
+    </div>
+  </div>
+
+  <!-- CONTENT AREA -->
+  <div class="content-area">
+
+    <!-- ──────────── INÍCIO (inline) ──────────── -->
+    <div class="page-panel active" id="page-inicio">
+      <div class="page-scroll">
+
+        <!-- Frase do Dia — full width no topo -->
+        <div style="margin-bottom:16px;background:#fff;border:1px solid #E4D8CC;border-radius:10px;padding:18px 24px;display:flex;align-items:center;gap:20px;">
+          <span style="font-size:2.2rem;opacity:.25;color:#8B2D42;line-height:1;flex-shrink:0;">❝</span>
+          <div style="flex:1;">
+            <div id="frase-do-dia-texto" style="font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;font-weight:400;font-style:italic;color:#8B2D42;line-height:1.5;letter-spacing:.01em;">Disciplina hoje e liberdade amanha.</div>
+            <div id="frase-do-dia-data" style="font-family:'Barlow Condensed',sans-serif;font-size:10px;color:#B85C72;text-transform:uppercase;letter-spacing:.12em;margin-top:6px;">Oral Unic · Athena</div>
+          </div>
+        </div>
+
+        <!-- Grid linha 1: Recados | Agenda | Colaborador -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px;">
+
+          <!-- Recados Gerais -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title"><span class="dot" style="background:#C4955A"></span>Recados Gerais</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px;padding:4px 0 8px;">
+              <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--creme);border-radius:8px;border-left:3px solid #C4955A;">
+                <div style="font-size:1.3rem;">🎪</div>
+                <div style="flex:1;">
+                  <div style="font-size:13px;font-weight:600;color:var(--text);">Festa Junina</div>
+                  <div style="font-size:11px;color:var(--muted);">25 de junho</div>
+                </div>
+                <span id="recado-dias-0" style="font-size:10px;background:#C4955A22;color:#C4955A;border-radius:6px;padding:2px 8px;font-weight:600;white-space:nowrap;"></span>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--creme);border-radius:8px;border-left:3px solid #4a7c5e;">
+                <div style="font-size:1.3rem;">🏅</div>
+                <div style="flex:1;">
+                  <div style="font-size:13px;font-weight:600;color:var(--text);">Olimpíada do Colono</div>
+                  <div style="font-size:11px;color:var(--muted);">28 de junho</div>
+                </div>
+                <span id="recado-dias-1" style="font-size:10px;background:#4a7c5e22;color:#4a7c5e;border-radius:6px;padding:2px 8px;font-weight:600;white-space:nowrap;"></span>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--creme);border-radius:8px;border-left:3px solid var(--vinho);">
+                <div style="font-size:1.3rem;">🤝</div>
+                <div style="flex:1;">
+                  <div style="font-size:13px;font-weight:600;color:var(--text);">All Hands</div>
+                  <div style="font-size:11px;color:var(--muted);">11 de julho</div>
+                </div>
+                <span id="recado-dias-2" style="font-size:10px;background:#6A1F3022;color:var(--vinho);border-radius:6px;padding:2px 8px;font-weight:600;white-space:nowrap;"></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Agenda de Hoje -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title"><span class="dot" style="background:var(--vinho)"></span>Agenda de Hoje</div>
+              <span class="card-action" onclick="nav(document.querySelector('[data-page=agenda]'))">Abrir completa →</span>
+            </div>
+            <div class="agenda-list" id="inicio-agenda-list">
+              <div style="padding:20px 0;text-align:center;color:var(--muted);font-size:13px;">
+                Carregando agenda…
+              </div>
+            </div>
+          </div>
+
+          <!-- Colaborador do Mês -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title"><span class="dot" style="background:var(--vinho-light)"></span>Colaborador do Mês</div>
+            </div>
+            <div class="colab-inner">
+              <div class="colab-card">
+                <div class="colab-badge">⭐ Março · 2026</div>
+                <div class="colab-photo">
+                  <img src="alexandre-rossi.jpg" alt="Alexandre Rossi" style="width:82px;height:82px;border-radius:50%;object-fit:cover;object-position:top center;border:3px solid rgba(253,249,244,0.3);">
+                </div>
+                <div class="colab-name">Alexandre Rossi</div>
+                <div class="colab-role">Auxiliar Administrativo</div>
+                <div class="colab-divider"></div>
+                <div class="colab-stats">
+                  <div class="colab-stat"><div class="colab-stat-val">🚀</div><div class="colab-stat-lbl">Destaque</div></div>
+                  <div class="colab-stat"><div class="colab-stat-val">💎</div><div class="colab-stat-lbl">Responsabilidade</div></div>
+                </div>
+                <div class="colab-msg">"Destaque do Mês · Oral Unic"</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Grid linha 2: Aniversariantes | Meta do Mês -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title"><span class="dot" style="background:var(--warning)"></span>Aniversariantes</div>
+              <span class="card-action">Ver mês →</span>
+            </div>
+            <div class="bday-list">
+              <div class="bday-item">
+                <div class="bday-av" style="background:var(--vinho)">SF</div>
+                <div class="bday-info"><div class="bday-name">Dr. Scharles Ferri</div><div class="bday-sub">Dentista · Cirurgião</div></div>
+                <span style="font-size:20px">🎂</span>
+              </div>
+              <div class="bday-item">
+                <div class="bday-av" style="background:var(--moka)">AM</div>
+                <div class="bday-info"><div class="bday-name">Dr. Aurélio Machado</div><div class="bday-sub">Diretor Clínico · Avaliador</div></div>
+                <span style="font-size:20px">🎉</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title"><span class="dot" style="background:var(--success)"></span>Meta do Mês</div>
+              <span class="card-action" onclick="nav(document.querySelector('[data-page=direcao]'))">Detalhes →</span>
+            </div>
+            <div class="meta-body">
+              <div style="padding:16px 0;text-align:center;color:var(--muted);font-size:13px;">
+                Acesse <strong>Direção</strong> para ver as metas do mês.
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ──────────── VELLO / KANBAN (iframe — local, auto-login) ──────────── -->
+    <!-- ──────────── VELLO (abas: Vello | Pendências) ──────────── -->
+    <div class="page-panel" id="page-vello">
+      <div style="display:flex;gap:0;background:#6b1a2e;padding:0 16px;flex-shrink:0;">
+        <button id="vello-tab-vello" onclick="switchVelloTab('vello')"
+          style="background:transparent;border:none;border-bottom:3px solid #f0c96e;color:#f0c96e;padding:10px 18px;font-size:13px;font-weight:600;cursor:pointer;letter-spacing:.5px;">
+          Vello
+        </button>
+        <button id="vello-tab-pendencia" onclick="switchVelloTab('pendencia')"
+          style="background:transparent;border:none;border-bottom:3px solid transparent;color:rgba(255,255,255,0.6);padding:10px 18px;font-size:13px;font-weight:600;cursor:pointer;letter-spacing:.5px;">
+          Pendências <span id="vello-badge-pendencia" style="background:#e53935;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;margin-left:4px;"></span>
+        </button>
+      </div>
+      <div style="flex:1;overflow:hidden;position:relative;">
+        <iframe id="iframe-vello" class="page-iframe"
+          src="about:blank"
+          data-src="kanban-oral-unic/index.html?tab=vello"
+          allow="*" style="position:absolute;inset:0;width:100%;height:100%;border:none;"></iframe>
+        <iframe id="iframe-pendencia" class="page-iframe"
+          src="about:blank"
+          data-src="kanban-oral-unic/index.html?tab=pendentes"
+          allow="*" style="position:absolute;inset:0;width:100%;height:100%;border:none;display:none;"></iframe>
+      </div>
+    </div>
+
+    <!-- ──────────── AGENDA (iframe — local, auto-login) ──────────── -->
+    <div class="page-panel" id="page-agenda">
+      <iframe class="page-iframe" id="iframe-agenda"
+        src="about:blank"
+        data-src="kanban-oral-unic/index.html?tab=agenda"
+        allow="*"></iframe>
+    </div>
+
+    <!-- ──────────── PRONTUÁRIOS (iframe — dio-dental local) ──────────── -->
+    <div class="page-panel" id="page-prontuarios">
+      <iframe class="page-iframe" id="iframe-prontuarios"
+        src="about:blank"
+        data-src="projects/sistema-integrado-oral-unic/perfil-paciente.html"
+        allow="*"></iframe>
+    </div>
+
+    <!-- ──────────── AVALIADOR PRÉ-CIRÚRGICO (iframe — GitHub) ──────────── -->
+    <div class="page-panel" id="page-avaliador">
+      <iframe class="page-iframe" id="iframe-avaliador"
+        src="about:blank"
+        data-src="https://iaoraluniccb-cloud.github.io/avaliador-cirurgico/"
+        allow="*"></iframe>
+    </div>
+
+    <!-- ──────────── LABORATÓRIOS (iframe — local, abre direto na aba Laboratório) ──────────── -->
+    <div class="page-panel" id="page-laboratorios">
+      <iframe class="page-iframe" id="iframe-laboratorios"
+        src="about:blank"
+        data-src="projects/sistema-integrado-oral-unic/lab-standalone.html"
+        allow="*"></iframe>
+    </div>
+
+    <!-- ──────────── CIRURGIAS (iframe — local, abre direto em Cirurgias → Lançamentos) ──────────── -->
+    <div class="page-panel" id="page-cirurgias">
+      <iframe class="page-iframe" id="iframe-cirurgias"
+        src="about:blank"
+        data-src="projects/sistema-integrado-oral-unic/athena-firebase-cir.html"
+        allow="*"></iframe>
+    </div>
+
+    <!-- ──────────── ESTOQUE (iframe — local, abre direto em Estoque) ──────────── -->
+    <div class="page-panel" id="page-estoque">
+      <iframe class="page-iframe" id="iframe-estoque"
+        src="about:blank"
+        data-src="projects/sistema-integrado-oral-unic/athena-firebase-est.html"
+        allow="*"></iframe>
+    </div>
+
+    <!-- ──────────── CONFERÊNCIA DE AGENDA (iframe — arquivo local Desktop) ──────────── -->
+    <div class="page-panel" id="page-conferencia">
+      <iframe class="page-iframe" id="iframe-conferencia"
+        src="about:blank"
+        data-src="kanban-oral-unic/conferencia-agenda.html"
+        allow="*"></iframe>
+    </div>
+
+    <!-- ──────────── AGENDAMENTOS PROTOCOLO (iframe — simulador-agendamentos) ──────────── -->
+    <div class="page-panel" id="page-agendamentos-protocolo">
+      <iframe class="page-iframe" id="iframe-agendamentos-protocolo"
+        src="about:blank"
+        data-src="projects/sistema-integrado-oral-unic/simulador-agendamentos.html"
+        allow="*"></iframe>
+    </div>
+
+    <!-- ──────────── PERFIL DE PACIENTE (iframe — local kanban, auto-login) ──────────── -->
+    <div class="page-panel" id="page-perfil-paciente">
+      <iframe class="page-iframe" id="iframe-perfil-paciente"
+        src="about:blank"
+        data-src="projects/sistema-integrado-oral-unic/perfil-paciente.html"
+        allow="microphone *; camera *; clipboard-read *; clipboard-write *"></iframe>
+    </div>
+
+    <!-- ──────────── ANTES E DEPOIS (iframe — kanban github, subaba sorriso) ──────────── -->
+    <div class="page-panel" id="page-antes-depois">
+      <iframe class="page-iframe" id="iframe-antes-depois"
+        src="about:blank"
+        data-src="projects/sistema-integrado-oral-unic/kanban-antes-depois.html"
+        allow="*"></iframe>
+    </div>
+
+    <!-- ──────────── PLANEJAMENTOS (iframe) ──────────── -->
+    <div class="page-panel" id="page-planejamentos">
+      <iframe class="page-iframe" id="iframe-planejamentos"
+        src="about:blank"
+        data-src="projects/sistema-integrado-oral-unic/planejamentos.html"
+        allow="*"></iframe>
+    </div>
+
+    <!-- ──────────── TOTEM ──────────── -->
+    <div class="page-panel" id="page-totem">
+      <iframe class="page-iframe" id="iframe-totem"
+        src="about:blank"
+        data-src="projects/sistema-integrado-oral-unic/totem.html"
+        allow="*"></iframe>
+    </div>
+
+    <!-- ──────────── DIO ──────────── -->
+    <div class="page-panel" id="page-dio">
+      <iframe class="page-iframe" id="iframe-dio"
+        src="about:blank"
+        data-src="projects/sistema-integrado-oral-unic/dio.html?v=2"
+        allow="*"></iframe>
+    </div>
+
+    <!-- ──────────── FINANCEIRO COMPLETO (Métricas + Conciliações + Aprovações) ──────────── -->
+    <div class="page-panel" id="page-financeiro-completo">
+      <iframe class="page-iframe" id="iframe-financeiro-completo"
+        src="about:blank"
+        data-src="projects/sistema-integrado-oral-unic/financeiro-completo.html?v=14"
+        allow="*"></iframe>
+    </div>
+
+    <!-- ──────────── FINANCEIRO/COBRANÇA (iframe — local) ──────────── -->
+    <div class="page-panel" id="page-financeiro">
+      <iframe class="page-iframe" id="iframe-financeiro"
+        src="about:blank"
+        data-src="projects/sistema-integrado-oral-unic/financeiro.html?v=2"
+        allow="*"></iframe>
+    </div>
+
+    <!-- ──────────── CONCILIAÇÕES E APROVAÇÕES (iframe — local) ──────────── -->
+    <div class="page-panel" id="page-conciliacao-aprovacoes">
+      <iframe class="page-iframe" id="iframe-conciliacao-aprovacoes"
+        src="about:blank"
+        data-src="projects/sistema-integrado-oral-unic/conciliacao-aprovacoes.html"
+        allow="*"></iframe>
+    </div>
+
+    <!-- ──────────── CALCULADORA (iframe) ──────────── -->
+    <div class="page-panel" id="page-calculadora">
+      <iframe class="page-iframe" id="iframe-calculadora"
+        src="about:blank"
+        data-src="projects/sistema-integrado-oral-unic/calculadora.html"
+        allow="*"></iframe>
+    </div>
+
+    <!-- ──────────── DIREÇÃO (iframe — metricas) ──────────── -->
+    <div class="page-panel" id="page-direcao">
+      <iframe class="page-iframe" id="iframe-direcao"
+        src="about:blank"
+        data-src="projects/sistema-integrado-oral-unic/direcao.html"
+        allow="*"></iframe>
+    </div>
+
+    <!-- ──────────── RH (iframe) ──────────── -->
+    <div class="page-panel" id="page-rh">
+      <iframe class="page-iframe" id="iframe-rh"
+        src="about:blank"
+        data-src="projects/sistema-integrado-oral-unic/rh.html?v=2"
+        allow="*"></iframe>
+    </div>
+
+    <!-- ──────────── BANCO DE CONTEÚDO ──────────── -->
+    <div class="page-panel" id="page-banco-conteudo">
+      <div class="placeholder-page">
+        <div class="placeholder-icon">🗂️</div>
+        <div class="placeholder-title">Banco de Conteúdo</div>
+        <div class="placeholder-sub">Repositório de imagens, vídeos e textos para publicações nas redes sociais.</div>
+        <div class="placeholder-badge">Em desenvolvimento</div>
+      </div>
+    </div>
+
+    <!-- ──────────── GERADOR DE POST ──────────── -->
+    <div class="page-panel" id="page-gerador-post">
+      <div class="placeholder-page">
+        <div class="placeholder-icon">✨</div>
+        <div class="placeholder-title">Gerador de Post</div>
+        <div class="placeholder-sub">Criação de posts para redes sociais com templates e IA integrada.</div>
+        <div class="placeholder-badge">Em desenvolvimento</div>
+      </div>
+    </div>
+
+    <!-- ──────────── RESGATES ──────────── -->
+    <div class="page-panel" id="page-resgates">
+      <iframe class="page-iframe" id="iframe-resgates"
+        src="about:blank"
+        data-src="projects/sistema-integrado-oral-unic/controle-resgate.html"
+        allow="*"></iframe>
+    </div>
+
+    <!-- ──────────── COBRANÇA (iframe — financeiro) ──────────── -->
+    <div class="page-panel" id="page-cobranca">
+      <iframe class="page-iframe" id="iframe-cobranca"
+        src="about:blank"
+        data-src="projects/sistema-integrado-oral-unic/financeiro.html?v=2"
+        allow="*"></iframe>
+    </div>
+
+    <!-- ──────────── GERADOR DE PROPOSTA ──────────── -->
+    <div class="page-panel" id="page-gerador-proposta">
+      <div class="placeholder-page">
+        <div class="placeholder-icon">📝</div>
+        <div class="placeholder-title">Gerador de Proposta</div>
+        <div class="placeholder-sub">Criação de propostas comerciais personalizadas para tratamentos.</div>
+        <div class="placeholder-badge">Em desenvolvimento</div>
+      </div>
+    </div>
+
+    <!-- ──────────── PROTOCOLOS CLÍNICOS ──────────── -->
+    <div class="page-panel" id="page-protocolos">
+      <div class="placeholder-page">
+        <div class="placeholder-icon">📋</div>
+        <div class="placeholder-title">Protocolos Clínicos</div>
+        <div class="placeholder-sub">Biblioteca de protocolos e diretrizes clínicas padronizadas para a equipe.</div>
+        <div class="placeholder-badge">Em desenvolvimento</div>
+      </div>
+    </div>
+
+    <!-- ──────────── DOCUMENTOS OPERAÇÃO ──────────── -->
+    <div class="page-panel" id="page-docs-operacao">
+      <div class="placeholder-page">
+        <div class="placeholder-icon">📁</div>
+        <div class="placeholder-title">Documentos Operação</div>
+        <div class="placeholder-sub">Manuais, contratos, termos e documentos operacionais da clínica.</div>
+        <div class="placeholder-badge">Em desenvolvimento</div>
+      </div>
+    </div>
+
+    <!-- ──────────── ATAS DE REUNIÕES ──────────── -->
+    <div class="page-panel" id="page-atas">
+      <div class="placeholder-page">
+        <div class="placeholder-icon">📝</div>
+        <div class="placeholder-title">Atas de Reuniões</div>
+        <div class="placeholder-sub">Registro de decisões, ações e encaminhamentos das reuniões da equipe.</div>
+        <div class="placeholder-badge">Em desenvolvimento</div>
+      </div>
+    </div>
+
+    <!-- ──────────── BIBLIOTECA ──────────── -->
+    <div class="page-panel" id="page-biblioteca">
+      <div class="placeholder-page">
+        <div class="placeholder-icon">📚</div>
+        <div class="placeholder-title">Biblioteca</div>
+        <div class="placeholder-sub">Acervo de artigos científicos, cursos e materiais de estudo para a equipe.</div>
+        <div class="placeholder-badge">Em desenvolvimento</div>
+      </div>
+    </div>
+
+    <!-- ──────────── ODONTOHUB ──────────── -->
+    <div class="page-panel" id="page-odontohub">
+      <div class="placeholder-page">
+        <div class="placeholder-icon">🦷</div>
+        <div class="placeholder-title">OdontoHub</div>
+        <div class="placeholder-sub">Hub de conhecimento odontológico integrado — casos, técnicas e referências.</div>
+        <div class="placeholder-badge">Em desenvolvimento</div>
+      </div>
+    </div>
+
+    <!-- ──────────── CONFIGURAÇÕES DE ACESSO ──────────── -->
+    <div class="page-panel" id="page-configuracoes" style="overflow:auto;padding:28px 32px;">
+      <div style="max-width:1100px;margin:0 auto;">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;">
+          <span style="font-size:1.5rem;">⚙️</span>
+          <div>
+            <div style="font-family:'Barlow',sans-serif;font-size:1.4rem;font-weight:700;color:#f0f0f0;letter-spacing:0.02em;">Configurações de Acesso</div>
+            <div style="font-size:0.78rem;color:rgba(253,249,244,0.45);margin-top:2px;">Gerencie o que cada usuário pode ver no sistema</div>
+          </div>
+          <button onclick="salvarPermissoesCustom()" style="margin-left:auto;padding:9px 22px;background:#f0c96e;border:none;border-radius:10px;font-family:'Barlow',sans-serif;font-size:0.82rem;font-weight:700;color:#1a0f0a;cursor:pointer;letter-spacing:0.04em;">💾 Salvar</button>
+          <button onclick="resetarPermissoes()" style="padding:9px 16px;background:transparent;border:1px solid rgba(240,201,110,0.3);border-radius:10px;font-family:'Barlow',sans-serif;font-size:0.78rem;font-weight:600;color:#f0c96e;cursor:pointer;">↺ Resetar padrão</button>
+        </div>
+        <div style="font-size:0.72rem;color:rgba(253,249,244,0.35);margin-bottom:20px;padding-left:2px;">✅ = acesso liberado &nbsp;|&nbsp; 🔒 = bloqueado (cadeado no menu)</div>
+
+        <div style="overflow-x:auto;border-radius:14px;border:1px solid rgba(253,249,244,0.1);">
+          <table id="perm-table" style="border-collapse:collapse;width:100%;min-width:900px;font-family:'Barlow',sans-serif;font-size:0.72rem;">
+            <thead id="perm-thead"></thead>
+            <tbody id="perm-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content-area -->
+</div><!-- /shell -->
+
+<script>
+// ══════════════════════════════════════════════
+// NAVIGATION ENGINE
+// ══════════════════════════════════════════════
+
+const iframeMap = {
+  'vello':                  'iframe-vello',
+  'agenda':                 'iframe-agenda',
+  'prontuarios':            'iframe-prontuarios',
+  'avaliador':              'iframe-avaliador',
+  'laboratorios':           'iframe-laboratorios',
+  'cirurgias':              'iframe-cirurgias',
+  'estoque':                'iframe-estoque',
+  'conferencia':            'iframe-conferencia',
+  'agendamentos-protocolo': 'iframe-agendamentos-protocolo',
+  'totem':                  'iframe-totem',
+  'perfil-paciente':        'iframe-perfil-paciente',
+  'antes-depois':           'iframe-antes-depois',
+  'planejamentos':          'iframe-planejamentos',
+  'dio':                    'iframe-dio',
+  'financeiro-completo':    'iframe-financeiro-completo',
+  'financeiro':             'iframe-financeiro',
+  'calculadora':            'iframe-calculadora',
+  'direcao':                'iframe-direcao',
+  'rh':                     'iframe-rh',
+  'cobranca':               'iframe-cobranca',
+  'resgates':               'iframe-resgates',
+};
+
+let currentPage = 'inicio';
+
+function buildSrc(src) {
+  if (!src) return 'about:blank';
+  try {
+    var u = JSON.parse(localStorage.getItem('ou_currentUser') || '{}');
+    var uid = (u.id || '').replace(/-/g, '_');
+    if (uid) {
+      var sep = src.includes('?') ? '&' : '?';
+      // Remove hash before adding query, then re-add
+      var hashIdx = src.indexOf('#');
+      var base = hashIdx >= 0 ? src.slice(0, hashIdx) : src;
+      var hash = hashIdx >= 0 ? src.slice(hashIdx) : '';
+      return base + sep + 'uid=' + uid + hash;
+    }
+  } catch(e) {}
+  return src;
+}
+
+function toggleSection(id) {
+  const group = document.getElementById('group-' + id);
+  const label = group ? group.previousElementSibling : null;
+  if (!group) return;
+  const isOpen = group.classList.contains('open');
+  if (isOpen) {
+    group.classList.remove('open');
+    if (label) label.classList.add('collapsed-section');
+  } else {
+    group.classList.add('open');
+    if (label) label.classList.remove('collapsed-section');
+  }
+}
+
+function initSidebarSections() {
+  document.querySelectorAll('.nav-group').forEach(g => {
+    g.classList.remove('open');
+    const label = g.previousElementSibling;
+    if (label) label.classList.add('collapsed-section');
+  });
+}
+
+function nav(btn) {
+  const page = btn.dataset.page;
+  if (!page) return;
+
+  // Deactivate old
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.page-panel').forEach(p => p.classList.remove('active'));
+
+  // Activate new
+  btn.classList.add('active');
+  const panel = document.getElementById('page-' + page);
+  if (panel) panel.classList.add('active');
+
+  // Lazy-load iframes
+  if (page === 'vello') {
+    const ifrV = document.getElementById('iframe-vello');
+    // Carrega Vello (aba padrão), ignora Pendências até o usuário clicar
+    if (ifrV && (!ifrV.src || ifrV.src === 'about:blank')) {
+      ifrV.src = buildSrc(ifrV.dataset.src);
+      ifrV.onload = () => {
+        const dw = ifrV.contentDocument && ifrV.contentDocument.defaultView;
+        if (dw && dw.currentUser) dw.switchTab('vello');
+      };
+    }
+  } else if (iframeMap[page]) {
+    const iframe = document.getElementById(iframeMap[page]);
+    if (iframe && (!iframe.src || iframe.src === 'about:blank')) {
+      let src = buildSrc(iframe.dataset.src);
+      // Injeta abas permitidas para Lab e Estoque
+      if (page === 'laboratorios' && window._labAbas && window._labAbas !== '*') {
+        src += (src.includes('?') ? '&' : '?') + 'allowed_tabs=' + encodeURIComponent(window._labAbas.join(','));
+      }
+      if (page === 'estoque' && window._estoqueAbas && window._estoqueAbas !== '*') {
+        src += (src.includes('?') ? '&' : '?') + 'allowed_tabs=' + encodeURIComponent(window._estoqueAbas.join(','));
+      }
+      iframe.src = src;
+    }
+  }
+
+  // Update topbar
+  document.getElementById('tb-section').textContent = btn.dataset.section || '';
+  document.getElementById('tb-page').textContent    = btn.dataset.label  || '';
+
+  currentPage = page;
+}
+
+// ══════════════════════════════════════════════
+// VELLO — ABAS INTERNAS (Vello | Pendências)
+// ══════════════════════════════════════════════
+function switchVelloTab(tab) {
+  const ifrVello    = document.getElementById('iframe-vello');
+  const ifrPend     = document.getElementById('iframe-pendencia');
+  const btnVello    = document.getElementById('vello-tab-vello');
+  const btnPend     = document.getElementById('vello-tab-pendencia');
+  const activeStyle   = 'border-bottom:3px solid #f0c96e;color:#f0c96e;';
+  const inactiveStyle = 'border-bottom:3px solid transparent;color:rgba(255,255,255,0.6);';
+
+  if (tab === 'vello') {
+    ifrVello.style.display = '';
+    ifrPend.style.display  = 'none';
+    btnVello.style.cssText += activeStyle;
+    btnPend.style.cssText  += inactiveStyle;
+    if (ifrVello.src === 'about:blank') ifrVello.src = buildSrc(ifrVello.dataset.src);
+  } else {
+    ifrVello.style.display = 'none';
+    ifrPend.style.display  = '';
+    btnVello.style.cssText += inactiveStyle;
+    btnPend.style.cssText  += activeStyle;
+    if (ifrPend.src === 'about:blank') ifrPend.src = buildSrc(ifrPend.dataset.src);
+  }
+}
+
+// ══════════════════════════════════════════════
+// SIDEBAR COLLAPSE
+// ══════════════════════════════════════════════
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('collapsed');
+}
+
+// ══════════════════════════════════════════════
+// LOGIN SCREEN — PROFILE SELECTOR
+// ══════════════════════════════════════════════
+(function initLoginScreen() {
+  const USERS = [
+    { id: 'dra-mone',    name: 'Dra. Mone',      role: 'Diretora Geral',   color: '#8B2D42' },
+    { id: 'dr-aurelio',  name: 'Dr. Aurélio',    role: 'Diretor Clínico',  color: '#2D4A6A' },
+    { id: 'jarina',      name: 'Jarina',          role: 'Gerente',          color: '#7B3F6E' },
+    { id: 'thais',       name: 'Thais',           role: 'ADM',              color: '#6A1F30' },
+    { id: 'brendha',     name: 'Brendha',         role: 'Relacionamento',   color: '#4A7C5E' },
+    { id: 'alexandre',   name: 'Alexandre',       role: 'Financeiro',       color: '#5C6B3A' },
+    { id: 'bruna',       name: 'Bruna',           role: 'Recepção',         color: '#8B5E3C' },
+    { id: 'suelen',      name: 'Suelen',          role: 'ASB',              color: '#8B3A4A' },
+    { id: 'mariele',     name: 'Mariele',         role: 'Recepção',         color: '#3A6A8A' },
+    { id: 'junior',      name: 'Junior',          role: 'Protético',        color: '#4A5A7A' },
+    { id: 'francieli',   name: 'Francieli',       role: 'Aux. Prótese',     color: '#7A4A6A' },
+    { id: 'dr-bruno',    name: 'Dr. Bruno',       role: 'Anestesista',      color: '#3A5A3A' },
+    { id: 'dr-scharles', name: 'Dr. Scharles',    role: 'Implantodontista', color: '#3D5A3A' },
+    { id: 'dra-stefany', name: 'Dra. Stefany',    role: 'Protesista',       color: '#6A3D6A' },
+    { id: 'dra-ana',     name: 'Dra. Ana',        role: 'Endodontista',     color: '#5A3D2A' },
+    { id: 'dra-fernanda',name: 'Dra. Fernanda',   role: 'Ortodontista',     color: '#3A5A5A' },
+  ];
+
+  function getInitials(name) {
+    return name.replace(/^(Dr\.|Dra\.)\s*/i, '').split(' ').slice(0,2).map(w => w[0]).join('').toUpperCase();
+  }
+
+  function buildCard(user) {
+    const card = document.createElement('div');
+    card.className = 'profile-card';
+    card.setAttribute('data-userid', user.id);
+
+    // Wrapper for photo + change button
+    const wrap = document.createElement('div');
+    wrap.className = 'profile-photo-wrap';
+
+    const cachedPhoto = localStorage.getItem('ou_photo_' + user.id);
+    let avatarEl;
+    if (cachedPhoto) {
+      avatarEl = document.createElement('img');
+      avatarEl.className = 'profile-photo';
+      avatarEl.src = cachedPhoto;
+      avatarEl.alt = user.name;
+      avatarEl.onerror = function() { this.replaceWith(buildInitials(user)); };
+    } else {
+      avatarEl = buildInitials(user);
+    }
+    wrap.appendChild(avatarEl);
+
+    // Camera button — opens file picker, saves to localStorage
+    const camBtn = document.createElement('div');
+    camBtn.className = 'profile-change-btn';
+    camBtn.title = 'Trocar foto';
+    camBtn.textContent = '📷';
+    camBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      const inp = document.createElement('input');
+      inp.type = 'file';
+      inp.accept = 'image/*';
+      inp.onchange = function() {
+        const file = inp.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(ev) {
+          _abrirCropLogin(ev.target.result, function(dataUrl) {
+            // Mostra imediatamente no card
+            localStorage.setItem('ou_photo_' + user.id, dataUrl);
+            const newImg = document.createElement('img');
+            newImg.className = 'profile-photo';
+            newImg.src = dataUrl;
+            newImg.alt = user.name;
+            newImg.onerror = function() { this.replaceWith(buildInitials(user)); };
+            wrap.replaceChild(newImg, wrap.querySelector('.profile-photo, .profile-initials'));
+            // Faz upload para Supabase Storage e salva URL pública
+            (async function() {
+              try {
+                // converte dataUrl → Blob
+                var res = await fetch(dataUrl);
+                var blob = await res.blob();
+                var path = 'fotos-login/' + user.id + '.jpg';
+                // upsert no bucket "avatars"
+                var up = await _supa.storage.from('avatars').upload(path, blob, { upsert: true, contentType: 'image/jpeg' });
+                if (up.error) throw up.error;
+                var pub = _supa.storage.from('avatars').getPublicUrl(path);
+                var url = pub.data.publicUrl;
+                // Salva URL na tabela usuarios
+                await _supa.from('usuarios').upsert({ id: user.id, nome: user.name, foto_url: url }, { onConflict: 'id' });
+                // Atualiza localStorage com URL pública (mais leve)
+                localStorage.setItem('ou_photo_' + user.id, url);
+                newImg.src = url;
+              } catch(err) {
+                console.warn('Upload foto falhou, mantendo base64 local:', err);
+              }
+            })();
+          });
+        };
+        reader.readAsDataURL(file);
+      };
+      inp.click();
+    });
+    wrap.appendChild(camBtn);
+
+    const nameEl = document.createElement('div');
+    nameEl.className = 'profile-name';
+    nameEl.textContent = user.name;
+
+    const roleEl = document.createElement('div');
+    roleEl.className = 'profile-role';
+    roleEl.textContent = user.role;
+
+    card.appendChild(wrap);
+    card.appendChild(nameEl);
+    card.appendChild(roleEl);
+
+    card.addEventListener('click', function() { selectProfile(user); });
+    return card;
+  }
+
+  function buildInitials(user) {
+    const el = document.createElement('div');
+    el.className = 'profile-initials';
+    el.style.background = user.color;
+    el.textContent = getInitials(user.name);
+    return el;
+  }
+
+  var _pendingUser = null;
+
+  function _doLogin(user) {
+    setTimeout(function(){ if(typeof setFraseDoDia==='function') setFraseDoDia(); }, 50);
+    localStorage.setItem('ou_currentUser', JSON.stringify(user));
+    if (!localStorage.getItem('athena_token')) localStorage.setItem('athena_token', 'athena-local-' + user.id);
+    if (!localStorage.getItem('dio_token'))    localStorage.setItem('dio_token', 'dio-local-' + user.id);
+    if (!localStorage.getItem('ou_athena_user')) localStorage.setItem('ou_athena_user', JSON.stringify({ email: 'adm@oralunic.com.br', name: user.name }));
+    sessionStorage.setItem('athena_logged_in', user.id);
+    atualizarSidebarUser(user);
+    aplicarPermissoes(user.id);
+
+    // Carrega permissões do Supabase e atualiza em background
+    _supa.from('permissoes').select('pagina,liberado').eq('usuario_id', user.id).then(function(res) {
+      if (res.data && res.data.length > 0) {
+        var pages = res.data.filter(function(r){ return r.liberado; }).map(function(r){ return r.pagina; });
+        var custom = {};
+        try { custom = JSON.parse(localStorage.getItem('ou_permissoes_custom') || '{}'); } catch(e){}
+        custom[user.id] = (user.id === 'thais' || user.id === 'dra-mone') ? '*' : pages;
+        localStorage.setItem('ou_permissoes_custom', JSON.stringify(custom));
+        PERMISSOES[user.id] = custom[user.id];
+        aplicarPermissoes(user.id);
+      }
+    });
+
+    var screen = document.getElementById('login-screen');
+    screen.style.transition = 'opacity .35s ease';
+    screen.style.opacity = '0';
+    setTimeout(function() { screen.classList.add('hidden'); screen.style.opacity = ''; }, 350);
+  }
+
+  // Modal de senha injetado no DOM
+  var pwdModal = document.createElement('div');
+  pwdModal.id = 'athena-pwd-modal';
+  pwdModal.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(10,4,8,0.75);z-index:9999;align-items:center;justify-content:center;';
+  pwdModal.innerHTML = ''
+    + '<div style="background:#2a0f1a;border:1px solid rgba(253,249,244,0.12);border-radius:20px;padding:36px 32px;width:340px;text-align:center;box-shadow:0 24px 80px rgba(0,0,0,0.5);">'
+    + '  <div id="pwd-modal-avatar" style="width:64px;height:64px;border-radius:50%;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:#fdf9f4;overflow:hidden;"></div>'
+    + '  <div id="pwd-modal-name" style="font-family:\'Barlow\',sans-serif;font-size:1.1rem;font-weight:600;color:#fdf9f4;margin-bottom:4px;"></div>'
+    + '  <div id="pwd-modal-role" style="font-size:0.72rem;color:rgba(253,249,244,0.4);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:22px;"></div>'
+    + '  <input id="pwd-modal-input" type="password" placeholder="Digite sua senha" autocomplete="current-password"'
+    + '    style="width:100%;padding:12px 16px;border-radius:10px;border:1px solid rgba(253,249,244,0.18);background:rgba(253,249,244,0.06);color:#fdf9f4;font-family:\'Barlow\',sans-serif;font-size:0.9rem;outline:none;text-align:center;letter-spacing:0.12em;">'
+    + '  <div id="pwd-modal-error" style="color:#f87171;font-size:0.72rem;margin-top:8px;min-height:18px;"></div>'
+    + '  <div style="display:flex;gap:10px;margin-top:16px;">'
+    + '    <button id="pwd-modal-cancel" style="flex:1;padding:11px;border-radius:10px;border:1px solid rgba(253,249,244,0.15);background:transparent;color:rgba(253,249,244,0.5);font-family:\'Barlow\',sans-serif;font-size:0.8rem;cursor:pointer;">Cancelar</button>'
+    + '    <button id="pwd-modal-btn" style="flex:2;padding:11px;border-radius:10px;border:none;background:#8B2D42;color:#fdf9f4;font-family:\'Barlow\',sans-serif;font-size:0.85rem;font-weight:600;cursor:pointer;letter-spacing:0.04em;">Entrar</button>'
+    + '  </div>'
+    + '</div>';
+
+  function _mostrarErroPwd(msg) {
+    var errEl = document.getElementById('pwd-modal-error');
+    errEl.textContent = msg;
+    document.getElementById('pwd-modal-input').value = '';
+    document.getElementById('pwd-modal-input').focus();
+    setTimeout(function(){ errEl.textContent = ''; }, 2500);
+  }
+
+  // Senhas locais — fallback caso Supabase esteja indisponível
+  var SENHAS_LOCAL = {
+    'dra-mone':    'cooperemartin',
+    'dr-aurelio':  'aurelio123',
+    'jarina':      'jarina123',
+    'thais':       'moviski',
+    'brendha':     'brendha123',
+    'alexandre':   'alexandre123',
+    'bruna':       'bruna123',
+    'marieli':     'mariele123',
+    'suelen':      'suelen123',
+    'junior':      'junior123',
+    'francieli':   'francieli123',
+    'dr-bruno':    'bruno123',
+    'dr-scharles': 'scharles123',
+    'dra-stefany': 'stefany123',
+    'dra-ana':     'ana123',
+    'dra-fernanda':'fernanda123',
+  };
+
+  function _confirmarSenha() {
+    var entered = (document.getElementById('pwd-modal-input').value || '').trim();
+    if (!entered) return;
+    var btn = document.getElementById('pwd-modal-btn');
+    btn.disabled = true;
+    btn.textContent = '…';
+
+    function _ok() {
+      btn.disabled = false;
+      btn.textContent = 'Entrar';
+      document.getElementById('athena-pwd-modal').style.display = 'none';
+      _doLogin(_pendingUser);
+    }
+    function _fail() {
+      btn.disabled = false;
+      btn.textContent = 'Entrar';
+      _mostrarErroPwd('Senha incorreta. Tente novamente.');
+    }
+
+    // Verifica senha local
+    var senhaLocal = SENHAS_LOCAL[_pendingUser.id] || (_pendingUser.id + '123');
+    if (entered === senhaLocal) { _ok(); return; }
+    _fail();
+  }
+  window._confirmarSenhaAthena = _confirmarSenha;
+
+  function _iniciarModalSenha() {
+    document.body.appendChild(pwdModal);
+    document.getElementById('pwd-modal-btn').addEventListener('click', _confirmarSenha);
+    document.getElementById('pwd-modal-cancel').addEventListener('click', function(){ document.getElementById('athena-pwd-modal').style.display='none'; });
+    document.getElementById('pwd-modal-input').addEventListener('keydown', function(e){ if(e.key==='Enter') _confirmarSenha(); });
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', _iniciarModalSenha);
+  } else {
+    _iniciarModalSenha();
+  }
+
+  function selectProfile(user) {
+    _pendingUser = user;
+    // Preenche modal
+    var av = document.getElementById('pwd-modal-avatar');
+    var photo = localStorage.getItem('ou_photo_' + user.id);
+    if (photo) {
+      av.innerHTML = '<img src="'+photo+'" style="width:64px;height:64px;object-fit:cover;border-radius:50%;">';
+    } else {
+      var ini = user.name.replace(/^(Dr\.|Dra\.)\s*/i,'').split(' ').slice(0,2).map(function(w){return w[0];}).join('').toUpperCase();
+      av.textContent = ini;
+      av.style.background = user.color || '#8B2D42';
+    }
+    document.getElementById('pwd-modal-name').textContent = user.name;
+    document.getElementById('pwd-modal-role').textContent = user.role;
+    document.getElementById('pwd-modal-input').value = '';
+    document.getElementById('pwd-modal-error').textContent = '';
+    pwdModal.style.display = 'flex';
+    setTimeout(function(){ document.getElementById('pwd-modal-input').focus(); }, 80);
+  }
+
+  // Render grid
+  const grid = document.getElementById('profile-grid');
+  if (!grid) return;
+  USERS.forEach(function(u) { grid.appendChild(buildCard(u)); });
+
+  // Carrega fotos do Supabase e atualiza localStorage + grid
+  _supa.from('usuarios').select('id,foto_url').then(function(res) {
+    if (!res.data) return;
+    res.data.forEach(function(row) {
+      if (!row.foto_url) return;
+      var stored = localStorage.getItem('ou_photo_' + row.id);
+      if (stored === row.foto_url) return; // já sincronizado
+      localStorage.setItem('ou_photo_' + row.id, row.foto_url);
+      // Atualiza o card no grid se visível
+      var card = grid.querySelector('[data-userid="' + row.id + '"]');
+      if (!card) return;
+      var wrap = card.querySelector('.profile-photo-wrap');
+      if (!wrap) return;
+      var existing = wrap.querySelector('.profile-photo, .profile-initials');
+      var newImg = document.createElement('img');
+      newImg.className = 'profile-photo';
+      newImg.src = row.foto_url;
+      newImg.alt = row.id;
+      newImg.style.cssText = 'width:100%;height:100%;object-fit:cover;object-position:center top;display:block;';
+      if (existing) wrap.replaceChild(newImg, existing);
+    });
+  });
+
+  // Skip login if already authenticated this session
+  const sessionUser = sessionStorage.getItem('athena_logged_in');
+  if (sessionUser) {
+    document.getElementById('login-screen').classList.add('hidden');
+  }
+})();
+
+// ══════════════════════════════════════════════
+// RECADOS GERAIS — contagem regressiva dinâmica
+// ══════════════════════════════════════════════
+(function() {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const eventos = [
+    { date: '2026-06-25' },
+    { date: '2026-06-28' },
+    { date: '2026-07-11' },
+  ];
+  eventos.forEach(function(ev, i) {
+    const el = document.getElementById('recado-dias-' + i);
+    if (!el) return;
+    const target = new Date(ev.date + 'T00:00:00');
+    const diff = Math.round((target - today) / 86400000);
+    if (diff === 0)      el.textContent = 'Hoje!';
+    else if (diff === 1) el.textContent = 'Amanhã';
+    else if (diff < 0)  el.textContent = 'Passou';
+    else                el.textContent = diff + ' dias';
+  });
+})();
+
+// ══════════════════════════════════════════════
+// AGENDA DE HOJE — busca no Supabase
+// ══════════════════════════════════════════════
+(function() {
+  var todayStr = new Date().toISOString().slice(0,10);
+
+  function renderAgendaHoje(events, userId) {
+    var el = document.getElementById('inicio-agenda-list');
+    if (!el) return;
+
+    var mine = events.filter(function(e) {
+      if (!e.data || e.data !== todayStr) return false;
+      if (!e.assigned_to || !e.assigned_to.length) return e.created_by === userId;
+      return e.assigned_to.includes(userId) || e.created_by === userId
+          || userId === 'thais' || userId === 'dra-mone';
+    });
+
+    if (mine.length === 0) {
+      el.innerHTML = '<div style="padding:20px 0;text-align:center;color:var(--muted);font-size:13px;">Sem compromissos agendados para hoje.</div>';
+      return;
+    }
+
+    mine.sort(function(a, b) {
+      return (a.hora_inicio || '00:00').localeCompare(b.hora_inicio || '00:00');
+    });
+
+    el.innerHTML = mine.map(function(e) {
+      var hora = e.hora_inicio ? e.hora_inicio + (e.hora_fim ? ' – ' + e.hora_fim : '') : 'Dia todo';
+      var color = e.cor || 'var(--vinho)';
+      return '<div style="display:flex;align-items:flex-start;gap:12px;padding:9px 12px;border-bottom:1px solid var(--border);">'
+        + '<div style="width:3px;height:36px;border-radius:2px;background:' + color + ';flex-shrink:0;margin-top:2px;"></div>'
+        + '<div style="flex:1;min-width:0;">'
+        +   '<div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (e.titulo || 'Evento') + '</div>'
+        +   '<div style="font-size:11px;color:var(--muted);margin-top:2px;">🕐 ' + hora + (e.local ? ' · 📍' + e.local : '') + '</div>'
+        + '</div>'
+        + '</div>';
+    }).join('');
+  }
+
+  function loadAgenda() {
+    var userRaw = localStorage.getItem('ou_currentUser');
+    var userId = userRaw ? (JSON.parse(userRaw).id || '') : '';
+    if (!userId) return;
+
+    _supa.from('eventos').select('*').eq('data', todayStr).then(function(res) {
+      renderAgendaHoje(res.data || [], userId);
+    }).catch(function() {
+      var el = document.getElementById('inicio-agenda-list');
+      if (el) el.innerHTML = '<div style="padding:20px 0;text-align:center;color:var(--muted);font-size:13px;">Abra a <strong>Agenda</strong> para ver os compromissos de hoje.</div>';
+    });
+
+    // Realtime: atualiza ao vivo
+    _supa.channel('inicio-agenda')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'eventos', filter: 'data=eq.' + todayStr }, function() {
+        _supa.from('eventos').select('*').eq('data', todayStr).then(function(res) {
+          renderAgendaHoje(res.data || [], userId);
+        });
+      })
+      .subscribe();
+  }
+
+  function tryLoad(attempts) {
+    var userRaw = localStorage.getItem('ou_currentUser');
+    if (userRaw || attempts <= 0) { loadAgenda(); return; }
+    setTimeout(function() { tryLoad(attempts - 1); }, 500);
+  }
+  tryLoad(20);
+})();
+
+// ══════════════════════════════════════════════
+// TOPBAR DATE
+// ══════════════════════════════════════════════
+(function setDate() {
+  const now = new Date();
+  const opts = { weekday:'short', day:'numeric', month:'short', year:'numeric' };
+  const s = now.toLocaleDateString('pt-BR', opts);
+  document.getElementById('topbar-date').textContent = s;
+})();
+
+document.addEventListener('DOMContentLoaded', () => {
+  initSidebarSections();
+  setFraseDoDia();
+});
+
+var FRASES_DIA = [
+  "Disciplina hoje e liberdade amanha.",
+  "Cada tarefa concluida e um passo a menos para o caos de amanha.",
+  "Organizacao nao e perfeicao: e clareza sobre o que importa agora.",
+  "O time que se comunica bem entrega bem.",
+  "Uma prioridade bem definida vale mais que dez tarefas mal distribuidas.",
+  "Quem controla o processo, controla o resultado.",
+  "Delegar com clareza e o maior presente que voce pode dar a sua equipe.",
+  "Pequenas entregas constantes constroem grandes resultados.",
+  "Foco total por algumas horas vale mais que presenca distraida o dia todo.",
+  "Comecar e a metade de qualquer tarefa. De o primeiro passo agora.",
+  "Um time alinhado move montanhas. Comece pela reuniao de hoje.",
+  "Clareza de objetivo e o combustivel da execucao.",
+  "O prazo de hoje e a qualidade de amanha. Respeite os dois.",
+  "Cada tarefa tem um dono. Sem dono, ninguem entrega.",
+  "Feito hoje com cuidado evita retrabalho amanha.",
+  "O que nao e medido, nao e gerenciado. Acompanhe seus numeros hoje.",
+  "Clareza nas responsabilidades elimina 80% dos conflitos de equipe.",
+  "Excelencia nao e um ato isolado: e o resultado de habitos consistentes.",
+  "O paciente percebe quando a equipe esta alinhada. Isso tambem e cuidado.",
+  "Equipe motivada e equipe que sabe o que esta fazendo e por que.",
+  "Menos improviso, mais protocolo: e muito mais qualidade.",
+  "Cada detalhe bem cuidado e um sorriso a mais no rosto do paciente.",
+  "Comunicacao clara e a vacina contra retrabalho e mal-entendido.",
+  "Hoje e a oportunidade de fazer algo que amanha voce vai agradecer.",
+  "A excelencia nao se improvisa: se constroi, dia apos dia.",
+  "Produtividade real e fazer o que importa, nao o que e urgente.",
+  "A reuniao mais importante do dia e aquela com voce mesmo: planeje antes de agir.",
+  "Equipes que celebram pequenas vitorias criam grandes conquistas.",
+  "Nao existe vento favoravel para quem nao sabe para onde vai.",
+  "O sucesso e a soma de pequenos esforcos repetidos dia apos dia.",
+  "Trabalho em equipe divide o esforco e multiplica o resultado.",
+  "Faca bem o que precisa ser feito hoje. O futuro e construido no presente.",
+  "A qualidade nunca e um acidente: e sempre resultado de esforco inteligente.",
+  "Quem nao planeja, planeja falhar.",
+  "Uma boa comunicacao hoje evita uma crise amanha.",
+  "Processos claros liberam criatividade. Caos gera retrabalho.",
+  "O segredo da produtividade esta em saber o que NAO fazer.",
+  "Cuide das pessoas e elas cuidarao dos resultados.",
+  "Cada cliente atendido bem e um testemunho vivo da sua equipe.",
+  "Foco e a habilidade de dizer nao para tudo que distrai do essencial.",
+  "Metas sem prazo sao apenas sonhos. Com prazo, viram planos.",
+  "Uma equipe que aprende junta, cresce junta.",
+  "O feedback dado com respeito e o maior presente profissional.",
+  "Rotinas eficientes criam espaco para o que realmente importa.",
+  "Liderar e servir: quem serve bem, lidera naturalmente.",
+  "Cada melhoria de processo e um presente para o proximo turno.",
+  "A pontualidade e o maior sinal de respeito pelo tempo alheio.",
+  "Bons habitos nao se constroem em um dia, mas fazem toda a diferenca todo dia.",
+  "O cliente nao compra um servico: compra uma experiencia. Crie experiencias memoraveis.",
+  "Menos reuniao, mais execucao. Mais execucao, mais resultado.",
+  "Quando a equipe confia, o trabalho flui. Invista na confianca.",
+  "Grandes resultados comecam com pequenas acoes feitas com consistencia.",
+  "A pergunta certa no momento certo vale mais que uma hora de tentativa e erro.",
+  "Priorize o importante antes que o urgente tome conta do dia.",
+  "Fazer bem feito uma vez e mais eficiente que refazer tres vezes.",
+  "Cuidar do processo e cuidar dos resultados e dos pacientes.",
+  "Seu trabalho hoje e a reputacao da clinica amanha.",
+  "A melhor hora para organizar e antes de comecar, nao depois de se perder.",
+  "Equipe engajada nao precisa ser cobrada: ela se cobra.",
+  "Cada problema resolvido hoje e uma licao aprendida para sempre.",
+  "O profissional que cuida dos detalhes e o que nunca e esquecido.",
+  "Nao basta saber: e preciso fazer. Nao basta planejar: e preciso executar.",
+  "Confiar nos colegas e dividir o peso e dobrar a forca."
+];
+
+function getFraseSeed() {
+  var now = new Date();
+  // Troca às 8h: usa a data de hoje se hora >= 8, senão usa data de ontem
+  var cutoff = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 8, 0, 0);
+  var ref = now >= cutoff ? now : new Date(now - 86400000);
+  return ref.getFullYear() * 10000 + (ref.getMonth() + 1) * 100 + ref.getDate();
+}
+
+function setFraseDoDia() {
+  var seed = getFraseSeed();
+  var frase = FRASES_DIA[seed % FRASES_DIA.length];
+  var el = document.getElementById('frase-do-dia-texto');
+  var dt = document.getElementById('frase-do-dia-data');
+  if (el) {
+    el.textContent = frase;
+    el.style.color = '#8B2D42';
+    el.style.fontStyle = 'italic';
+    el.style.fontSize = '18px';
+    el.style.opacity = '1';
+    el.style.visibility = 'visible';
+  }
+  if (dt) {
+    var dias = ['Dom','Seg','Ter','Qua','Qui','Sex','Sab'];
+    var now = new Date();
+    dt.textContent = 'Oral Unic · Athena · ' + dias[now.getDay()] + ', ' + now.getDate() + '/' + String(now.getMonth()+1).padStart(2,'0') + '/' + now.getFullYear();
+  }
+  // Agenda próxima troca para as 8h de amanhã
+  var now2 = new Date();
+  var prox8h = new Date(now2.getFullYear(), now2.getMonth(), now2.getDate(), 8, 0, 0);
+  if (now2 >= prox8h) prox8h.setDate(prox8h.getDate() + 1);
+  var msAte8h = prox8h - now2;
+  setTimeout(setFraseDoDia, msAte8h);
+}
+
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+  setFraseDoDia();
+}
+
+// ══════════════════════════════════════════════
+// PERMISSÕES POR USUÁRIO
+// ══════════════════════════════════════════════
+var PERMISSOES = {
+  // pages que o usuário pode VER (nav-items). '*' = tudo.
+  // Todos têm: inicio, vello, agenda, prontuarios, protocolos, docs-operacao, atas, biblioteca, odontohub
+  _base: ['inicio','vello','agenda','prontuarios','protocolos','docs-operacao','atas','biblioteca','odontohub'],
+
+  'dra-mone':    '*',
+  'dr-aurelio':  '*',
+  'thais':       '*',
+  'jarina':      ['inicio','vello','agenda','prontuarios',
+                  'avaliador','laboratorios','cirurgias',
+                  'conferencia','agendamentos-protocolo','totem',
+                  'perfil-paciente','antes-depois','planejamentos','dio',
+                  'resgates','cobranca','gerador-proposta',
+                  'financeiro-completo','calculadora','direcao','rh',
+                  'protocolos','docs-operacao','atas','biblioteca','odontohub'],
+  'brendha':     ['inicio','vello','agenda','prontuarios',
+                  'perfil-paciente','antes-depois','dio',
+                  'resgates','cobranca','gerador-proposta',
+                  'financeiro-completo',
+                  'protocolos','docs-operacao','atas','biblioteca','odontohub'],
+  'alexandre':   ['inicio','vello','agenda','prontuarios',
+                  'resgates','cobranca','gerador-proposta',
+                  'financeiro-completo',
+                  'protocolos','docs-operacao','atas','biblioteca','odontohub'],
+  'bruna':       ['inicio','vello','agenda','prontuarios',
+                  'avaliador','laboratorios',
+                  'agendamentos-protocolo',
+                  'perfil-paciente','antes-depois','dio',
+                  'protocolos','docs-operacao','atas','biblioteca','odontohub'],
+  'marieli':     ['inicio','vello','agenda','prontuarios',
+                  'agendamentos-protocolo',
+                  'protocolos','docs-operacao','atas','biblioteca','odontohub'],
+  'suelen':      ['inicio','vello','agenda','prontuarios',
+                  'avaliador','laboratorios','cirurgias','estoque',
+                  'perfil-paciente','antes-depois','dio',
+                  'protocolos','docs-operacao','atas','biblioteca','odontohub'],
+  'junior':      ['inicio','vello','agenda','prontuarios',
+                  'laboratorios','estoque',
+                  'protocolos','docs-operacao','atas','biblioteca','odontohub'],
+  'francieli':   ['inicio','vello','agenda','prontuarios',
+                  'laboratorios','estoque',
+                  'protocolos','docs-operacao','atas','biblioteca','odontohub'],
+  'dr-bruno':    ['inicio','vello','agenda','prontuarios',
+                  'estoque',
+                  'protocolos','docs-operacao','atas','biblioteca','odontohub'],
+  'dr-scharles': ['inicio','vello','agenda','prontuarios',
+                  'avaliador','cirurgias','estoque',
+                  'perfil-paciente','antes-depois','dio',
+                  'protocolos','docs-operacao','atas','biblioteca','odontohub'],
+  'dra-stefany': ['inicio','vello','agenda','prontuarios',
+                  'laboratorios','estoque',
+                  'protocolos','docs-operacao','atas','biblioteca','odontohub'],
+  'dra-ana':     ['inicio','vello','agenda','prontuarios',
+                  'estoque',
+                  'protocolos','docs-operacao','atas','biblioteca','odontohub'],
+  'dra-fernanda':['inicio','vello','agenda','prontuarios',
+                  'estoque',
+                  'protocolos','docs-operacao','atas','biblioteca','odontohub'],
+};
+
+// Abas internas do Laboratório por usuário (enviadas via postMessage ao iframe)
+var LAB_ABAS = {
+  'dra-mone':    '*',
+  'dr-aurelio':  '*',
+  'thais':       '*',
+  'jarina':      '*',
+  'francieli':   ['lab-interno','pesquisar'],
+  'junior':      ['lab-interno','pesquisar'],
+  'bruna':       ['lab-interno','externo','pesquisar'],
+  'suelen':      ['lab-interno','externo','pesquisar'],
+  'dra-stefany': ['lab-interno','externo','pesquisar'],
+};
+
+// Abas internas do Estoque por usuário (enviadas via postMessage ao iframe)
+var ESTOQUE_ABAS = {
+  'dra-mone':    '*',
+  'thais':       '*',
+  'francieli':   ['laboratorio','dentes','componentes-lab'],
+  'junior':      ['laboratorio','dentes','componentes-lab'],
+  'suelen':      ['esterilizacao','componentes-esterilizacao'],
+  'dra-stefany': ['consultorio3','componentes-consultorio3'],
+  'dra-ana':     ['consultorio2','componentes-consultorio2','endodontia'],
+  'dra-fernanda':['ortodontia','consultorio1'],
+  'dr-bruno':    ['medicacao'],
+  'dr-scharles': ['avaliacao','consultorio1','bloco','implantes','componentes'],
+};
+
+function aplicarPermissoes(userId) {
+  // Aplica customizações salvas antes de usar
+  try {
+    var _custom = localStorage.getItem('ou_permissoes_custom');
+    if (_custom) { var _obj = JSON.parse(_custom); Object.keys(_obj).forEach(function(k){ PERMISSOES[k]=_obj[k]; }); }
+  } catch(e) {}
+  var permitido = PERMISSOES[userId];
+  var navItems = document.querySelectorAll('.nav-item[data-page]');
+  navItems.forEach(function(btn) {
+    var page = btn.getAttribute('data-page');
+    var liberado = (permitido === '*') || (Array.isArray(permitido) && permitido.indexOf(page) !== -1);
+
+    // Remove estado de bloqueio anterior
+    btn.classList.remove('nav-locked');
+    var oldLock = btn.querySelector('.nav-lock-icon');
+    if (oldLock) oldLock.remove();
+    btn.style.pointerEvents = '';
+    btn.style.opacity = '';
+    btn.title = '';
+
+    if (!liberado) {
+      btn.classList.add('nav-locked');
+      btn.style.pointerEvents = 'none';
+      btn.style.opacity = '0.45';
+      btn.title = 'Acesso restrito';
+      // Adiciona ícone de cadeado ao lado do label
+      var lock = document.createElement('span');
+      lock.className = 'nav-lock-icon';
+      lock.textContent = '🔒';
+      lock.style.cssText = 'margin-left:auto;font-size:11px;opacity:0.7;flex-shrink:0;';
+      btn.appendChild(lock);
+    }
+  });
+  // Botão de Configurações — só Thais e Mone
+  var btnConf = document.getElementById('nav-configuracoes');
+  if (btnConf) btnConf.style.display = (userId === 'thais' || userId === 'dra-mone') ? '' : 'none';
+
+  // Salva abas permitidas para uso pelos iframes
+  window._labAbas     = LAB_ABAS[userId]     || '*';
+  window._estoqueAbas = ESTOQUE_ABAS[userId] || '*';
+}
+
+// ── Rodapé sidebar: usuário logado ──
+function atualizarSidebarUser(user) {
+  var av = document.getElementById('sidebar-user-avatar');
+  var nm = document.getElementById('sidebar-user-name');
+  var rl = document.getElementById('sidebar-user-role');
+  if (!av) return;
+  var photo = localStorage.getItem('ou_photo_' + user.id);
+  if (photo) {
+    av.innerHTML = '<img src="'+photo+'" style="width:34px;height:34px;object-fit:cover;border-radius:50%;">';
+  } else {
+    var initials = user.name.replace(/^(Dr\.|Dra\.)\s*/i,'').split(' ').slice(0,2).map(function(w){return w[0];}).join('').toUpperCase();
+    av.textContent = initials;
+    av.style.background = user.color || 'var(--vinho)';
+  }
+  if (nm) nm.textContent = user.name;
+  if (rl) rl.textContent = user.role;
+}
+
+function toggleLogoutMenu() {
+  var menu = document.getElementById('sidebar-logout-menu');
+  if (!menu) return;
+  menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+  if (menu.style.display === 'block') {
+    setTimeout(function() { document.addEventListener('click', function close(e) {
+      if (!menu.contains(e.target)) { menu.style.display='none'; document.removeEventListener('click', close); }
+    }); }, 50);
+  }
+}
+
+function fazerLogoutAthena() {
+  document.getElementById('sidebar-logout-menu').style.display = 'none';
+  sessionStorage.removeItem('athena_logged_in');
+  localStorage.removeItem('ou_currentUser');
+  var screen = document.getElementById('login-screen');
+  screen.classList.remove('hidden');
+  screen.style.opacity = '0';
+  screen.style.transition = 'opacity .3s ease';
+  setTimeout(function(){ screen.style.opacity = '1'; }, 10);
+}
+
+// Restaura sidebar se já estava logado (refresh sem passar pelo selectProfile)
+(function() {
+  function _restore() {
+    var sid = sessionStorage.getItem('athena_logged_in');
+    if (!sid) return;
+    try {
+      var u = JSON.parse(localStorage.getItem('ou_currentUser') || '{}');
+      if (u && u.id) { atualizarSidebarUser(u); aplicarPermissoes(u.id); }
+    } catch(e) {}
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', _restore);
+  } else {
+    _restore();
+  }
+})();
+</script>
+
+<script>
+// ══════════════════════════════════════════════
+//  BACKUP COMPLETO — coleta localStorage de todos os iframes + shell
+// ══════════════════════════════════════════════
+function fazerBackupCompleto() {
+  const btn = document.querySelector('button[onclick="fazerBackupCompleto()"]');
+  const orig = btn.innerHTML;
+  btn.innerHTML = '⏳ Coletando...';
+  btn.disabled = true;
+
+  const backup = {
+    versao: '1.0',
+    data: new Date().toISOString(),
+    shell_localStorage: {},
+    iframes: {}
+  };
+
+  // 1. localStorage do shell (athena-unified)
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    try { backup.shell_localStorage[k] = JSON.parse(localStorage.getItem(k)); }
+    catch(e) { backup.shell_localStorage[k] = localStorage.getItem(k); }
+  }
+
+  // 2. localStorage de cada iframe (mesma origem = localhost:8787)
+  const iframes = document.querySelectorAll('iframe');
+  let pendentes = 0;
+
+  iframes.forEach(ifr => {
+    if (!ifr.src || ifr.src === 'about:blank') return;
+    const ifrId = ifr.id || ifr.src;
+    try {
+      const ifrLS = ifr.contentWindow && ifr.contentWindow.localStorage;
+      if (!ifrLS) return;
+      const data = {};
+      for (let i = 0; i < ifrLS.length; i++) {
+        const k = ifrLS.key(i);
+        try { data[k] = JSON.parse(ifrLS.getItem(k)); }
+        catch(e) { data[k] = ifrLS.getItem(k); }
+      }
+      if (Object.keys(data).length > 0) backup.iframes[ifrId] = data;
+    } catch(e) {
+      // Cross-origin — não acessível (ex: GitHub Pages, Vercel)
+      backup.iframes[ifrId] = { _nota: 'cross-origin, dados em nuvem (Supabase/Firebase)' };
+    }
+  });
+
+  // 3. Download do JSON
+  const json = JSON.stringify(backup, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  const now  = new Date();
+  const ts   = now.toISOString().slice(0,10) + '_' + now.toTimeString().slice(0,5).replace(':','h');
+  a.href     = url;
+  a.download = `athena-backup-${ts}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+
+  btn.innerHTML = '✅ Backup Baixado!';
+  setTimeout(() => { btn.innerHTML = orig; btn.disabled = false; }, 2500);
+}
+</script>
+
+<!-- ══ CHAT FLUTUANTE ══ -->
+<div id="chat-widget">
+  <!-- Header -->
+  <div class="chat-hdr">
+    <button class="chat-hdr-back" id="chat-back-btn" onclick="chatShowList()" style="display:none">‹</button>
+    <div class="chat-hdr-title" id="chat-hdr-title">💬 Mensagens</div>
+    <button class="chat-hdr-close" onclick="chatToggle()">✕</button>
+  </div>
+  <!-- Lista de usuários -->
+  <div id="chat-list-panel" class="chat-user-list"></div>
+  <!-- Conversa -->
+  <div id="chat-conv-panel" style="display:none;flex:1;flex-direction:column;overflow:hidden;">
+    <div class="chat-msgs" id="chat-msgs"></div>
+    <div class="chat-input-bar">
+      <input id="chat-msg-input" placeholder="Digite uma mensagem…" onkeydown="if(event.key==='Enter')chatSend()">
+      <button class="chat-send-btn" onclick="chatSend()">➤</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+// CHAT FLUTUANTE — Supabase (canais + mensagens)
+// ══════════════════════════════════════════════
+(function() {
+
+var CHAT_USERS = [
+  { id:'thais',        name:'Thais',         role:'ADM',              color:'#6A1F30' },
+  { id:'dra-mone',     name:'Dra. Mone',     role:'Diretora Geral',   color:'#8B2D42' },
+  { id:'jarina',       name:'Jarina',        role:'Gerente',          color:'#7B3F6E' },
+  { id:'brendha',      name:'Brendha',       role:'Relacionamento',   color:'#4A7C5E' },
+  { id:'marieli',      name:'Mariele',       role:'Recepção',         color:'#3A6A8A' },
+  { id:'bruna',        name:'Bruna',         role:'Recepção',         color:'#8B5E3C' },
+  { id:'alexandre',    name:'Alexandre',     role:'Financeiro',       color:'#5C6B3A' },
+  { id:'suelen',       name:'Suelen',        role:'ASB',              color:'#8B3A4A' },
+  { id:'junior',       name:'Junior',        role:'Protético',        color:'#4A5A7A' },
+  { id:'francieli',    name:'Francieli',     role:'Aux. Prótese',     color:'#7A4A6A' },
+  { id:'dr-bruno',     name:'Dr. Bruno',     role:'Anestesista',      color:'#3A5A3A' },
+  { id:'dr-aurelio',   name:'Dr. Aurélio',   role:'Diretor Clínico',  color:'#2D4A6A' },
+  { id:'dr-scharles',  name:'Dr. Scharles',  role:'Implantodontista', color:'#3D5A3A' },
+  { id:'dra-stefany',  name:'Dra. Stefany',  role:'Protesista',       color:'#6A3D6A' },
+  { id:'dra-ana',      name:'Dra. Ana',      role:'Endodontista',     color:'#5A3D2A' },
+  { id:'dra-fernanda', name:'Dra. Fernanda', role:'Ortodontista',     color:'#3A5A5A' },
+];
+
+function getCanalId(a, b) { return [a,b].sort().join('__'); }
+function getMe()     { try { return JSON.parse(localStorage.getItem('ou_currentUser')||'{}').id||''; } catch(e){ return ''; } }
+function getMyName() { try { return JSON.parse(localStorage.getItem('ou_currentUser')||'{}').name||'Eu'; } catch(e){ return 'Eu'; } }
+function fmtTime(ts) {
+  if(!ts) return '';
+  var d = new Date(ts);
+  return d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+}
+
+var _activeChat = null;
+var _chatSub = null;
+var _unreadSub = null;
+var _unreadMap = {};
+var _canalIdMap = {};  // targetId → canal_id (uuid)
+
+// ── Garante canal direto entre dois usuários ──
+async function getOrCreateCanal(me, targetId) {
+  var slug = getCanalId(me, targetId);
+  if (_canalIdMap[slug]) return _canalIdMap[slug];
+
+  var res = await _supa.from('canais')
+    .select('id')
+    .eq('tipo', 'direto')
+    .contains('membros', [me, targetId])
+    .maybeSingle();
+
+  if (res.data) { _canalIdMap[slug] = res.data.id; return res.data.id; }
+
+  var ins = await _supa.from('canais').insert({
+    nome: slug,
+    tipo: 'direto',
+    membros: [me, targetId],
+    criado_por: me
+  }).select('id').single();
+
+  if (ins.data) { _canalIdMap[slug] = ins.data.id; return ins.data.id; }
+  return null;
+}
+
+// ── Não-lidos: conta mensagens com autor != eu e eu não está em lida_por ──
+async function refreshUnread() {
+  var me = getMe(); if(!me) return;
+  var map = {};
+  var res = await _supa.from('mensagens')
+    .select('canal_id, lida_por, autor_id')
+    .neq('autor_id', me)
+    .not('lida_por', 'cs', '{"' + me + '"}');
+
+  if (res.data) {
+    res.data.forEach(function(m) {
+      map[m.canal_id] = (map[m.canal_id] || 0) + 1;
+    });
+  }
+  _unreadMap = map;
+  var total = Object.values(map).reduce(function(s,v){ return s+v; }, 0);
+  var badge = document.getElementById('chat-unread-badge');
+  if(badge) badge.style.display = total > 0 ? '' : 'none';
+  var sinoBtn = document.getElementById('chat-open-btn');
+  if(sinoBtn) {
+    if(total > 0) {
+      sinoBtn.style.color = '#c0392b';
+      sinoBtn.style.background = 'rgba(192,57,43,0.08)';
+    } else {
+      sinoBtn.style.color = '';
+      sinoBtn.style.background = '';
+    }
+  }
+  if(document.getElementById('chat-list-panel') &&
+     document.getElementById('chat-list-panel').style.display !== 'none') renderList();
+}
+
+function watchUnread() {
+  var me = getMe(); if(!me) return;
+  refreshUnread();
+  if(_unreadSub) { _supa.removeChannel(_unreadSub); _unreadSub = null; }
+  _unreadSub = _supa.channel('chat-unread-watch')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mensagens' }, function() {
+      refreshUnread();
+    })
+    .subscribe();
+}
+
+// ── Lista de usuários ──
+function renderList() {
+  var me = getMe();
+  var panel = document.getElementById('chat-list-panel');
+  if (!panel) return;
+  var others = CHAT_USERS.filter(function(u){ return u.id !== me; });
+  panel.innerHTML = others.map(function(u) {
+    var slug = getCanalId(me, u.id);
+    var canalId = _canalIdMap[slug] || '';
+    var unread = canalId ? (_unreadMap[canalId] || 0) : 0;
+    return '<div class="chat-user-item" onclick="openConv(\'' + u.id + '\')" style="cursor:pointer;">'
+      + '<div class="chat-u-av" style="background:' + u.color + '">' + u.name.charAt(0) + '</div>'
+      + '<div style="flex:1;min-width:0;">'
+      +   '<div class="chat-u-name">' + u.name + '</div>'
+      +   '<div class="chat-u-role">' + u.role + '</div>'
+      + '</div>'
+      + (unread > 0 ? '<span class="chat-u-badge">' + unread + '</span>' : '')
+      + '</div>';
+  }).join('');
+}
+
+// ── Abrir conversa ──
+window.openConv = async function(targetId) {
+  var me = getMe(); if(!me) return;
+  var target = CHAT_USERS.find(function(u){ return u.id===targetId; });
+  document.getElementById('chat-hdr-title').textContent = '💬 ' + (target ? target.name : targetId);
+  document.getElementById('chat-back-btn').style.display = '';
+  document.getElementById('chat-list-panel').style.display = 'none';
+  var conv = document.getElementById('chat-conv-panel');
+  conv.style.display = 'flex';
+
+  var canalId = await getOrCreateCanal(me, targetId);
+  _activeChat = { canalId: canalId, targetId: targetId };
+
+  // Carrega histórico
+  var res = await _supa.from('mensagens').select('*').eq('canal_id', canalId).order('created_at');
+  renderMsgs(res.data || [], me);
+
+  // Marca como lidas
+  if (res.data && res.data.length > 0) {
+    var ids = res.data.filter(function(m){ return m.autor_id !== me && !(m.lida_por||[]).includes(me); }).map(function(m){ return m.id; });
+    if (ids.length) {
+      res.data.forEach(async function(m) {
+        if (ids.includes(m.id)) {
+          var lp = m.lida_por || [];
+          if (!lp.includes(me)) {
+            await _supa.from('mensagens').update({ lida_por: lp.concat([me]) }).eq('id', m.id);
+          }
+        }
+      });
+      setTimeout(refreshUnread, 500);
+    }
+  }
+
+  // Realtime desta conversa
+  if(_chatSub) { _supa.removeChannel(_chatSub); _chatSub = null; }
+  _chatSub = _supa.channel('chat-conv-' + canalId)
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mensagens', filter: 'canal_id=eq.' + canalId }, async function(payload) {
+      var me2 = getMe();
+      var res2 = await _supa.from('mensagens').select('*').eq('canal_id', canalId).order('created_at');
+      renderMsgs(res2.data || [], me2);
+      // Marca lida imediatamente se conversa aberta
+      var m = payload.new;
+      if (m && m.autor_id !== me2 && !(m.lida_por||[]).includes(me2)) {
+        await _supa.from('mensagens').update({ lida_por: (m.lida_por||[]).concat([me2]) }).eq('id', m.id);
+        setTimeout(refreshUnread, 300);
+      }
+    })
+    .subscribe();
+};
+
+function renderMsgs(msgs, me) {
+  var el = document.getElementById('chat-msgs');
+  if (!el) return;
+  el.innerHTML = msgs.map(function(m) {
+    var isMe = m.autor_id === me;
+    var hora = fmtTime(m.created_at);
+    return '<div class="chat-bubble ' + (isMe?'me':'them') + '">'
+      + (!isMe ? '<div class="cb-author">' + (m.autor_id||'') + '</div>' : '')
+      + '<div>' + (m.texto||'') + '</div>'
+      + '<div class="cb-time">' + hora + '</div>'
+      + '</div>';
+  }).join('');
+  el.scrollTop = el.scrollHeight;
+  setTimeout(function(){ el.scrollTop = el.scrollHeight; }, 80);
+}
+
+// ── Enviar mensagem ──
+window.chatSend = async function() {
+  var input = document.getElementById('chat-msg-input');
+  var text = input.value.trim();
+  if(!text || !_activeChat) return;
+  input.value = '';
+  var me = getMe();
+  var myName = getMyName();
+  await _supa.from('mensagens').insert({
+    canal_id: _activeChat.canalId,
+    autor_id: me,
+    texto: text,
+    tipo: 'text',
+    lida_por: [me]
+  });
+};
+
+// ── Toggle e navegação ──
+window.chatToggle = function() {
+  var w = document.getElementById('chat-widget');
+  if(w.classList.toggle('open')) {
+    chatShowList();
+    watchUnread();
+  } else {
+    if(_chatSub) { _supa.removeChannel(_chatSub); _chatSub=null; }
+  }
+};
+window.chatShowList = function() {
+  _activeChat = null;
+  if(_chatSub) { _supa.removeChannel(_chatSub); _chatSub=null; }
+  document.getElementById('chat-hdr-title').textContent = '💬 Mensagens';
+  document.getElementById('chat-back-btn').style.display = 'none';
+  document.getElementById('chat-list-panel').style.display = '';
+  document.getElementById('chat-conv-panel').style.display = 'none';
+  renderList();
+};
+
+function tryWatchUnread(n) {
+  var me = getMe();
+  if(me) { watchUnread(); return; }
+  if(n > 0) setTimeout(function(){ tryWatchUnread(n-1); }, 800);
+}
+tryWatchUnread(20);
+
+})();
+</script>
+
+<script>
+// ══════════════════════════════════════════════
+// CONFIGURAÇÕES DE ACESSO — tabela visual
+// ══════════════════════════════════════════════
+(function() {
+
+var TODAS_PAGINAS = [
+  { id:'inicio',               label:'Início',                  secao:'Principal' },
+  { id:'vello',                label:'Vello',                   secao:'Principal' },
+  { id:'agenda',               label:'Agenda',                  secao:'Principal' },
+  { id:'prontuarios',          label:'Prontuários',             secao:'Clínica' },
+  { id:'avaliador',            label:'Avaliador Pré-Cirúrgico', secao:'Clínica' },
+  { id:'laboratorios',         label:'Laboratórios',            secao:'Clínica' },
+  { id:'cirurgias',            label:'Cirurgias',               secao:'Clínica' },
+  { id:'estoque',              label:'Estoque',                 secao:'Clínica' },
+  { id:'conferencia',          label:'Conferência de Agenda',   secao:'Recepção' },
+  { id:'agendamentos-protocolo',label:'Agendamentos Protocolo', secao:'Recepção' },
+  { id:'totem',                label:'Totem',                   secao:'Recepção' },
+  { id:'perfil-paciente',      label:'Perfil de Paciente',      secao:'Avaliação' },
+  { id:'antes-depois',         label:'Antes e Depois',          secao:'Avaliação' },
+  { id:'planejamentos',        label:'Planejamentos',           secao:'Avaliação' },
+  { id:'dio',                  label:'DIO',                     secao:'Avaliação' },
+  { id:'resgates',             label:'Resgates',                secao:'Comercial' },
+  { id:'cobranca',             label:'Cobrança',                secao:'Comercial' },
+  { id:'gerador-proposta',     label:'Gerador de Proposta',     secao:'Comercial' },
+  { id:'financeiro-completo',  label:'Financeiro',              secao:'Gestão' },
+  { id:'calculadora',          label:'Calculadora',             secao:'Gestão' },
+  { id:'direcao',              label:'Direção',                 secao:'Gestão' },
+  { id:'rh',                   label:'RH',                      secao:'Gestão' },
+  { id:'banco-conteudo',       label:'Banco de Conteúdo',       secao:'Marketing' },
+  { id:'gerador-post',         label:'Gerador de Post',         secao:'Marketing' },
+  { id:'protocolos',           label:'Protocolos Clínicos',     secao:'Documentos' },
+  { id:'docs-operacao',        label:'Docs Operação',           secao:'Documentos' },
+  { id:'atas',                 label:'Atas de Reuniões',        secao:'Documentos' },
+  { id:'biblioteca',           label:'Biblioteca',              secao:'Estudo' },
+  { id:'odontohub',            label:'OdontoHub',               secao:'Estudo' },
+];
+
+var TODOS_USERS = [
+  { id:'dra-mone',     nome:'Dra. Mone' },
+  { id:'dr-aurelio',   nome:'Dr. Aurélio' },
+  { id:'thais',        nome:'Thais' },
+  { id:'jarina',       nome:'Jarina' },
+  { id:'brendha',      nome:'Brendha' },
+  { id:'alexandre',    nome:'Alexandre' },
+  { id:'bruna',        nome:'Bruna' },
+  { id:'marieli',      nome:'Mariele' },
+  { id:'suelen',       nome:'Suelen' },
+  { id:'junior',       nome:'Junior' },
+  { id:'francieli',    nome:'Francieli' },
+  { id:'dr-bruno',     nome:'Dr. Bruno' },
+  { id:'dr-scharles',  nome:'Dr. Scharles' },
+  { id:'dra-stefany',  nome:'Dra. Stefany' },
+  { id:'dra-ana',      nome:'Dra. Ana' },
+  { id:'dra-fernanda', nome:'Dra. Fernanda' },
+];
+
+// Carrega permissões salvas do localStorage (sobrescreve o padrão se existir)
+function carregarPermissoesCustom() {
+  try {
+    var saved = localStorage.getItem('ou_permissoes_custom');
+    if (saved) {
+      var obj = JSON.parse(saved);
+      Object.keys(obj).forEach(function(uid) { PERMISSOES[uid] = obj[uid]; });
+    }
+  } catch(e) {}
+}
+carregarPermissoesCustom();
+
+window.salvarPermissoesCustom = function() {
+  // Lê estado atual dos checkboxes
+  var resultado = {};
+  TODOS_USERS.forEach(function(u) {
+    var pages = [];
+    TODAS_PAGINAS.forEach(function(p) {
+      var cb = document.getElementById('perm_' + u.id + '_' + p.id);
+      if (cb && cb.checked) pages.push(p.id);
+    });
+    resultado[u.id] = pages;
+  });
+  // Mantém '*' para Thais e Mone (sempre tudo)
+  resultado['thais']   = '*';
+  resultado['dra-mone'] = '*';
+  localStorage.setItem('ou_permissoes_custom', JSON.stringify(resultado));
+  // Atualiza PERMISSOES em memória
+  Object.assign(PERMISSOES, resultado);
+  // Reaplica ao usuário atual
+  try {
+    var u = JSON.parse(localStorage.getItem('ou_currentUser') || '{}');
+    if (u && u.id) aplicarPermissoes(u.id);
+  } catch(e) {}
+  // Feedback visual
+  var btn = event.target;
+  var orig = btn.innerHTML;
+  btn.innerHTML = '✅ Salvo!';
+  btn.style.background = '#4ade80';
+  setTimeout(function(){ btn.innerHTML = orig; btn.style.background = '#f0c96e'; }, 1800);
+};
+
+window.resetarPermissoes = function() {
+  if (!confirm('Resetar todas as permissões para o padrão?')) return;
+  localStorage.removeItem('ou_permissoes_custom');
+  location.reload();
+};
+
+function renderTabelaPermissoes() {
+  var thead = document.getElementById('perm-thead');
+  var tbody = document.getElementById('perm-tbody');
+  if (!thead || !tbody) return;
+
+  // Inject toggle CSS once
+  if (!document.getElementById('perm-toggle-style')) {
+    var s = document.createElement('style');
+    s.id = 'perm-toggle-style';
+    s.textContent = `
+      .perm-toggle { position:relative; display:inline-block; width:34px; height:20px; }
+      .perm-toggle input { opacity:0; width:0; height:0; position:absolute; }
+      .perm-slider {
+        position:absolute; inset:0; border-radius:20px; cursor:pointer;
+        background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.15);
+        transition:background 0.2s, border 0.2s;
+      }
+      .perm-slider::before {
+        content:''; position:absolute; width:14px; height:14px; border-radius:50%;
+        left:2px; top:2px; background:rgba(253,249,244,0.35);
+        transition:transform 0.2s, background 0.2s; box-shadow:0 1px 4px rgba(0,0,0,0.3);
+      }
+      .perm-toggle input:checked + .perm-slider { background:#2d7d32; border-color:#4caf50; }
+      .perm-toggle input:checked + .perm-slider::before { transform:translateX(14px); background:#fff; }
+      .perm-toggle input:not(:checked) + .perm-slider:hover { background:rgba(255,255,255,0.18); }
+      .perm-admin-icon { font-size:16px; line-height:1; }
+    `;
+    document.head.appendChild(s);
+  }
+
+  var secaoAtual = '';
+  var border = '1px solid rgba(255,255,255,0.07)';
+  var cellStyle = 'border:'+border+';padding:8px 6px;text-align:center;vertical-align:middle;';
+  var labelStyle = 'border:'+border+';padding:9px 14px;white-space:nowrap;vertical-align:middle;';
+
+  // Header
+  var thHtml = '<tr style="background:rgba(0,0,0,0.45);">'
+    + '<th style="'+labelStyle+'min-width:170px;text-align:left;color:rgba(253,249,244,0.45);font-size:0.62rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;">Página</th>'
+    + '<th style="'+labelStyle+'color:rgba(253,249,244,0.45);font-size:0.62rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;">Seção</th>';
+  TODOS_USERS.forEach(function(u) {
+    var isAdmin = (u.id === 'thais' || u.id === 'dra-mone');
+    var nameShort = u.nome.replace('Dr. ','Dr.<br>').replace('Dra. ','Dra.<br>');
+    thHtml += '<th style="'+cellStyle+'min-width:60px;vertical-align:bottom;padding-bottom:12px;">'
+      + '<div style="display:flex;flex-direction:column;align-items:center;gap:4px;">'
+      + '<div style="width:28px;height:28px;border-radius:50%;background:'+(isAdmin?'rgba(240,201,110,0.2)':'rgba(255,255,255,0.08)')+';border:1px solid '+(isAdmin?'rgba(240,201,110,0.4)':'rgba(255,255,255,0.15)')+';display:flex;align-items:center;justify-content:center;font-size:0.62rem;font-weight:700;color:'+(isAdmin?'#f0c96e':'rgba(253,249,244,0.6)')+';">'
+      + u.nome.charAt(0).toUpperCase() + '</div>'
+      + '<span style="font-size:0.6rem;font-weight:600;color:'+(isAdmin?'#f0c96e':'rgba(253,249,244,0.65)')+';line-height:1.2;text-align:center;">' + nameShort + '</span>'
+      + (isAdmin ? '<span style="font-size:0.48rem;color:#f0c96e;opacity:0.6;letter-spacing:0.1em;">admin</span>' : '')
+      + '</div></th>';
+  });
+  thHtml += '</tr>';
+  thead.innerHTML = thHtml;
+
+  // Rows
+  var tbHtml = '';
+  TODAS_PAGINAS.forEach(function(p) {
+    if (p.secao !== secaoAtual) {
+      secaoAtual = p.secao;
+      tbHtml += '<tr>'
+        + '<td colspan="'+(TODOS_USERS.length+2)+'" style="padding:6px 14px 5px;border:'+border+';background:rgba(240,201,110,0.07);">'
+        + '<span style="font-size:0.58rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:#f0c96e;">▸ '+p.secao+'</span>'
+        + '</td></tr>';
+    }
+    tbHtml += '<tr style="background:rgba(255,255,255,0.015);" '
+      + 'onmouseover="this.style.background=\'rgba(255,255,255,0.04)\'" '
+      + 'onmouseout="this.style.background=\'rgba(255,255,255,0.015)\'">';
+    tbHtml += '<td style="'+labelStyle+'color:rgba(253,249,244,0.88);font-size:0.73rem;font-weight:500;">'+p.label+'</td>';
+    tbHtml += '<td style="'+labelStyle+'color:rgba(253,249,244,0.3);font-size:0.62rem;">'+p.secao+'</td>';
+    TODOS_USERS.forEach(function(u) {
+      var isAdmin = (u.id === 'thais' || u.id === 'dra-mone');
+      var perm = PERMISSOES[u.id];
+      var checked = isAdmin || perm === '*' || (Array.isArray(perm) && perm.indexOf(p.id) !== -1);
+      if (isAdmin) {
+        tbHtml += '<td style="'+cellStyle+'"><span class="perm-admin-icon">✅</span></td>';
+      } else {
+        tbHtml += '<td style="'+cellStyle+'">'
+          + '<label class="perm-toggle">'
+          + '<input type="checkbox" id="perm_'+u.id+'_'+p.id+'"'+(checked?' checked':'')+'>'
+          + '<span class="perm-slider"></span>'
+          + '</label></td>';
+      }
+    });
+    tbHtml += '</tr>';
+  });
+  tbody.innerHTML = tbHtml;
+}
+
+// Renderiza quando a aba for aberta
+var _permRendered = false;
+var _origNav = window.nav;
+window.nav = function(btn) {
+  _origNav(btn);
+  if (btn.getAttribute('data-page') === 'configuracoes' && !_permRendered) {
+    renderTabelaPermissoes();
+    _permRendered = true;
+  }
+};
+
+})();
+</script>
+
+<!-- CROP MODAL — login screen photos -->
+<div id="login-crop-overlay" style="display:none;position:fixed;inset:0;background:rgba(10,4,8,0.82);z-index:99999;align-items:center;justify-content:center;">
+  <div style="background:#1a0f1a;border:1px solid rgba(253,249,244,0.12);border-radius:20px;padding:28px;width:320px;display:flex;flex-direction:column;align-items:center;gap:16px;box-shadow:0 24px 80px rgba(0,0,0,0.6);">
+    <div style="font-family:'Barlow',sans-serif;font-size:1rem;font-weight:600;color:#fdf9f4;letter-spacing:0.06em;">Centralizar Foto</div>
+    <div style="font-size:0.7rem;color:rgba(253,249,244,0.4);">Arraste a foto para posicionar · Scroll para zoom</div>
+    <div id="lcrop-wrap" style="width:240px;height:240px;border-radius:50%;overflow:hidden;border:3px solid #8B2D42;cursor:grab;flex-shrink:0;user-select:none;touch-action:none;">
+      <canvas id="lcrop-canvas" width="240" height="240" style="display:block;"></canvas>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;width:100%;">
+      <span style="font-size:0.6rem;color:rgba(253,249,244,0.4);text-transform:uppercase;letter-spacing:0.1em;white-space:nowrap;">🔍 Zoom</span>
+      <input type="range" id="lcrop-zoom" min="0.1" max="3" step="0.01" value="1" style="flex:1;accent-color:#8B2D42;height:4px;" oninput="lcropDraw()">
+    </div>
+    <div style="display:flex;gap:10px;width:100%;">
+      <button onclick="lcropCancelar()" style="flex:1;padding:11px;border-radius:10px;border:1px solid rgba(253,249,244,0.15);background:transparent;color:rgba(253,249,244,0.5);font-family:'Barlow',sans-serif;font-size:0.82rem;cursor:pointer;">Cancelar</button>
+      <button onclick="lcropConfirmar()" style="flex:2;padding:11px;border-radius:10px;border:none;background:#8B2D42;color:#fdf9f4;font-family:'Barlow',sans-serif;font-size:0.88rem;font-weight:600;cursor:pointer;letter-spacing:0.04em;">✓ Salvar Foto</button>
+    </div>
+  </div>
+</div>
+<script>
+var _lcrop = {img:null, cb:null, x:0, y:0, z:1, drag:false, lx:0, ly:0, ox:0, oy:0, S:240};
+
+window._abrirCropLogin = function(src, callback) {
+  _lcrop.cb = callback;
+  var img = new Image();
+  img.onload = function() {
+    _lcrop.img = img;
+    var S = _lcrop.S;
+    var z = Math.max(S / img.naturalWidth, S / img.naturalHeight);
+    _lcrop.z = z;
+    _lcrop.x = (S - img.naturalWidth * z) / 2;
+    _lcrop.y = (S - img.naturalHeight * z) / 2;
+    var zi = document.getElementById('lcrop-zoom');
+    zi.min = (z * 0.5).toFixed(3);
+    zi.max = (z * 4).toFixed(3);
+    zi.step = (z * 0.02).toFixed(3);
+    zi.value = z;
+    lcropDraw();
+    document.getElementById('login-crop-overlay').style.display = 'flex';
+  };
+  img.src = src;
+};
+
+window.lcropDraw = function() {
+  var lc = _lcrop;
+  lc.z = parseFloat(document.getElementById('lcrop-zoom').value);
+  var cv = document.getElementById('lcrop-canvas');
+  var ctx = cv.getContext('2d');
+  ctx.clearRect(0, 0, lc.S, lc.S);
+  if (!lc.img) return;
+  ctx.drawImage(lc.img, lc.x, lc.y, lc.img.naturalWidth * lc.z, lc.img.naturalHeight * lc.z);
+};
+
+window.lcropCancelar = function() {
+  document.getElementById('login-crop-overlay').style.display = 'none';
+};
+
+window.lcropConfirmar = function() {
+  var lc = _lcrop;
+  var cv = document.getElementById('lcrop-canvas');
+  var out = document.createElement('canvas');
+  out.width = lc.S; out.height = lc.S;
+  var ctx = out.getContext('2d');
+  ctx.beginPath(); ctx.arc(lc.S/2, lc.S/2, lc.S/2, 0, Math.PI*2); ctx.clip();
+  ctx.drawImage(cv, 0, 0);
+  var url = out.toDataURL('image/jpeg', 0.9);
+  document.getElementById('login-crop-overlay').style.display = 'none';
+  if (lc.cb) lc.cb(url);
+};
+
+(function() {
+  var wrap = document.getElementById('lcrop-wrap');
+  var cv   = document.getElementById('lcrop-canvas');
+  var lc   = _lcrop;
+
+  function startDrag(cx, cy) { lc.drag=true; lc.lx=cx; lc.ly=cy; lc.ox=lc.x; lc.oy=lc.y; wrap.style.cursor='grabbing'; }
+  function moveDrag(cx, cy)  { if(!lc.drag) return; lc.x=lc.ox+(cx-lc.lx); lc.y=lc.oy+(cy-lc.ly); lcropDraw(); }
+  function endDrag()         { lc.drag=false; wrap.style.cursor='grab'; }
+
+  wrap.addEventListener('mousedown',  function(e){ e.preventDefault(); e.stopPropagation(); startDrag(e.clientX, e.clientY); });
+  wrap.addEventListener('touchstart', function(e){ e.preventDefault(); e.stopPropagation(); startDrag(e.touches[0].clientX, e.touches[0].clientY); }, {passive:false});
+  wrap.addEventListener('wheel',      function(e){ e.preventDefault(); var zi=document.getElementById('lcrop-zoom'); var z=Math.max(parseFloat(zi.min),Math.min(parseFloat(zi.max),parseFloat(zi.value)+(e.deltaY<0?0.05:-0.05))); zi.value=z; lcropDraw(); }, {passive:false});
+
+  window.addEventListener('mousemove', function(e){ moveDrag(e.clientX, e.clientY); });
+  window.addEventListener('mouseup',   endDrag);
+  window.addEventListener('touchmove', function(e){ if(lc.drag){ e.preventDefault(); moveDrag(e.touches[0].clientX, e.touches[0].clientY); } }, {passive:false});
+  window.addEventListener('touchend',  endDrag);
+})();
+</script>
+</body>
+</html>

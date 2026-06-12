@@ -200,6 +200,8 @@
       window.renderSaidaTab && window.renderSaidaTab();
       window.renderPedidosTab && window.renderPedidosTab();
       window.renderCotacaoTab && window.renderCotacaoTab();
+      const _selCir = document.getElementById('cirFiltroMesDash');
+      if (_selCir && !_selCir.value) _selCir.value = new Date().toISOString().slice(0,7);
       window.renderCirurgiasTab && window.renderCirurgiasTab();
       window.renderComprasTab && window.renderComprasTab();
     }

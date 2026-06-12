@@ -7824,12 +7824,10 @@ function goSection(section) {
     if (modals)   modals.style.display   = 'none';
     if (labSec)   labSec.style.display   = 'block';
     btns[2].classList.add('active');
-    // Garantir mês atual no select (só na primeira vez)
-    if (!lab_listenerStarted) {
-      lab_mesAtivo = new Date().getMonth();
-      const selMes = document.getElementById('lab-seletorMes');
-      if (selMes) selMes.value = lab_mesAtivo;
-    }
+    // Garantir mês atual no select sempre que abrir
+    lab_mesAtivo = new Date().getMonth();
+    const selMes = document.getElementById('lab-seletorMes');
+    if (selMes) selMes.value = lab_mesAtivo;
     // Set lab user
     if (typeof usuarioAtual !== 'undefined' && usuarioAtual) {
       lab_usuarioLogado = { nome: usuarioAtual.nome || usuarioAtual, cargo: 'admin', cor: 'linear-gradient(135deg,#8B2D42,#6A1F30)', letra: (usuarioAtual.nome || usuarioAtual).charAt(0).toUpperCase() };
