@@ -4982,6 +4982,8 @@ function renderPendentes() {
     if (overdueCnt > 0) { badge.textContent = overdueCnt; badge.classList.remove('hidden'); }
     else badge.classList.add('hidden');
   }
+  // Notifica o app pai para atualizar o badge da aba Pendências
+  try { window.parent.postMessage({ type: 'pendencias-badge', count: overdueCnt }, '*'); } catch(e) {}
 
   // Aplica filtro
   const filteredList = _pendFilter === 'overdue' ? pendList.filter(p => p.overdue) : pendList;
