@@ -2605,7 +2605,13 @@ function startRealtimeListeners() {
           const _cnt = Object.entries(_allC).filter(([id]) => id !== _myId && (_allowedOwners === null || _allowedOwners.includes(id))).reduce((acc,[,arr]) => acc + (Array.isArray(arr) ? arr.filter(c => c.column !== 'done' && !c.sharedOriginId && c.dueDate && (() => { const d = new Date(c.dueDate+'T23:59:59'); return d <= new Date(); })()).length : 0), 0);
           const _b = document.getElementById('pendentes-badge');
           if (_b) { if (_cnt > 0) { _b.textContent = _cnt; _b.classList.remove('hidden'); } else _b.classList.add('hidden'); }
+          try { window.parent.postMessage({ type: 'pendencias-badge', count: _cnt }, '*'); } catch(e) {}
         }
+      } else if (currentUser) {
+        // Para outros usuários (ex: alexandre): calcula atraso dos próprios cards
+        const _myCards = (window._cache.cards[currentUser.id] || []);
+        const _myOverdue = _myCards.filter(c => c.column !== 'done' && c.dueDate && new Date(c.dueDate+'T23:59:59') <= new Date()).length;
+        try { window.parent.postMessage({ type: 'pendencias-badge', count: _myOverdue }, '*'); } catch(e) {}
       }
     });
   }
