@@ -83,7 +83,9 @@
             delegatedFromName: c.delegated_from_name || null,
             isDelegation: !!c.is_delegation,
             delegationStatus: c.delegation_status || null,
-            delegationId: c.delegation_id || null
+            delegationId: c.delegation_id || null,
+            delegatedTo: c.delegated_to || [],
+            delegatedMainId: c.delegated_main_id || null
           };
         });
         return {
@@ -128,7 +130,7 @@
       var res = await _sb.from('cards').select('*').eq('owner_id', resolvedId);
       if (res.error || !res.data || !res.data.length) return { exists: function(){ return false; }, data: function(){ return {}; } };
       var cards = res.data.map(function(c) {
-        return { id: c.id, title: c.titulo, description: c.descricao, column: c.coluna, priority: c.prioridade, dueDate: c.due_date, dueTime: c.due_time, tags: c.tags||[], assignedTo: c.assigned_to||[], sharedOriginId: c.shared_origin_id, createdBy: c.created_by, createdAt: c.created_at, updatedAt: c.updated_at };
+        return { id: c.id, title: c.titulo, description: c.descricao, column: c.coluna, priority: c.prioridade, dueDate: c.due_date, dueTime: c.due_time, tags: c.tags||[], assignedTo: c.assigned_to||[], sharedOriginId: c.shared_origin_id, createdBy: c.created_by, createdAt: c.created_at, updatedAt: c.updated_at, delegatedFrom: c.delegated_from||null, delegatedFromName: c.delegated_from_name||null, isDelegation: !!c.is_delegation, delegationStatus: c.delegation_status||null, delegationId: c.delegation_id||null, delegatedTo: c.delegated_to||[], delegatedMainId: c.delegated_main_id||null };
       });
       return { exists: function(){ return true; }, data: function(){ return { cards: JSON.stringify(cards) }; } };
     }
@@ -199,7 +201,9 @@
             delegated_from_name: c.delegatedFromName || null,
             is_delegation: c.isDelegation || false,
             delegation_status: c.delegationStatus || null,
-            delegation_id: c.delegationId || null
+            delegation_id: c.delegationId || null,
+            delegated_to: c.delegatedTo || [],
+            delegated_main_id: c.delegatedMainId || null
           };
         });
         var upsertRes = await _sb.from('cards').upsert(rows, { onConflict: 'id' });
@@ -209,6 +213,7 @@
             var b = Object.assign({}, r);
             delete b.delegated_from; delete b.delegated_from_name;
             delete b.is_delegation; delete b.delegation_status; delete b.delegation_id;
+            delete b.delegated_to; delete b.delegated_main_id;
             return b;
           });
           await _sb.from('cards').upsert(rowsBase, { onConflict: 'id' });
