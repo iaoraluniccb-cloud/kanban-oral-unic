@@ -7,39 +7,318 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📅</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+SC:wght@300;400&family=Cormorant+Italic:wght@300&family=Josefin+Sans:wght@300;400;600&display=swap" rel="stylesheet">
-<!-- Firebase SDK -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getFirestore, collection, doc, getDoc, getDocs, setDoc, deleteDoc, onSnapshot, query, where } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+<!-- Supabase SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function() {
+  var _sb = supabase.createClient(
+    'https://eeqpvuaigqzclpompxao.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVlcXB2dWFpZ3F6Y2xwb21weGFvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1NzE1NzcsImV4cCI6MjA5NDE0NzU3N30.kDyXLrZi9ItX4Rq1hAw3iGGYxM7FtZ2gMNYhsJSSw9Q'
+  );
+  window._supa = _sb;
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyB9zXOuoxC20uG7BUlfKBxHiLcJRNmq4n8",
-    authDomain: "vello-athena.firebaseapp.com",
-    projectId: "vello-athena",
-    storageBucket: "vello-athena.firebasestorage.app",
-    messagingSenderId: "246132621623",
-    appId: "1:246132621623:web:ab3480b79de6095d6d9ab2",
-    measurementId: "G-HLP5G9NB3G"
+  // ── Adaptador Supabase → API usada pelo app (estilo Firebase) ──
+  // Mapas de coleção Firestore → tabela/campo Supabase
+  // ou_cards/{userId}         → tabela cards (owner_id)
+  // ou_shared/agenda          → tabela eventos
+  // ou_shared/delegations     → tabela cards (delegações serão embedded em tags)
+  // ou_notifications/{userId} → tabela notificacoes
+  // ou_photos/{userId}        → campo foto_url em usuarios
+  // ou_chats/{chatId}         → tabela mensagens + canais
+
+  // Referência virtual (col + id) — usada como chave de despacho
+  function _ref(col, id) { return { _col: col, _id: id }; }
+
+  // Mapa de normalização: IDs que o app usa (underscore) → IDs que estão no banco (hífen)
+  // O banco foi criado com hífen; o app via Athena passa underscore
+  var _ownerIdCache = {
+    'dra_mone':    'dra-mone',
+    'dr_aurelio':  'dr-aurelio',
+    'dr_scharles': 'dr-scharles',
+    'dra_stefany': 'dra-stefany',
+    'dra_ana':     'dra-ana',
+    'dra_fernanda':'dra-fernanda',
+    'dr_bruno':    'dr-bruno',
+    // inverso também (para quem já tem hífen)
+    'dra-mone':    'dra-mone',
+    'dr-aurelio':  'dr-aurelio',
+    'dr-scharles': 'dr-scharles',
+    'dra-stefany': 'dra-stefany',
+    'dra-ana':     'dra-ana',
+    'dra-fernanda':'dra-fernanda',
+    'dr-bruno':    'dr-bruno',
+  };
+  async function _resolveOwnerId(rawId) {
+    return _ownerIdCache[rawId] || rawId;
+  }
+
+  window.__db = true; // Indica que o backend está disponível
+  window.__fbReady = true;
+  window.__col = function(name) { return { _col: name }; };
+  window.__doc = function(col, id) { return _ref(col, id); };
+
+  // ── getDocs ──
+  window.__getDocs = async function(ref) {
+    var col = ref._col;
+    if (col === 'ou_cards') {
+      var res = await _sb.from('cards').select('*');
+      if (res.error) return { forEach: function(){} };
+      // Agrupa por owner_id simulando documentos por usuário
+      var byUser = {};
+      (res.data || []).forEach(function(c) {
+        if (!byUser[c.owner_id]) byUser[c.owner_id] = [];
+        byUser[c.owner_id].push(c);
+      });
+      var docs = Object.entries(byUser).map(function(entry) {
+        var uid = entry[0], cards = entry[1];
+        // Converte para o formato esperado pelo app
+        var mapped = cards.map(function(c) {
+          return {
+            id: c.id, title: c.titulo, description: c.descricao,
+            column: c.coluna, priority: c.prioridade,
+            dueDate: c.due_date, dueTime: c.due_time, tags: c.tags || [],
+            assignedTo: c.assigned_to || [], sharedOriginId: c.shared_origin_id,
+            createdBy: c.created_by, createdAt: c.created_at, updatedAt: c.updated_at,
+            delegatedFrom: c.delegated_from || null,
+            delegatedFromName: c.delegated_from_name || null,
+            isDelegation: !!c.is_delegation,
+            delegationStatus: c.delegation_status || null,
+            delegationId: c.delegation_id || null
+          };
+        });
+        return {
+          id: uid,
+          data: function() { return { cards: JSON.stringify(mapped), updatedAt: new Date().toISOString() }; }
+        };
+      });
+      return { forEach: function(fn) { docs.forEach(fn); } };
+    }
+    if (col === 'ou_notifications') {
+      var res2 = await _sb.from('notificacoes').select('*').order('created_at', { ascending: false });
+      if (res2.error) return { forEach: function(){} };
+      var byUser2 = {};
+      (res2.data || []).forEach(function(n) {
+        if (!byUser2[n.usuario_id]) byUser2[n.usuario_id] = [];
+        byUser2[n.usuario_id].push({ id: n.id, title: n.titulo, body: n.corpo, type: n.tipo, read: n.lida, createdAt: n.created_at });
+      });
+      var docs2 = Object.entries(byUser2).map(function(entry) {
+        return { id: entry[0], data: function() { return { data: JSON.stringify(entry[1]) }; } };
+      });
+      return { forEach: function(fn) { docs2.forEach(fn); } };
+    }
+    if (col === 'ou_photos') {
+      var res3 = await _sb.from('usuarios').select('id, foto_url').not('foto_url', 'is', null);
+      if (res3.error) return { forEach: function(){} };
+      var docs3 = (res3.data || []).map(function(u) {
+        return { id: u.id, data: function() { return { photo: u.foto_url }; } };
+      });
+      return { forEach: function(fn) { docs3.forEach(fn); } };
+    }
+    if (col === 'ou_chats') {
+      return { forEach: function(){} }; // chat migrado para widget Supabase
+    }
+    return { forEach: function(){} };
   };
 
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
+  // ── getDoc ──
+  window.__getDoc = async function(ref) {
+    var col = ref._col, id = ref._id;
+    if (col === 'ou_cards') {
+      var resolvedId = _ownerIdCache[id] || id;
+      var res = await _sb.from('cards').select('*').eq('owner_id', resolvedId);
+      if (res.error || !res.data || !res.data.length) return { exists: function(){ return false; }, data: function(){ return {}; } };
+      var cards = res.data.map(function(c) {
+        return { id: c.id, title: c.titulo, description: c.descricao, column: c.coluna, priority: c.prioridade, dueDate: c.due_date, dueTime: c.due_time, tags: c.tags||[], assignedTo: c.assigned_to||[], sharedOriginId: c.shared_origin_id, createdBy: c.created_by, createdAt: c.created_at, updatedAt: c.updated_at };
+      });
+      return { exists: function(){ return true; }, data: function(){ return { cards: JSON.stringify(cards) }; } };
+    }
+    if (col === 'ou_shared' && id === 'agenda') {
+      var res2 = await _sb.from('eventos').select('*').order('data').order('hora_inicio');
+      if (res2.error) return { exists: function(){ return false; }, data: function(){ return {}; } };
+      var events = (res2.data || []).map(function(e) {
+        return { id: e.id, title: e.titulo, type: e.tipo, date: e.data, startTime: e.hora_inicio, endTime: e.hora_fim, description: e.descricao, location: e.local, color: e.cor, createdBy: e.created_by, assignedTo: e.assigned_to||[], recurring: e.recorrente };
+      });
+      return { exists: function(){ return true; }, data: function(){ return { data: JSON.stringify(events) }; } };
+    }
+    if (col === 'ou_shared' && id === 'delegations') {
+      // Delegações: cards com sharedOriginId preenchido
+      var res3 = await _sb.from('cards').select('*').not('shared_origin_id', 'is', null);
+      if (res3.error) return { exists: function(){ return false; }, data: function(){ return {}; } };
+      var dels = (res3.data||[]).map(function(c){
+        return { id: c.id, originCardId: c.shared_origin_id, assignedTo: c.owner_id, createdBy: c.created_by, title: c.titulo, dueDate: c.due_date };
+      });
+      return { exists: function(){ return dels.length > 0; }, data: function(){ return { data: JSON.stringify(dels) }; } };
+    }
+    if (col === 'ou_notifications') {
+      var res4 = await _sb.from('notificacoes').select('*').eq('usuario_id', id).order('created_at', { ascending: false });
+      if (res4.error) return { exists: function(){ return false; }, data: function(){ return {}; } };
+      var notifs = (res4.data||[]).map(function(n){ return { id: n.id, title: n.titulo, body: n.corpo, type: n.tipo, read: n.lida, createdAt: n.created_at }; });
+      return { exists: function(){ return true; }, data: function(){ return { data: JSON.stringify(notifs) }; } };
+    }
+    if (col === 'ou_photos') {
+      var res5 = await _sb.from('usuarios').select('foto_url').eq('id', id).single();
+      if (res5.error || !res5.data || !res5.data.foto_url) return { exists: function(){ return false; }, data: function(){ return {}; } };
+      return { exists: function(){ return true; }, data: function(){ return { photo: res5.data.foto_url }; } };
+    }
+    return { exists: function(){ return false; }, data: function(){ return {}; } };
+  };
 
-  // Expõe globalmente para o resto do app
-  window.__db = db;
+  // ── setDoc ──
+  window.__setDoc = async function(ref, data) {
+    var col = ref._col, id = ref._id;
+    if (col === 'ou_cards') {
+      id = _ownerIdCache[id] || id;
+      var cards = [];
+      try { cards = JSON.parse(data.cards || '[]'); } catch {}
+      // Proteção: nunca salva array vazio se já existem cards no banco
+      if (cards.length === 0) {
+        var check = await _sb.from('cards').select('id').eq('owner_id', id).limit(1);
+        if (check.data && check.data.length > 0) return; // ignora gravação vazia
+      }
+      if (cards.length > 0) {
+        var incomingIds = cards.map(function(c){ return c.id; }).filter(Boolean);
+        // Remove só os cards que não estão mais na lista (exclusão explícita)
+        if (incomingIds.length > 0) {
+          await _sb.from('cards').delete().eq('owner_id', id).not('id', 'in', '(' + incomingIds.map(function(x){ return '"'+x+'"'; }).join(',') + ')');
+        }
+        var rows = cards.map(function(c) {
+          return {
+            id: c.id || undefined,
+            owner_id: id,
+            titulo: c.title || '(sem título)',
+            descricao: c.description || null,
+            coluna: c.column || 'todo',
+            prioridade: c.priority || 'normal',
+            due_date: c.dueDate || null,
+            due_time: c.dueTime || null,
+            tags: c.tags || [],
+            assigned_to: c.assignedTo || [],
+            shared_origin_id: c.sharedOriginId || null,
+            created_by: c.createdBy || id,
+            delegated_from: c.delegatedFrom || null,
+            delegated_from_name: c.delegatedFromName || null,
+            is_delegation: c.isDelegation || false,
+            delegation_status: c.delegationStatus || null,
+            delegation_id: c.delegationId || null
+          };
+        });
+        var upsertRes = await _sb.from('cards').upsert(rows, { onConflict: 'id' });
+        if (upsertRes.error && upsertRes.error.message && upsertRes.error.message.includes('column')) {
+          // Colunas de delegação ainda não existem — salva sem elas
+          var rowsBase = rows.map(function(r) {
+            var b = Object.assign({}, r);
+            delete b.delegated_from; delete b.delegated_from_name;
+            delete b.is_delegation; delete b.delegation_status; delete b.delegation_id;
+            return b;
+          });
+          await _sb.from('cards').upsert(rowsBase, { onConflict: 'id' });
+        }
+        var _dummy_skip = true; // continua sem o await duplicado abaixo
+      }
+      return;
+    }
+    if (col === 'ou_shared' && id === 'agenda') {
+      var events = [];
+      try { events = JSON.parse(data.data || '[]'); } catch {}
+      // Proteção: nunca apaga agenda se recebeu lista vazia
+      if (events.length === 0) {
+        var checkEv = await _sb.from('eventos').select('id').limit(1);
+        if (checkEv.data && checkEv.data.length > 0) return;
+      }
+      var incomingEvIds = events.map(function(e){ return e.id; }).filter(Boolean);
+      if (incomingEvIds.length > 0) {
+        await _sb.from('eventos').delete().not('id', 'in', '(' + incomingEvIds.map(function(x){ return '"'+x+'"'; }).join(',') + ')');
+      }
+      if (events.length > 0) {
+        var evRows = events.map(function(e) {
+          return {
+            id: e.id || undefined,
+            titulo: e.title,
+            tipo: e.type || 'event',
+            data: e.date,
+            hora_inicio: e.startTime || null,
+            hora_fim: e.endTime || null,
+            descricao: e.description || null,
+            local: e.location || null,
+            cor: e.color || null,
+            created_by: e.createdBy || null,
+            assigned_to: e.assignedTo || [],
+            recorrente: !!e.recurring
+          };
+        });
+        await _sb.from('eventos').upsert(evRows);
+      }
+      return;
+    }
+    if (col === 'ou_shared' && id === 'delegations') {
+      return; // delegações já persistidas como cards com shared_origin_id
+    }
+    if (col === 'ou_notifications') {
+      var notifs = [];
+      try { notifs = JSON.parse(data.data || '[]'); } catch {}
+      await _sb.from('notificacoes').delete().eq('usuario_id', id);
+      if (notifs.length > 0) {
+        var nRows = notifs.map(function(n) {
+          return { usuario_id: id, titulo: n.title, corpo: n.body || '', tipo: n.type || 'info', lida: !!n.read };
+        });
+        await _sb.from('notificacoes').insert(nRows);
+      }
+      return;
+    }
+    if (col === 'ou_photos') {
+      await _sb.from('usuarios').update({ foto_url: data.photo }).eq('id', id);
+      return;
+    }
+    // ou_chat_unread etc — ignora (chat migrado)
+  };
+
+  // ── deleteDoc ──
+  window.__deleteDoc = async function(ref) {
+    var col = ref._col, id = ref._id;
+    if (col === 'ou_cards') { var _di = _ownerIdCache[id] || id.replace(/_/g,'-'); await _sb.from('cards').delete().eq('owner_id', _di); return; }
+    if (col === 'ou_notifications') { await _sb.from('notificacoes').delete().eq('usuario_id', id); return; }
+  };
+
+  // ── onSnapshot — polling leve via Supabase Realtime ──
+  window.__onSnapshot = function(ref, callback) {
+    var col = ref._col, id = ref._id;
+
+    async function fetchAndCall() {
+      var snap = await window.__getDoc(ref);
+      callback(snap);
+    }
+    fetchAndCall();
+
+    // Realtime subscription
+    var channelName = 'snap-' + col + '-' + (id||'all') + '-' + Math.random().toString(36).slice(2);
+    var tableMap = {
+      'ou_cards': 'cards',
+      'ou_shared': 'eventos',
+      'ou_notifications': 'notificacoes',
+      'ou_photos': 'usuarios',
+    };
+    var table = tableMap[col];
+    if (!table) return function(){};
+
+    var filterStr = undefined;
+    if (col === 'ou_cards' && id) filterStr = 'owner_id=eq.' + (_ownerIdCache[id] || id.replace(/_/g,'-'));
+    if (col === 'ou_notifications' && id) filterStr = 'usuario_id=eq.' + id;
+    if (col === 'ou_photos' && id) filterStr = 'id=eq.' + id;
+
+    var chanOpts = { event: '*', schema: 'public', table: table };
+    if (filterStr) chanOpts.filter = filterStr;
+
+    var ch = _sb.channel(channelName).on('postgres_changes', chanOpts, function() { fetchAndCall(); }).subscribe();
+    return function() { _sb.removeChannel(ch); };
+  };
+
+  // ── query / where — não usados em Supabase, mas evita erros ──
+  window.__query = function(ref) { return ref; };
+  window.__where = function() { return {}; };
+
   window.__fbReady = true;
-  window.__col = (name) => collection(db, name);
-  window.__doc = (col, id) => doc(db, col, id);
-  window.__getDocs = getDocs;
-  window.__setDoc = setDoc;
-  window.__deleteDoc = deleteDoc;
-  window.__getDoc = getDoc;
-  window.__onSnapshot = onSnapshot;
-  window.__query = query;
-  window.__where = where;
-
-  // Avisa o app que o Firebase está pronto
   document.dispatchEvent(new Event('firebase-ready'));
+})();
 </script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -380,11 +659,11 @@
   .logout-btn:hover { background: rgba(255,255,255,0.1); color: white; }
 
   /* Tab content */
-  .tab-content { display: none; flex: 1; }
-  .tab-content.active { display: flex; flex-direction: column; flex: 1; }
+  .tab-content { display: none; flex: 1; min-height: 0; }
+  .tab-content.active { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 
   /* ===== KANBAN ===== */
-  #vello-tab { padding: 20px; overflow: auto; }
+  #vello-tab { padding: 20px; overflow: auto; min-height: 0; }
 
   /* Inbox */
   .inbox-section {
@@ -832,10 +1111,10 @@
   .empty-col svg { opacity: 0.4; }
 
   /* ===== AGENDA ===== */
-  #agenda-tab { padding: 20px; }
-  #gestao-tab { display: none; flex-direction: column; flex: 1; overflow: hidden; }
+  #agenda-tab { padding: 20px; min-height: 0; overflow: auto; }
+  #gestao-tab { display: none; flex-direction: column; flex: 1; overflow: hidden; min-height: 0; }
   #gestao-tab.active { display: flex; }
-  #avaliacao-tab { display: none; flex-direction: column; flex: 1; overflow: hidden; }
+  #avaliacao-tab { display: none; flex-direction: column; flex: 1; overflow: hidden; min-height: 0; }
   #avaliacao-tab.active { display: flex; }
   /* ===== ABA PENDENTES ===== */
   #pendentes-tab { display: none; flex-direction: column; flex: 1; overflow: auto; padding: 20px; }
@@ -1210,6 +1489,7 @@
 
   @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
   @keyframes slideUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+  @keyframes slideInRight { from { opacity: 0; transform: translateX(60px); } to { opacity: 1; transform: none; } }
 
   .modal {
     background: white;
@@ -1681,15 +1961,6 @@
       </div>
     </div>
 
-    <!-- Frase do dia -->
-    <div id="frase-do-dia" style="margin:12px 16px 0;padding:14px 20px;background:linear-gradient(135deg,#7c3aed15,#db277715);border-left:4px solid #7c3aed;border-radius:10px;display:flex;align-items:center;gap:12px;">
-      <span style="font-size:1.4rem;">✨</span>
-      <div>
-        <div style="font-size:0.7rem;font-weight:700;color:#7c3aed;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:3px;">Frase do Dia</div>
-        <div id="frase-texto" style="font-size:0.92rem;font-weight:600;color:#3b1a6e;line-height:1.4;"></div>
-      </div>
-    </div>
-
     <!-- Kanban board -->
     <div class="kanban-board">
       <div class="kanban-col col-todo" id="col-todo" ondragover="onDragOver(event,'todo')" ondrop="onDrop(event,'todo')" ondragleave="onDragLeave(event)">
@@ -1774,13 +2045,17 @@
         <button class="add-event-btn" id="add-event-btn" onclick="openAddEvent()">+ Novo Evento</button>
       </div>
     </div>
+    <!-- Google Calendar embed — visível para usuários com agenda vinculada -->
+    <div id="gcal-embed-panel" style="display:none;width:100%;height:calc(100vh - 120px);min-height:500px;">
+      <iframe id="gcal-embed-iframe" src="" style="width:100%;height:100%;border:none;border-radius:12px;" frameborder="0" scrolling="no" allowfullscreen></iframe>
+    </div>
+
     <div id="month-view-wrapper" class="calendar-grid-wrapper">
       <div class="calendar-weekdays">
         <div class="calendar-weekday">Dom</div>
         <div class="calendar-weekday">Seg</div>
         <div class="calendar-weekday">Ter</div>
         <div class="calendar-weekday">Qua</div>
-        <div class="calendar-weekday">Qui</div>
         <div class="calendar-weekday">Sex</div>
         <div class="calendar-weekday">Sáb</div>
       </div>
@@ -1845,7 +2120,7 @@
 const USERS = [
   { id: "jarina",      name: "Jarina",       role: "Gerente",           color: "#8B5CF6" },
   { id: "brendha",     name: "Brendha",      role: "Relacionamento",    color: "#EC4899" },
-  { id: "marieli",     name: "Mariele",      role: "Recepção 2",        color: "#F59E0B" },
+  { id: "mariele",     name: "Mariele",      role: "Recepção 2",        color: "#F59E0B" },
   { id: "bruna",       name: "Bruna",        role: "Recepção 1",        color: "#10B981" },
   { id: "alexandre",   name: "Alexandre",    role: "Financeiro",        color: "#3B82F6" },
   { id: "suelen",      name: "Suelen",       role: "ASB",               color: "#F97316" },
@@ -1863,14 +2138,18 @@ const USERS = [
 const ADM_USERS = ["thais", "dra_mone"];
 // Supervisores: podem acessar perfis dos supervisionados sem senha e recebem alertas de atraso deles
 const SUPERVISORS = {
-  jarina: ["bruna", "marieli"]
+  jarina: ["bruna", "mariele"]
 };
 
 function genId() {
   try { return crypto.randomUUID(); } catch(e) { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
 }
 
-function getUserById(id) { return USERS.find(u => u.id === id); }
+function getUserById(id) {
+  if (!id) return undefined;
+  const norm = id.replace(/-/g, '_');
+  return USERS.find(u => u.id === id || u.id === norm || u.id.replace(/-/g,'_') === norm);
+}
 
 function getInitials(name) {
   if (!name) return '?';
@@ -2214,9 +2493,17 @@ async function saveAgenda(a) {
 
 // ---- Sessão atual (localStorage) ----
 function getCurrentUserId() {
-  return localStorage.getItem('ou_currentUser');
+  const raw = localStorage.getItem('ou_currentUser');
+  if (!raw) return null;
+  // Athena salva como JSON {id, name, role, color} — extrai só o id
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed && parsed.id) return parsed.id.replace(/-/g, '_');
+  } catch(e) {}
+  return raw; // formato antigo: string simples
 }
 function setCurrentUserId(id) {
+  // Salva só o id (string simples) para manter compatibilidade
   localStorage.setItem('ou_currentUser', id);
 }
 
@@ -2303,11 +2590,13 @@ function startRealtimeListeners() {
       // doc não existe → não toca no cache
       if (currentUser && currentUser.id === userId) renderKanban();
       if (currentUser && ADM_USERS.includes(currentUser.id)) renderOverdueTeamPanel();
-      if (currentUser && ['thais','dra_mone'].includes(currentUser.id)) {
+      if (currentUser && ['thais','dra_mone','jarina'].includes(currentUser.id)) {
         if (document.getElementById('pendentes-tab')?.classList.contains('active')) renderPendentes();
         else { // atualiza badge mesmo sem estar na aba
           const _allC = window._cache.cards || {};
-          const _cnt = Object.entries(_allC).filter(([id]) => id !== 'dra_mone').reduce((acc,[,arr]) => acc + (Array.isArray(arr) ? arr.filter(c => c.column !== 'done' && !c.sharedOriginId && c.dueDate && (() => { const d = new Date(c.dueDate+'T23:59:59'); return d <= new Date(); })()).length : 0), 0);
+          const _myId = currentUser.id;
+          const _allowedOwners = ['thais','dra_mone'].includes(_myId) ? null : (SUPERVISORS[_myId] || []);
+          const _cnt = Object.entries(_allC).filter(([id]) => id !== _myId && (_allowedOwners === null || _allowedOwners.includes(id))).reduce((acc,[,arr]) => acc + (Array.isArray(arr) ? arr.filter(c => c.column !== 'done' && !c.sharedOriginId && c.dueDate && (() => { const d = new Date(c.dueDate+'T23:59:59'); return d <= new Date(); })()).length : 0), 0);
           const _b = document.getElementById('pendentes-badge');
           if (_b) { if (_cnt > 0) { _b.textContent = _cnt; _b.classList.remove('hidden'); } else _b.classList.add('hidden'); }
         }
@@ -2414,6 +2703,11 @@ async function loadInitialData(userId) {
       if (u.id !== userId) window._listenUserCards(u.id);
     });
   }
+  // Supervisores escutam cards dos seus subordinados em tempo real
+  const subordinates = SUPERVISORS[userId];
+  if (subordinates && window._listenUserCards) {
+    subordinates.forEach(subId => window._listenUserCards(subId));
+  }
 }
 
 // ============================================================
@@ -2497,19 +2791,44 @@ async function login(userId) {
   updateHeaderAvatar();
   document.getElementById('header-name').textContent = currentUser.name;
 
-  // Mostra loading enquanto carrega dados do Firebase
+  // Mostra loading enquanto carrega dados do Firebase (timeout de 5s para não travar)
   showToast('Carregando dados...', 'info');
-  await loadInitialData(userId);
+  await Promise.race([loadInitialData(userId), new Promise(r => setTimeout(r, 10000))]);
 
-  switchTab('vello');
-  renderVello();
+  const _initTab = new URLSearchParams(window.location.search).get('tab') || 'vello';
+  switchTab(_initTab);
+  if (_initTab === 'pendentes') renderPendentes();
+  else renderVello();
   // Mostra botão de trocar perfil para ADMs e supervisores
   const canSwitch = ADM_USERS.includes(userId) || !!SUPERVISORS[userId];
   document.getElementById('adm-switch-wrap').style.display = canSwitch ? 'flex' : 'none';
   // Botão de recarregar dados visível só para ADMs
   const diagBtn = document.getElementById('diag-btn');
   if (diagBtn) diagBtn.style.display = ADM_USERS.includes(userId) ? 'inline-flex' : 'none';
-  // Apenas Vello e Agenda visíveis — demais abas removidas
+  // Adiciona abas extras conforme perfil do usuário
+  const nav = document.querySelector('.header-tabs');
+  // Remove abas extras existentes antes de recriar (evita duplicatas ao trocar usuário)
+  ['tab-gestao-btn','tab-avaliacao-btn','tab-pendentes-btn'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.remove();
+  });
+  if (ADM_USERS.includes(userId)) {
+    const btnG = document.createElement('button');
+    btnG.className = 'tab-btn'; btnG.id = 'tab-gestao-btn';
+    btnG.onclick = () => switchTab('gestao'); btnG.textContent = 'Gestão';
+    nav.appendChild(btnG);
+    const btnA = document.createElement('button');
+    btnA.className = 'tab-btn'; btnA.id = 'tab-avaliacao-btn';
+    btnA.onclick = () => switchTab('avaliacao'); btnA.textContent = 'Avaliação';
+    nav.appendChild(btnA);
+  }
+  if (['thais','dra_mone','jarina'].includes(userId)) {
+    const btnP = document.createElement('button');
+    btnP.className = 'tab-btn'; btnP.id = 'tab-pendentes-btn';
+    btnP.onclick = () => switchTab('pendentes');
+    btnP.innerHTML = 'Pendentes <span class="tab-badge hidden" id="pendentes-badge"></span>';
+    nav.appendChild(btnP);
+  }
   // Verifica cards fora do prazo e notifica ADMs (após carregar alertas dispensados)
   setTimeout(async () => {
     await loadDismissedAlerts(userId);
@@ -2528,10 +2847,10 @@ function logout() {
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('app').style.display = 'none';
   document.getElementById('adm-switch-wrap').style.display = 'none';
-  document.getElementById('tab-gestao-btn').style.display = 'none';
-  document.getElementById('tab-avaliacao-btn').style.display = 'none';
-  const _pb = document.getElementById('tab-pendentes-btn');
-  if (_pb) _pb.style.display = 'none';
+  ['tab-gestao-btn','tab-avaliacao-btn','tab-pendentes-btn'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.remove();
+  });
   selectedDay = null;
 }
 
@@ -2539,17 +2858,10 @@ function logout() {
 // TABS
 // ============================================================
 function switchTab(tab) {
-  document.getElementById('vello-tab').classList.remove('active');
-  document.getElementById('agenda-tab').classList.remove('active');
-  document.getElementById('gestao-tab').classList.remove('active');
-  document.getElementById('avaliacao-tab').classList.remove('active');
-  document.getElementById('pendentes-tab').classList.remove('active');
+  ['vello-tab','agenda-tab','gestao-tab','avaliacao-tab','pendentes-tab'].forEach(id => document.getElementById(id)?.classList.remove('active'));
   const protTab = document.getElementById('protocolo-tab');
   if (protTab) { protTab.style.display = 'none'; }
-  document.getElementById('tab-vello-btn').classList.remove('active');
-  document.getElementById('tab-agenda-btn').classList.remove('active');
-  document.getElementById('tab-gestao-btn').classList.remove('active');
-  document.getElementById('tab-avaliacao-btn').classList.remove('active');
+  ['tab-vello-btn','tab-agenda-btn','tab-gestao-btn','tab-avaliacao-btn'].forEach(id => document.getElementById(id)?.classList.remove('active'));
   const pendBtn = document.getElementById('tab-pendentes-btn');
   if (pendBtn) pendBtn.classList.remove('active');
   const protBtn = document.getElementById('tab-protocolo-btn');
@@ -2585,6 +2897,7 @@ function switchTab(tab) {
   } else {
     document.getElementById('agenda-tab').classList.add('active');
     document.getElementById('tab-agenda-btn').classList.add('active');
+    _atualizarGcalEmbed();
     renderCalendar();
     // Show/hide add event button
     const btn = document.getElementById('add-event-btn');
@@ -2911,19 +3224,18 @@ function renderCard(card) {
     delegHtml = `<span class="delegation-badge from">👤 De: ${card.delegatedFromName}</span>`;
   }
 
-  // Mostra para quem foi delegado (no card do dono)
+  // Mostra para quem foi delegado (no card do dono) e por quem (no card do destinatário)
   let delegatedToHtml = '';
   if (card.delegatedTo?.length) {
-    const mainId = card.delegatedMainId;
-    const mainUser = mainId ? getUserById(mainId) : null;
-    const mainName = mainUser ? mainUser.name : (mainId || null);
-    const copias = (card.delegatedTo || []).filter(uid => uid !== mainId).map(uid => { const u = getUserById(uid); return u ? u.name : uid; });
-    if (mainName) {
-      delegatedToHtml = `<div style="font-size:0.72rem;color:var(--gray-500);margin-top:4px;">👤 <strong>Responsável: ${escHtml(mainName)}</strong>${copias.length ? ` · Cópia: ${escHtml(copias.join(', '))}` : ''}</div>`;
-    } else {
-      const names = card.delegatedTo.map(uid => { const u = getUserById(uid); return u ? u.name : uid; }).join(', ');
-      delegatedToHtml = `<div style="font-size:0.72rem;color:var(--gray-500);margin-top:4px;">📤 Delegado para: <strong>${escHtml(names)}</strong></div>`;
-    }
+    const mainId = card.delegatedMainId || card.delegatedTo[0];
+    const mainUser = getUserById(mainId);
+    const mainName = mainUser ? mainUser.name : mainId;
+    const copias = card.delegatedTo.filter(uid => uid !== mainId).map(uid => { const u = getUserById(uid); return u ? u.name : uid; });
+    delegatedToHtml = `<div style="font-size:0.72rem;background:#eff6ff;border:1px solid #bfdbfe;border-radius:5px;padding:3px 8px;margin-top:5px;color:#1e40af;">👤 <strong>Responsável: ${escHtml(mainName)}</strong>${copias.length ? ` · Cópia: ${escHtml(copias.join(', '))}` : ''}</div>`;
+  }
+  let delegatedByHtml = '';
+  if (card.isDelegation && card.delegatedFromName) {
+    delegatedByHtml = `<div style="font-size:0.72rem;background:#f5f3ff;border:1px solid #ddd6fe;border-radius:5px;padding:3px 8px;margin-top:5px;color:#5b21b6;">↩️ <strong>Delegado por: ${escHtml(card.delegatedFromName)}</strong></div>`;
   }
 
   // Label de status do card
@@ -2954,6 +3266,7 @@ function renderCard(card) {
         return `<div style="margin-bottom:4px;"><button onclick="openSharedChat('${card.id}')" class="${unreadCount ? 'chat-btn-unread' : ''}" style="font-size:0.7rem;background:${unreadCount ? '#ef4444' : '#0ea5e9'};color:#fff;border:none;border-radius:4px;padding:2px 7px;cursor:pointer;">💬 Chat${unreadCount ? ' (' + unreadCount + ')' : ''}</button></div>`;
       })()}
       ${delegatedToHtml}
+      ${delegatedByHtml}
       ${(() => {
         // Verifica se existe chat de cobrança para este card
         const chats = window._cache.chats || {};
@@ -2977,7 +3290,6 @@ function renderCard(card) {
       <div class="card-footer">
         <div class="card-meta">
           ${dateHtml}
-          ${!isPending ? delegHtml : ''}
         </div>
         <div class="card-actions">
           <button class="card-action-btn btn-edit-card" onclick="openEditCard('${card.id}')" title="Editar">✏️</button>
@@ -4444,6 +4756,8 @@ function getVisibleEvents() {
 function renderOverdueTeamPanel() {
   const panel = document.getElementById('overdue-team-panel');
   if (!panel) return;
+  // Dentro do athena-unified (iframe) não mostra — o painel Pendências do athena já cobre isso
+  if (window !== window.top) { panel.style.display = 'none'; return; }
   if (!ADM_USERS.includes(currentUser?.id)) { panel.style.display = 'none'; return; }
 
   const today = new Date(); today.setHours(0,0,0,0);
@@ -4592,10 +4906,20 @@ function renderPendentes() {
   // Deduplicação final por (ownerId, cardId) para evitar entradas repetidas
   const pendListKeys = new Set();
 
+  // Normaliza allCards para evitar duplicação por hífen vs underscore
+  const seenOwners = new Set();
+  const normalizedCards = {};
   Object.entries(allCards).forEach(([ownerId, cardArray]) => {
+    const normId = ownerId.replace(/-/g, '_');
+    if (!normalizedCards[normId]) normalizedCards[normId] = [];
+    (cardArray || []).forEach(c => { if (!normalizedCards[normId].find(x => x.id === c.id)) normalizedCards[normId].push(c); });
+  });
+
+  Object.entries(normalizedCards).forEach(([ownerId, cardArray]) => {
     if (!Array.isArray(cardArray)) return;
-    if (ownerId === currentUser.id) return;
-    if (!isAdm && allowedOwners && !allowedOwners.includes(ownerId)) return;
+    const myNorm = (currentUser.id || '').replace(/-/g,'_');
+    if (ownerId === myNorm) return;
+    if (!isAdm && allowedOwners && !allowedOwners.includes(ownerId) && !allowedOwners.includes(ownerId.replace(/_/g,'-'))) return;
     const owner = getUserById(ownerId);
     cardArray.forEach(card => {
       if (card.column === 'done') return;
@@ -4769,6 +5093,28 @@ async function _confirmEditPrazo(ownerId, cardId) {
   showToast('Prazo atualizado.', 'success');
 }
 
+function _chatMsgHtml(m, isMine) {
+  const t = new Date(m.createdAt);
+  const hora = t.toLocaleDateString('pt-BR') === new Date().toLocaleDateString('pt-BR')
+    ? 'Hoje ' + t.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})
+    : t.toLocaleDateString('pt-BR') + ' ' + t.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  const photo = getPhoto(m.userId);
+  const u = getUserById(m.userId);
+  const color = u ? u.color : '#6A1F30';
+  const initials = (m.userName||'?').replace(/^(Dr\.|Dra\.)\s*/i,'').split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();
+  const avatarHtml = isMine ? '' : photo
+    ? `<img src="${photo}" alt="" style="width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0;align-self:flex-end;">`
+    : `<div style="width:32px;height:32px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;flex-shrink:0;align-self:flex-end;">${initials}</div>`;
+  return `<div style="display:flex;align-items:flex-end;gap:6px;margin-bottom:10px;${isMine?'flex-direction:row-reverse;':''}">
+    ${avatarHtml}
+    <div style="max-width:72%;display:flex;flex-direction:column;${isMine?'align-items:flex-end;':''}">
+      ${isMine?'':'<div style="font-size:10px;font-weight:700;color:#6A1F30;margin-bottom:2px;">'+escHtml(m.userName)+'</div>'}
+      <div style="background:${isMine?'#6A1F30':'#fff'};color:${isMine?'#fff':'#1e293b'};border-radius:${isMine?'16px 4px 16px 16px':'4px 16px 16px 16px'};padding:8px 12px;font-size:13px;line-height:1.4;box-shadow:0 1px 3px rgba(0,0,0,.1);">${escHtml(m.text)}</div>
+      <div style="font-size:10px;color:#94a3b8;margin-top:3px;">${hora}</div>
+    </div>
+  </div>`;
+}
+
 async function openCobrarChat(chatId, cardTitle, ownerId, cardId) {
   const chats = window._cache.chats || {};
   const messages = chats[chatId] || [];
@@ -4780,34 +5126,42 @@ async function openCobrarChat(chatId, cardTitle, ownerId, cardId) {
     delete unread[currentUser.id];
     window._cache.chatUnread[chatId] = unread;
     if (window.__setDoc) window.__setDoc(window.__doc('ou_chats', chatId), { messages: JSON.stringify(messages), unread: JSON.stringify(unread) }).catch(() => null);
-    renderKanban(); // atualiza botão no card (remove badge não lido)
+    renderKanban();
   }
 
   const ownerUser = getUserById(ownerId);
   const ownerName = ownerUser ? ownerUser.name : ownerId;
+  const ownerPhoto = getPhoto(ownerId);
+  const ownerColor = ownerUser ? ownerUser.color : '#6A1F30';
+  const ownerInitials = (ownerName).replace(/^(Dr\.|Dra\.)\s*/i,'').split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();
+  const avatarHeader = ownerPhoto
+    ? `<img src="${ownerPhoto}" style="width:38px;height:38px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,.4);">`
+    : `<div style="width:38px;height:38px;border-radius:50%;background:${ownerColor};display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;border:2px solid rgba(255,255,255,.4);">${ownerInitials}</div>`;
 
   const html = `
     <div class="modal-overlay" id="cobrar-chat-modal" onclick="closeOnOverlay(event,'cobrar-chat-modal')">
-      <div class="modal" role="dialog" style="max-width:480px;">
-        <div class="modal-header">
-          <span class="modal-title">💬 Cobrar: ${escHtml(cardTitle)}</span>
-          <button class="modal-close" onclick="closeModal('cobrar-chat-modal')">✕</button>
+      <div class="modal" role="dialog" style="max-width:440px;padding:0;overflow:hidden;border-radius:14px;">
+        <!-- Header WhatsApp -->
+        <div style="background:#6A1F30;padding:12px 16px;display:flex;align-items:center;gap:10px;">
+          ${avatarHeader}
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:14px;font-weight:700;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escHtml(ownerName)}</div>
+            <div style="font-size:11px;color:rgba(255,255,255,.7);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">📌 ${escHtml(cardTitle)}</div>
+          </div>
+          <button onclick="closeModal('cobrar-chat-modal')" style="background:none;border:none;color:rgba(255,255,255,.8);font-size:18px;cursor:pointer;line-height:1;padding:4px;">✕</button>
         </div>
-        <div style="padding:8px 18px 0;font-size:0.78rem;color:#6b7280;">Conversa com <strong>${escHtml(ownerName)}</strong> sobre esta tarefa</div>
-        <div class="modal-body">
-          <div id="cobrar-chat-messages" style="max-height:320px;overflow-y:auto;margin-bottom:4px;">
-            ${messages.length === 0
-              ? `<div style="text-align:center;color:var(--gray-400);padding:24px;font-size:0.85rem;">Nenhuma mensagem ainda.</div>`
-              : messages.map(m => `
-                <div class="chat-bubble${m.userId === currentUser.id ? ' mine' : ''}">
-                  <div class="chat-author">${escHtml(m.userName)} · ${timeAgo(m.createdAt)}</div>
-                  <div>${escHtml(m.text)}</div>
-                </div>`).join('')}
-          </div>
-          <div class="chat-input-row">
-            <input type="text" id="cobrar-msg-input" placeholder="Digite sua cobrança..." onkeydown="if(event.key==='Enter')sendCobrarMsg('${chatId}','${ownerId}','${cardId}')"/>
-            <button class="chat-send-btn" onclick="sendCobrarMsg('${chatId}','${ownerId}','${cardId}')">Enviar</button>
-          </div>
+        <!-- Mensagens -->
+        <div id="cobrar-chat-messages" style="background:#f0ebe4;min-height:280px;max-height:360px;overflow-y:auto;padding:14px 12px;">
+          ${messages.length === 0
+            ? `<div style="text-align:center;color:#94a3b8;padding:40px 20px;font-size:13px;">Nenhuma mensagem ainda.<br><span style="font-size:22px;">💬</span></div>`
+            : messages.map(m => _chatMsgHtml(m, m.userId === currentUser.id)).join('')}
+        </div>
+        <!-- Input -->
+        <div style="background:#fff;padding:10px 12px;display:flex;align-items:center;gap:8px;border-top:1px solid #e5e7eb;">
+          <input type="text" id="cobrar-msg-input" placeholder="Digite uma mensagem..." onkeydown="if(event.key==='Enter')sendCobrarMsg('${chatId}','${ownerId}','${cardId}')"
+            style="flex:1;padding:9px 14px;border:1.5px solid #e5e7eb;border-radius:22px;font-size:13px;outline:none;font-family:inherit;background:#f8fafc;"/>
+          <button onclick="sendCobrarMsg('${chatId}','${ownerId}','${cardId}')"
+            style="width:38px;height:38px;border-radius:50%;border:none;background:#6A1F30;color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">➤</button>
         </div>
       </div>
     </div>`;
@@ -4885,15 +5239,26 @@ async function sendCobrarMsg(chatId, ownerId, cardId) {
     saveNotifications(recipientId, filteredNotifs);
   }
 
-  // Re-renderiza o chat aberto
+  // Re-renderiza o chat aberto com layout WhatsApp
   const el = document.getElementById('cobrar-chat-messages');
   if (el) {
-    el.innerHTML = window._cache.chats[chatId].map(m => `
-      <div class="chat-bubble${m.userId === currentUser.id ? ' mine' : ''}">
-        <div class="chat-author">${escHtml(m.userName)} · ${timeAgo(m.createdAt)}</div>
-        <div>${escHtml(m.text)}</div>
-      </div>`).join('');
+    el.innerHTML = window._cache.chats[chatId].map(m => _chatMsgHtml(m, m.userId === currentUser.id)).join('');
     el.scrollTop = el.scrollHeight;
+  }
+  // Toast no canto da tela
+  const recipUser = recipientId ? getUserById(recipientId) : null;
+  if (recipUser) {
+    const rPhoto = getPhoto(recipientId);
+    const rColor = recipUser.color || '#6A1F30';
+    const rInitials = recipUser.name.replace(/^(Dr\.|Dra\.)\s*/i,'').split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();
+    const avatarImg = rPhoto
+      ? `<img src="${rPhoto}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;">`
+      : `<div style="width:36px;height:36px;border-radius:50%;background:${rColor};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;flex-shrink:0;">${rInitials}</div>`;
+    const t = document.createElement('div');
+    t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#1e293b;color:#fff;border-radius:12px;padding:10px 14px;display:flex;align-items:center;gap:10px;z-index:99999;box-shadow:0 8px 24px rgba(0,0,0,.25);max-width:280px;animation:slideInRight .3s ease;';
+    t.innerHTML = avatarImg + `<div><div style="font-size:12px;font-weight:700;">Mensagem enviada para ${escHtml(recipUser.name)}</div><div style="font-size:11px;color:#94a3b8;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escHtml(text)}</div></div>`;
+    document.body.appendChild(t);
+    setTimeout(() => { t.style.opacity='0'; t.style.transition='opacity .4s'; setTimeout(()=>t.remove(),400); }, 2800);
   }
   input?.focus();
 }
@@ -5357,18 +5722,17 @@ function timeAgo(iso) {
 // DIAGNÓSTICO / RECUPERAÇÃO
 // ============================================================
 async function diagCards() {
-  if (!window.__db) { alert('Firebase não conectado'); return; }
+  if (!window.__db) { alert('Banco não conectado'); return; }
   const snap = await window.__getDocs(window.__col('ou_cards')).catch(() => null);
-  if (!snap) { alert('Erro ao ler Firestore'); return; }
+  if (!snap) { alert('Erro ao ler banco'); return; }
   let report = '';
   snap.forEach(d => {
     let cards = [];
     try { cards = JSON.parse(d.data().cards || '[]'); } catch {}
     report += `${d.id}: ${cards.length} cards\n`;
-    // Restaura no cache imediatamente
     window._cache.cards[d.id] = cards;
   });
-  alert('Dados no Firestore:\n' + report);
+  alert('Dados no banco:\n' + report);
   renderKanban();
   renderOverdueTeamPanel();
 }
@@ -5376,7 +5740,57 @@ async function diagCards() {
 // ============================================================
 // INIT
 // ============================================================
+let _initDone = false;
+
 function init() {
+  if (_initDone) {
+    // Firebase chegou tarde (após o fallback de 3s já ter rodado init()).
+    // Só carrega os dados sem reiniciar o app — evita o "aparece e some".
+    if (window.__db) {
+      startRealtimeListeners();
+      migrateLocalPhotosToFirestore();
+      if (currentUser) {
+        loadInitialData(currentUser.id).then(() => {
+          renderVello();
+          if (document.getElementById('agenda-tab')?.classList.contains('active')) renderCalendar();
+          if (document.getElementById('pendentes-tab')?.classList.contains('active')) renderPendentes();
+        }).catch(() => {});
+      }
+    }
+    return;
+  }
+  _initDone = true;
+
+  // Dentro do athena-unified (iframe): esconde o header próprio e a tela de login — o athena já tem o seu
+  if (window !== window.top) {
+    const hdr = document.querySelector('.app-header');
+    if (hdr) hdr.style.display = 'none';
+    // Em modo iframe: ajusta o #app para scroll correto
+    const appEl = document.getElementById('app');
+    if (appEl) {
+      appEl.style.overflowY = 'auto';
+      appEl.style.height = '100%';
+      appEl.style.background = '#fdf9f4';
+    }
+    // Se há uid na URL, esconde a tela de login imediatamente (sem esperar Firebase)
+    const _iframeUid = new URLSearchParams(window.location.search).get('uid');
+    if (_iframeUid && getUserById(_iframeUid)) {
+      const ls = document.getElementById('login-screen');
+      if (ls) ls.style.display = 'none';
+      if (appEl) appEl.style.display = 'flex';
+    }
+  } else {
+    // Standalone: esconde o botão da aba que não é a inicial
+    const _initTabStandalone = new URLSearchParams(window.location.search).get('tab');
+    if (_initTabStandalone === 'agenda') {
+      const vBtn = document.getElementById('tab-vello-btn');
+      if (vBtn) vBtn.style.display = 'none';
+    } else if (_initTabStandalone === 'vello') {
+      const aBtn = document.getElementById('tab-agenda-btn');
+      if (aBtn) aBtn.style.display = 'none';
+    }
+  }
+
   renderLogin();
   // Inicia listeners globais (agenda, delegações) assim que Firebase estiver pronto
   startRealtimeListeners();
@@ -5457,6 +5871,37 @@ function disconnectGoogleCalendar() {
   renderCalendar();
 }
 
+// Mapa usuário → URL embed Google Calendar
+const GCAL_EMBEDS = {
+  // Embeds desativados — usando OAuth nativo
+  // 'thais':    'https://...',
+  // 'dra-mone': 'https://...',
+};
+
+function _atualizarGcalEmbed() {
+  const embed = document.getElementById('gcal-embed-panel');
+  const iframe = document.getElementById('gcal-embed-iframe');
+  const monthWrap = document.getElementById('month-view-wrapper');
+  const weekWrap = document.getElementById('week-view-wrapper');
+  const gcalBtn = document.getElementById('gcal-connect-btn');
+  const addBtn = document.getElementById('add-event-btn');
+  if (!embed || !iframe) return;
+  const userId = currentUser?.id;
+  const url = GCAL_EMBEDS[userId];
+  if (url) {
+    if (iframe.src !== url) iframe.src = url;
+    embed.style.display = 'block';
+    if (monthWrap) monthWrap.style.display = 'none';
+    if (weekWrap) weekWrap.style.display = 'none';
+    if (gcalBtn) gcalBtn.style.display = 'none';
+    if (addBtn) addBtn.style.display = 'none';
+  } else {
+    embed.style.display = 'none';
+    if (gcalBtn) gcalBtn.style.display = 'flex';
+    if (addBtn) addBtn.style.display = '';
+  }
+}
+
 function updateGcalBtn() {
   const btn = document.getElementById('gcal-connect-btn');
   if (!btn) return;
@@ -5476,15 +5921,20 @@ function updateGcalBtn() {
   }
 }
 
+let _fetchGcalLock = false;
 async function fetchGoogleCalendarEvents() {
+  if (_fetchGcalLock) return; // evita chamadas paralelas que causam duplicatas
   const token = _gcalAccessToken || localStorage.getItem('ou_gcal_' + currentUser?.id);
   if (!token || !currentUser) return;
+  _fetchGcalLock = true;
 
   try {
-    const now = new Date();
-    const threeMonths = new Date(now);
-    threeMonths.setMonth(threeMonths.getMonth() + 3);
-    const url = `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${now.toISOString()}&timeMax=${threeMonths.toISOString()}&singleEvents=true&orderBy=startTime&maxResults=50`;
+    // Busca 3 meses para trás + 12 meses para frente — garante que eventos passados também são sincronizados
+    const past = new Date();
+    past.setMonth(past.getMonth() - 3);
+    const future = new Date();
+    future.setMonth(future.getMonth() + 12);
+    const url = `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${past.toISOString()}&timeMax=${future.toISOString()}&singleEvents=true&orderBy=startTime&maxResults=500`;
 
     const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
     if (!res.ok) {
@@ -5531,13 +5981,19 @@ async function fetchGoogleCalendarEvents() {
       };
     }).filter(e => e.date);
 
-    // Remove eventos antigos do Google e adiciona os novos
-    const existingAgenda = getAgenda().filter(e => e.source !== 'google' || e.createdBy !== currentUser.id);
-    saveAgenda([...existingAgenda, ...gcalEvents]);
+    // Remove TODOS os eventos do usuário atual e substitui exatamente pelo que veio do Google
+    // Inclui passado (3 meses) + futuro (12 meses) — sem eventos órfãos de sincronizações anteriores
+    const existingAgenda = getAgenda().filter(e => e.createdBy !== currentUser.id);
+    // Deduplica pelo id canônico
+    const seen = new Set();
+    const gcalUnicos = gcalEvents.filter(e => { if (seen.has(e.id)) return false; seen.add(e.id); return true; });
+    await saveAgenda([...existingAgenda, ...gcalUnicos]);
     renderCalendar();
-    showToast(`${gcalEvents.length} eventos importados do Google Agenda`, 'success');
+    showToast(`${gcalUnicos.length} eventos do Google Agenda carregados`, 'success');
   } catch(e) {
     console.warn('Erro ao buscar Google Calendar:', e);
+  } finally {
+    _fetchGcalLock = false;
   }
 }
 
