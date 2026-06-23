@@ -199,6 +199,9 @@
       if (!window.db || document.getElementById('appScreen').style.display === 'none') return;
       window.renderSaidaTab && window.renderSaidaTab();
       window.renderPedidosTab && window.renderPedidosTab();
+      window.renderPedidosMedTab && window.renderPedidosMedTab();
+      window.renderPedidosImpTab && window.renderPedidosImpTab();
+      window.renderPedidosLabTab && window.renderPedidosLabTab();
       window.renderCotacaoTab && window.renderCotacaoTab();
       window.renderCirurgiasTab && window.renderCirurgiasTab();
       window.renderComprasTab && window.renderComprasTab();
@@ -6768,11 +6771,81 @@ const USUARIOS = {
 
 const TODAS_ABAS = ['saida','cirurgias','pedidos','pedidos-med','pedidos-imp','pedidos-lab','cotacao','compras','relatorio','cadastro'];
 
-// Auto-login: abre direto como Adm sem tela de login
-let usuarioAtual = { ...USUARIOS['adm'], id: 'adm' };
+// Lê allowed_tabs da URL (passado pelo Athena) — IDs das abas do nav
+function _getAllowedTabsFromUrl() {
+  try {
+    var p = new URLSearchParams(location.search).get('allowed_tabs');
+    if (!p) return null;
+    var ids = p.split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+    return ids.length > 0 ? ids : null;
+  } catch(e) { return null; }
+}
+
+// Aplica allowed_tabs ao nav do estoque — oculta abas não permitidas
+function _aplicarAllowedTabsNav(allowedTabs) {
+  if (!allowedTabs) return;
+  var navBtns = document.querySelectorAll('#mainNav button');
+  var abaIds = ['saida','busca','pedidos','pedidos-med','pedidos-imp','pedidos-lab','cotacao','compras','relatorio','cadastro'];
+  navBtns.forEach(function(btn, i) {
+    var aba = abaIds[i];
+    if (aba) btn.style.display = allowedTabs.indexOf(aba) !== -1 ? '' : 'none';
+  });
+  // Abre a primeira aba permitida
+  if (allowedTabs.length > 0) goTab(allowedTabs[0]);
+}
+
+// Mapa uid Athena (com _ ou -) → id local USUARIOS
+var _UID_MAP = {
+  'dr_scharles': 'scharles', 'dr-scharles': 'scharles',
+  'dr_aurelio':  'aurelio',  'dr-aurelio':  'aurelio',
+  'dr_bruno':    'bruno',    'dr-bruno':    'bruno',
+  'dra_mone':    'mone',     'dra-mone':    'mone',
+  'dra_stefany': 'stefany',  'dra-stefany': 'stefany',
+  'dra_ana':     'ana',      'dra-ana':     'ana',
+  'dra_fernanda':'fernanda', 'dra-fernanda':'fernanda',
+  'francieli':   'fra',
+  'alexandre':   'adm',
+  'jarina':      'adm',
+  'brendha':     'adm',
+  'mariele':     'adm',
+};
+
+function _getUidFromUrl() {
+  try { return new URLSearchParams(location.search).get('uid') || ''; } catch(e) { return ''; }
+}
+
+// Lê allowed_sectors da URL (passado pelo Athena) — nomes dos setores separados por |
+function _getAllowedSectorsFromUrl() {
+  try {
+    var p = new URLSearchParams(location.search).get('allowed_sectors');
+    if (!p) return null;
+    var ids = p.split('|').map(function(s){ return s.trim(); }).filter(Boolean);
+    return ids.length > 0 ? ids : null;
+  } catch(e) { return null; }
+}
+
+// Auto-login: resolve usuário pelo uid da URL (passado pelo Athena via buildSrc)
+var _allowedTabsUrl    = _getAllowedTabsFromUrl();
+var _allowedSectorsUrl = _getAllowedSectorsFromUrl();
+var _uidUrl = _getUidFromUrl();
+var _localUid = (_uidUrl && _UID_MAP[_uidUrl]) ? _UID_MAP[_uidUrl] : (_uidUrl && USUARIOS[_uidUrl] ? _uidUrl : 'adm');
+var _usuarioBase = USUARIOS[_localUid] || USUARIOS['adm'];
+let usuarioAtual = {
+  ..._usuarioBase,
+  id: _localUid,
+  abas: _allowedTabsUrl || _usuarioBase.abas || undefined,
+  setores: _allowedSectorsUrl !== null ? _allowedSectorsUrl : _usuarioBase.setores,
+};
+
 document.addEventListener('DOMContentLoaded', function() {
   var badge = document.getElementById('userBadge');
-  if (badge) badge.textContent = 'Adm  ⏻';
+  if (badge) badge.textContent = (_usuarioBase.nome || 'Adm') + '  ⏻';
+  // Aplica restrição de abas do nav se veio pela URL
+  if (_allowedTabsUrl) {
+    var mainNav = document.getElementById('mainNav');
+    if (mainNav) mainNav.style.display = '';
+    _aplicarAllowedTabsNav(_allowedTabsUrl);
+  }
 });
 
 function fazerLogin() {
@@ -7864,7 +7937,8 @@ function goSection(section) {
     if (section === 'estoque') {
       if (mainNav) mainNav.style.display = '';
       btns[0].classList.add('active');
-      goTab('saida');
+      aplicarPermissoesUI();
+      goTab(usuarioAtual && usuarioAtual.abas && usuarioAtual.abas.length > 0 ? usuarioAtual.abas[0] : 'saida');
     } else if (section === 'cirurgias') {
       if (mainNav) mainNav.style.display = 'none';
       btns[1].classList.add('active');
