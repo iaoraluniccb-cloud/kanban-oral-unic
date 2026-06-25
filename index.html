@@ -7,7 +7,7 @@
 <title>Oral Unic — Sistema Integrado v2</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📅</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+SC:wght@300;400&family=Cormorant+Italic:wght@300&family=Josefin+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <!-- Supabase SDK -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -374,7 +374,7 @@
   }
 
   body {
-    font-family: 'Josefin Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
     background: var(--bg);
     color: var(--gray-800);
     min-height: 100vh;
@@ -412,7 +412,7 @@
 
   .login-logo h1 {
     color: white;
-    font-family: 'Cormorant SC', serif;
+    font-family: 'Inter', sans-serif;
     font-size: 2.4rem;
     font-weight: 300;
     letter-spacing: 0.2em;
@@ -420,7 +420,7 @@
 
   .login-logo p {
     color: #C4955A;
-    font-family: 'Josefin Sans', sans-serif;
+    font-family: 'Inter', sans-serif;
     font-size: 0.75rem;
     margin-top: 6px;
     letter-spacing: 0.28em;
@@ -585,7 +585,7 @@
   }
 
   .header-brand {
-    font-family: 'Cormorant SC', serif;
+    font-family: 'Inter', sans-serif;
     font-weight: 400;
     font-size: 1.25rem;
     letter-spacing: 0.12em;
@@ -5823,6 +5823,30 @@ function init() {
   const savedUser = getCurrentUserId();
   if (savedUser && getUserById(savedUser)) {
     login(savedUser);
+  } else {
+    // Fallback: tenta recuperar usuário do token JWT do Athena
+    const _athenaToken = localStorage.getItem('athena_token') || localStorage.getItem('dio_token');
+    if (_athenaToken) {
+      try {
+        const _payload = JSON.parse(atob(_athenaToken.split('.')[1]));
+        // payload tem: { id, username, name, role } — ex: name="Thais", username="thais"
+        const _tknUsername = (_payload.username || '').toLowerCase().replace(/[^a-z]/g, '');
+        const _tknName = (_payload.name || '').toLowerCase();
+        const _matched = USERS.find(u => {
+          const uid = u.id.replace(/_/g, '').toLowerCase();
+          const uname = u.name.toLowerCase();
+          // Match por username exato, ou nome contém/igual
+          return uid === _tknUsername ||
+                 uname === _tknName ||
+                 uname.startsWith(_tknName) ||
+                 _tknName.startsWith(uname.split(' ')[0]);
+        });
+        if (_matched) {
+          setCurrentUserId(_matched.id);
+          login(_matched.id);
+        }
+      } catch(e) {}
+    }
   }
 }
 
