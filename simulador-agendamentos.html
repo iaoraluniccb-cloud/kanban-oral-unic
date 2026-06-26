@@ -743,33 +743,19 @@
     let barraDentes = addDiasUteis(barra, 1);
     barraDentes = forcarFimDia(barraDentes);
 
-    // 5. Entrega: MÁXIMO 15 dias corridos após cirurgia
-    // Regras: sexta após 16h30 OU sábado até 12h — nunca ultrapassar +15 dias
-    let limiteEntrega = new Date(dataCirurgia.getTime());
-    limiteEntrega.setDate(limiteEntrega.getDate() + 15);
-    let entrega = new Date(limiteEntrega.getTime());
-    // Se domingo, recua para sábado
-    if (entrega.getDay() === 0) entrega.setDate(entrega.getDate() - 1);
-    // Recua até encontrar sexta ou sábado dentro do limite
-    let tentativa = new Date(entrega.getTime());
-    for (let i = 0; i < 7; i++) {
-      const dow = tentativa.getDay();
-      if (dow === 5 || dow === 6) { entrega = new Date(tentativa.getTime()); break; }
-      tentativa.setDate(tentativa.getDate() - 1);
-    }
-    // Verifica se entrega caiu em sábado → gera duas opções
-    let entregaOpcoes = null;
-    if (entrega.getDay() === 6) {
-      // Opção A: sábado até 12h
-      let entregaSab = new Date(entrega.getTime());
-      entregaSab.setHours(8, 0, 0, 0); // usaremos 12h no desc
-      // Opção B: sexta anterior após 16h30
-      let entregaSex = new Date(entrega.getTime());
-      entregaSex.setDate(entregaSex.getDate() - 1); // sexta
-      entregaSex.setHours(16, 30, 0, 0);
-      entregaOpcoes = { sabado: entregaSab, sexta: entregaSex };
-    }
-    entrega = forcarFimDia(entrega);
+    // 5. Entrega: duas opções fixas
+    //    Opção A: +14 dias após cirurgia, após 16h30
+    //    Opção B: +15 dias após cirurgia, qualquer horário (manhã 08h00)
+    let entregaOpcaoA = new Date(dataCirurgia.getTime());
+    entregaOpcaoA.setDate(entregaOpcaoA.getDate() + 14);
+    entregaOpcaoA.setHours(16, 30, 0, 0);
+
+    let entregaOpcaoB = new Date(dataCirurgia.getTime());
+    entregaOpcaoB.setDate(entregaOpcaoB.getDate() + 15);
+    entregaOpcaoB.setHours(8, 0, 0, 0);
+
+    let entregaOpcoes = { opcaoA: entregaOpcaoA, opcaoB: entregaOpcaoB };
+    let entrega = entregaOpcaoA;
 
     return [
       {
@@ -819,7 +805,7 @@
       {
         etapa: 'Entrega da Prótese',
         icon: '🎉',
-        data: entregaOpcoes ? entregaOpcoes.sexta : entrega,
+        data: entregaOpcoes ? entregaOpcoes.opcaoA : entrega,
         duracao: duracoes.entrega,
         desc: 'Final do dia — entrega e orientações',
         highlight: true,
@@ -895,13 +881,13 @@
           <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px;">
             <div style="background:#FDF9F4;border:1.5px solid #C4955A;border-radius:8px;padding:10px 14px;">
               <div style="font-size:0.72rem;font-weight:700;color:#8B4A00;letter-spacing:0.05em;margin-bottom:4px;">OPÇÃO A</div>
-              <div style="font-weight:700;font-size:0.95rem;color:#3D2A20;">${formatarData(op.sexta)}</div>
-              <div style="font-size:0.82rem;color:#6B4F44;margin-top:2px;">⏰ Após 16h30 · Sexta-feira</div>
+              <div style="font-weight:700;font-size:0.95rem;color:#3D2A20;">${formatarData(op.opcaoA)}</div>
+              <div style="font-size:0.82rem;color:#6B4F44;margin-top:2px;">⏰ Após 16h30 · 14 dias após a cirurgia</div>
             </div>
             <div style="background:#FDF9F4;border:1.5px solid #C4955A;border-radius:8px;padding:10px 14px;">
               <div style="font-size:0.72rem;font-weight:700;color:#8B4A00;letter-spacing:0.05em;margin-bottom:4px;">OPÇÃO B</div>
-              <div style="font-weight:700;font-size:0.95rem;color:#3D2A20;">${formatarData(op.sabado)}</div>
-              <div style="font-size:0.82rem;color:#6B4F44;margin-top:2px;">⏰ 08h00 – 12h00 · Sábado</div>
+              <div style="font-weight:700;font-size:0.95rem;color:#3D2A20;">${formatarData(op.opcaoB)}</div>
+              <div style="font-size:0.82rem;color:#6B4F44;margin-top:2px;">⏰ Qualquer horário · 15 dias após a cirurgia</div>
             </div>
           </div>
           <div style="font-size:0.78rem;color:#9A7B6E;margin-top:8px;">⏱ Duração: ${formatarDuracao(ag.duracao)} · Entrega e orientações</div>`;
